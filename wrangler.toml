@@ -11,10 +11,6 @@ binding = "DB"
 database_name = "namechart"
 database_id = "6f658ccd-7d51-4de7-8eb7-b643fc1a4e97"
 
-[[routes]]
-pattern = "namechart.zalize.com"
-custom_domain = true
-
 [vars]
 INDEXNOW_KEY = "2913dae48d02d63b78ce1b2daf0bb420"
 
