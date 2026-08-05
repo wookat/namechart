@@ -1,0 +1,36 @@
+{
+  "name": "namechart",
+  "version": "1.0.0",
+  "description": "",
+  "main": "index.js",
+  "directories": {
+    "doc": "docs"
+  },
+  "scripts": {
+    "test": "echo \"Error: no test specified\" && exit 1",
+    "build:css": "tailwindcss -i src/styles.css -o public/styles.css --minify",
+    "build:data": "node scripts/build-data.mjs",
+    "dev": "wrangler dev",
+    "deploy": "wrangler deploy"
+  },
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/wookat/namechart.git"
+  },
+  "keywords": [],
+  "author": "",
+  "license": "ISC",
+  "bugs": {
+    "url": "https://github.com/wookat/namechart/issues"
+  },
+  "homepage": "https://github.com/wookat/namechart#readme",
+  "devDependencies": {
+    "@tailwindcss/cli": "^4.3.3",
+    "tailwindcss": "^4.3.3",
+    "wrangler": "^4.119.0"
+  },
+  "dependencies": {
+    "hono": "^4.13.0"
+  },
+  "type": "module"
+}

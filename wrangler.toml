@@ -1,0 +1,19 @@
+name = "namechart"
+main = "src/index.js"
+compatibility_date = "2026-07-01"
+
+[assets]
+directory = "public"
+binding = "ASSETS"
+
+[[d1_databases]]
+binding = "DB"
+database_name = "namechart"
+database_id = "6f658ccd-7d51-4de7-8eb7-b643fc1a4e97"
+
+[[routes]]
+pattern = "namechart.zalize.com"
+custom_domain = true
+
+[observability]
+enabled = true
