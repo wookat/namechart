@@ -87,8 +87,8 @@ app.get('/name/:slug', async c => {
   const primary = r.f_total >= r.m_total ? 'girl' : 'boy';
   const unisex = r.f_total > 0 && r.m_total > 0 && Math.min(r.f_total, r.m_total) / r.total > 0.2;
   const rankBits = [];
-  if (r.latest_rank_f) rankBits.push(`#${fmt(r.latest_rank_f)} for girls`);
-  if (r.latest_rank_m) rankBits.push(`#${fmt(r.latest_rank_m)} for boys`);
+  if (r.latest_rank_f && r.latest_rank_f <= 1000) rankBits.push(`#${fmt(r.latest_rank_f)} for girls`);
+  if (r.latest_rank_m && r.latest_rank_m <= 1000) rankBits.push(`#${fmt(r.latest_rank_m)} for boys`);
   const similar = await db.prepare('SELECT slug,name,total,f_total,m_total,first_year FROM names WHERE slug LIKE ? AND slug != ? ORDER BY total DESC LIMIT 8')
     .bind(slug.slice(0, 3) + '%', slug).all();
   const stats = [
@@ -159,7 +159,7 @@ app.get('/compare/:pair', async c => {
 <div class="mt-6 grid grid-cols-2 gap-3">
   ${[a, b].map(r => `<a href="/name/${r.slug}" class="rounded-xl bg-white border border-slate-200 p-4 hover:border-indigo-400">
     <p class="font-bold">${esc(r.name)}</p>
-    <p class="text-sm text-slate-500 mt-1">${fmt(r.total)} total · peak ${r.peak_year}${r.latest_rank_f ? ` · #${r.latest_rank_f} girls` : ''}${r.latest_rank_m ? ` · #${r.latest_rank_m} boys` : ''}</p>
+    <p class="text-sm text-slate-500 mt-1">${fmt(r.total)} total · peak ${r.peak_year}${r.latest_rank_f && r.latest_rank_f <= 1000 ? ` · #${r.latest_rank_f} girls` : ''}${r.latest_rank_m && r.latest_rank_m <= 1000 ? ` · #${r.latest_rank_m} boys` : ''}</p>
   </a>`).join('')}
 </div>
 <form action="/compare" method="get" class="mt-8 flex flex-col sm:flex-row gap-2 max-w-lg">
