@@ -13,6 +13,9 @@ const STATE_DIR = process.env.STATE_DIR || join(homedir(), 'data/ssa-states');
 const OUT_DIR = new URL('../data/seed/', import.meta.url).pathname;
 mkdirSync(OUT_DIR, { recursive: true });
 
+// Source artifacts that are not real names.
+const NOT_NAMES = new Set(['Unknown', 'Unnamed', 'Noname', 'Notnamed', 'Baby', 'Babyboy', 'Babygirl', 'Infant', 'Male', 'Female', 'Child', 'Twin', 'Twina', 'Twinb']);
+
 const yobFiles = readdirSync(DATA_DIR).filter(f => /^yob\d{4}\.txt$/.test(f)).sort();
 const years = yobFiles.map(f => Number(f.slice(3, 7)));
 const START = years[0], END = years[years.length - 1];
@@ -27,7 +30,7 @@ for (const f of yobFiles) {
   for (const line of readFileSync(join(DATA_DIR, f), 'utf8').split('\n')) {
     if (!line) continue;
     const [name, sex, cnt] = line.trim().split(',');
-    if (!name || !sex || !cnt) continue;
+    if (!name || !sex || !cnt || NOT_NAMES.has(name)) continue;
     let rec = names.get(name);
     if (!rec) { rec = { f: new Int32Array(NY), m: new Int32Array(NY) }; names.set(name, rec); }
     rec[sex === 'F' ? 'f' : 'm'][idx] += Number(cnt);
@@ -93,8 +96,9 @@ DROP TABLE IF EXISTS decade_ranks;
 CREATE TABLE decade_ranks (decade INTEGER, sex TEXT, rank INTEGER, name TEXT, count INTEGER, PRIMARY KEY(decade,sex,rank));
 DROP TABLE IF EXISTS state_ranks;
 CREATE TABLE state_ranks (state TEXT, sex TEXT, rank INTEGER, name TEXT, count INTEGER, PRIMARY KEY(state,sex,rank));
-CREATE TABLE IF NOT EXISTS subscribers (email TEXT PRIMARY KEY, created_at TEXT DEFAULT (datetime('now')));
+CREATE TABLE IF NOT EXISTS subscribers (email TEXT PRIMARY KEY, created_at TEXT DEFAULT (datetime('now')), source TEXT);
 CREATE TABLE IF NOT EXISTS hits (day TEXT, path TEXT, count INTEGER DEFAULT 0, PRIMARY KEY(day,path));
+CREATE TABLE IF NOT EXISTS rate_limits (key TEXT PRIMARY KEY, count INTEGER DEFAULT 0);
 `);
 
 let rows = [];

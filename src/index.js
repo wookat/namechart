@@ -1,7 +1,7 @@
 import { Hono } from 'hono';
 import {
-  layout, esc, fmt, cap, chartSVG, emailForm, nameCard, rankTable,
-  expandSeries, SITE, ORIGIN, START_YEAR, END_YEAR,
+  layout, esc, fmt, cap, chartSVG, chartReadout, emailForm, nameCard, rankTable,
+  expandSeries, genderOf, SITE, ORIGIN, START_YEAR, END_YEAR,
 } from './html.js';
 
 const app = new Hono();
@@ -24,16 +24,36 @@ app.use('*', async (c, next) => {
   c.header('X-Frame-Options', 'DENY');
   c.header('Referrer-Policy', 'strict-origin-when-cross-origin');
   c.header('Permissions-Policy', 'camera=(), microphone=(), geolocation=()');
+  c.header('Strict-Transport-Security', 'max-age=31536000; includeSubDomains');
   if ((c.res.headers.get('Content-Type') || '').includes('text/html')) {
     c.header('Content-Security-Policy', "default-src 'self'; script-src 'self' 'unsafe-inline'; style-src 'self' 'unsafe-inline'; img-src 'self' data:; connect-src 'self'; frame-ancestors 'none'; base-uri 'self'; form-action 'self'");
   }
 });
 
 const cache = { 'Cache-Control': 'public, max-age=3600, s-maxage=86400' };
-const html = (c, body, status = 200) => c.html(body, status, cache);
+const noStore = { 'Cache-Control': 'no-store' };
+const html = (c, body, status = 200) => c.html(body, status, status === 200 ? cache : noStore);
+const htmlPrivate = (c, body, status = 200) => c.html(body, status, noStore);
+
+const SLUG_RE = /^[a-z][a-z'-]{0,39}$/;
+const slugify = s => (s || '').toLowerCase().replace(/[^a-z'-]/g, '').slice(0, 40);
 
 async function getName(db, slug) {
-  return db.prepare('SELECT * FROM names WHERE slug = ?').bind(slug.toLowerCase()).first();
+  if (!SLUG_RE.test(slug)) return null;
+  return db.prepare('SELECT * FROM names WHERE slug = ?').bind(slug).first();
+}
+
+// Names similar in era + popularity + gender, which is what parents actually shortlist against.
+async function similarNames(db, r) {
+  const g = genderOf(r);
+  const sexCol = g === 'boy' ? 'm_total' : 'f_total';
+  const rows = await db.prepare(`SELECT slug,name,total,f_total,m_total,first_year FROM names
+      WHERE slug != ? AND ${sexCol} * 1.0 / total > 0.5
+        AND peak_year BETWEEN ? AND ?
+        AND total BETWEEN ? AND ?
+      ORDER BY ABS(total - ?) LIMIT 8`)
+    .bind(r.slug, r.peak_year - 6, r.peak_year + 6, Math.round(r.total * 0.45), Math.round(r.total * 2.2), r.total).all();
+  return rows.results;
 }
 
 // ---------- home ----------
@@ -50,8 +70,8 @@ app.get('/', async c => {
   <p class="mt-4 text-slate-500 max-w-xl mx-auto">Free popularity charts, rankings and insights for ${fmt(105966)} names — from 146 years of official U.S. birth records. No ads, no paywall.</p>
   <form action="/search" method="get" class="mt-6 max-w-md mx-auto flex gap-2">
     <input name="q" placeholder="Try “Olivia”, “Theodore”, “Luna”…" autocomplete="off"
-      class="flex-1 rounded-full border border-slate-300 bg-white px-5 py-3 shadow-sm focus:outline-none focus:ring-2 focus:ring-indigo-400">
-    <button class="rounded-full bg-indigo-600 text-white font-semibold px-6 py-3 hover:bg-indigo-700">Search</button>
+      class="flex-1 min-w-0 rounded-full border border-slate-300 bg-white px-4 sm:px-5 py-3 shadow-sm focus:outline-none focus:ring-2 focus:ring-indigo-400">
+    <button class="shrink-0 rounded-full bg-indigo-600 text-white font-semibold px-4 sm:px-6 py-3 hover:bg-indigo-700">Search</button>
   </form>
 </section>
 <section class="grid sm:grid-cols-2 gap-6">
@@ -86,22 +106,22 @@ ${emailForm()}`;
 // ---------- name page ----------
 app.get('/name/:slug', async c => {
   const db = c.env.DB;
-  const slug = c.req.param('slug').toLowerCase();
+  const slug = slugify(c.req.param('slug'));
   const r = await getName(db, slug);
-  if (!r) return html(c, layout({ title: 'Name not found — ' + SITE, desc: 'Name not found', path: '/name/' + slug, noindex: true, body: `<div class="text-center py-20"><h1 class="text-2xl font-bold">We don't have data for “${esc(cap(slug))}” yet</h1><p class="mt-2 text-slate-500">It may have fewer than 5 births in any year — the data source only includes names with 5+ births.</p><a href="/" class="inline-block mt-6 text-indigo-600 hover:underline">← Back to search</a></div>` }), 404);
+  if (!r) return html(c, layout({ title: 'Name not found — ' + SITE, desc: 'Name not found', path: '/name/', noindex: true, body: `<div class="text-center py-20"><h1 class="text-2xl font-bold">We don't have data for “${esc(cap(slug))}” yet</h1><p class="mt-2 text-slate-500">It may have fewer than 5 births in any year — the data source only includes names with 5+ births.</p><a href="/" class="inline-block mt-6 text-indigo-600 hover:underline">← Back to search</a></div>` }), 404);
   const series = JSON.parse(r.series);
   const { f, m } = expandSeries(series);
   const latest = f[f.length - 1] + m[m.length - 1];
   const tenAgo = (f[f.length - 11] ?? 0) + (m[m.length - 11] ?? 0);
   const trendPct = tenAgo > 0 ? Math.round(((latest - tenAgo) / tenAgo) * 100) : null;
   const girlPct = r.total ? Math.round((r.f_total / r.total) * 100) : 0;
-  const primary = r.f_total >= r.m_total ? 'girl' : 'boy';
-  const unisex = r.f_total > 0 && r.m_total > 0 && Math.min(r.f_total, r.m_total) / r.total > 0.2;
+  const gender = genderOf(r);
+  const unisex = gender === 'unisex';
+  const primary = gender === 'unisex' ? (r.f_total >= r.m_total ? 'girl' : 'boy') : gender;
   const rankBits = [];
   if (r.latest_rank_f && r.latest_rank_f <= 1000) rankBits.push(`#${fmt(r.latest_rank_f)} for girls`);
   if (r.latest_rank_m && r.latest_rank_m <= 1000) rankBits.push(`#${fmt(r.latest_rank_m)} for boys`);
-  const similar = await db.prepare('SELECT slug,name,total,f_total,m_total,first_year FROM names WHERE slug LIKE ? AND slug != ? ORDER BY total DESC LIMIT 8')
-    .bind(slug.slice(0, 3) + '%', slug).all();
+  const similar = await similarNames(db, r);
   const stats = [
     ['Total babies', fmt(r.total)],
     ['Peak year', `${r.peak_year} (${fmt(r.peak_count)} babies)`],
@@ -120,15 +140,20 @@ app.get('/name/:slug', async c => {
 <div class="mt-6 rounded-2xl bg-white border border-slate-200 p-4 sm:p-6">
   <h2 class="font-bold mb-2">Popularity over time <span class="font-normal text-sm text-slate-400">births per year, 1880–${END_YEAR}</span></h2>
   ${chartSVG(series)}
+  ${chartReadout(series)}
 </div>
 <div class="mt-6 grid grid-cols-2 sm:grid-cols-3 gap-3">
   ${stats.map(([k, v]) => `<div class="rounded-xl bg-white border border-slate-200 p-4"><p class="text-xs uppercase tracking-wide text-slate-400">${k}</p><p class="font-semibold mt-1">${v}</p></div>`).join('')}
 </div>
 <div class="mt-6 flex flex-wrap gap-3">
-  <a href="/compare/${slug}-vs-${slug === 'olivia' ? 'emma' : 'olivia'}" class="rounded-full border border-indigo-300 text-indigo-700 px-4 py-2 text-sm font-medium hover:bg-indigo-50">⚔️ Compare ${esc(r.name)} with another name</a>
+  <form action="/compare" method="get" class="flex gap-2 items-center">
+    <input type="hidden" name="a" value="${esc(r.name)}">
+    <input name="b" required placeholder="Compare with…" class="rounded-full border border-slate-300 px-4 py-2 text-sm bg-white w-44">
+    <button class="rounded-full border border-indigo-300 text-indigo-700 px-4 py-2 text-sm font-medium hover:bg-indigo-50">⚔️ Compare</button>
+  </form>
   <button onclick="navigator.share?navigator.share({title:document.title,url:location.href}):navigator.clipboard.writeText(location.href).then(()=>this.textContent='✓ Link copied')" class="rounded-full border border-slate-300 px-4 py-2 text-sm font-medium hover:bg-slate-100">↗ Share this chart</button>
 </div>
-${similar.results.length ? `<section class="mt-10"><h2 class="font-bold text-lg mb-3">Similar names</h2><div class="grid grid-cols-2 sm:grid-cols-4 gap-3">${similar.results.map(nameCard).join('')}</div></section>` : ''}
+${similar.length ? `<section class="mt-10"><h2 class="font-bold text-lg mb-3">Names with a similar vibe</h2><p class="text-sm text-slate-500 -mt-2 mb-3">Same primary gender, peaked around the same years, and roughly as common as ${esc(r.name)}.</p><div class="grid grid-cols-2 sm:grid-cols-4 gap-3">${similar.map(nameCard).join('')}</div></section>` : ''}
 ${emailForm()}`;
   return html(c, layout({
     title: `${r.name} — Name Popularity, Rank & Chart (1880–${END_YEAR}) | ${SITE}`,
@@ -187,16 +212,15 @@ ${emailForm()}`;
   }));
 });
 app.get('/compare', c => {
-  const a = (c.req.query('a') || '').trim().toLowerCase().replace(/[^a-z'-]/g, '');
-  const b = (c.req.query('b') || '').trim().toLowerCase().replace(/[^a-z'-]/g, '');
+  const a = slugify(c.req.query('a')), b = slugify(c.req.query('b'));
   return c.redirect(a && b ? `/compare/${a}-vs-${b}` : '/');
 });
 
 // ---------- search ----------
 app.get('/search', async c => {
   const db = c.env.DB;
-  const q = (c.req.query('q') || '').trim();
-  const slug = q.toLowerCase().replace(/[^a-z'-]/g, '');
+  const q = (c.req.query('q') || '').trim().slice(0, 60);
+  const slug = slugify(q);
   if (slug) {
     const exact = await getName(db, slug);
     if (exact) return c.redirect(`/name/${slug}`);
@@ -208,7 +232,7 @@ ${like.results.length
     ? `<div class="mt-6 grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 gap-3">${like.results.map(nameCard).join('')}</div>`
     : `<p class="mt-4 text-slate-500">No names found. The data only includes names given to 5+ babies in a single year.</p>`}
 ${emailForm()}`;
-  return html(c, layout({ title: `“${q}” — name search | ${SITE}`, desc: `Search results for ${q}`, path: '/search', noindex: true, body }));
+  return htmlPrivate(c, layout({ title: `“${q}” — name search | ${SITE}`, desc: `Search results for ${q}`, path: '/search', noindex: true, body }));
 });
 
 // ---------- top lists ----------
@@ -389,6 +413,28 @@ app.get('/about', c => html(c, layout({
 </article>${emailForm()}`,
 })));
 
+app.get('/terms', c => html(c, layout({
+  title: `Terms of Use | ${SITE}`,
+  desc: 'NameChart terms of use: free informational service, data accuracy disclaimer, acceptable use, and no government affiliation.',
+  path: '/terms',
+  body: `<article class="max-w-2xl">
+<h1 class="text-3xl font-extrabold">Terms of Use</h1>
+<p class="mt-4 text-slate-600">Effective: August 2026 · Operator: Zalize (hello@zalize.com)</p>
+<h2 class="text-xl font-bold mt-8">The service</h2>
+<p class="mt-2 text-slate-700">NameChart is a free, informational website presenting statistics derived from public-domain U.S. Social Security Administration data. There is no paid plan, no account, and no purchase.</p>
+<h2 class="text-xl font-bold mt-8">No affiliation with the government</h2>
+<p class="mt-2 text-slate-700">NameChart is not affiliated with, endorsed by, or sponsored by the U.S. Social Security Administration or any other government agency. “Social Security Administration” is used only to identify the source of the underlying data.</p>
+<h2 class="text-xl font-bold mt-8">Accuracy</h2>
+<p class="mt-2 text-slate-700">Data is provided “as is” without warranty. The source data excludes names given to fewer than 5 babies of a gender in a year, is based on Social Security card applications rather than all births, and may contain source-side errors. Do not rely on it for legal, medical, or official purposes.</p>
+<h2 class="text-xl font-bold mt-8">Acceptable use</h2>
+<p class="mt-2 text-slate-700">You may read, link to, and share pages freely. Do not attempt to disrupt the service, bulk-scrape at a rate that degrades it, or submit email addresses you do not own.</p>
+<h2 class="text-xl font-bold mt-8">Content reuse</h2>
+<p class="mt-2 text-slate-700">The underlying SSA data is in the public domain. Our page text, design, and derived visualizations are © Zalize; you may quote them with attribution and a link.</p>
+<h2 class="text-xl font-bold mt-8">Changes &amp; contact</h2>
+<p class="mt-2 text-slate-700">These terms may be updated; the effective date above will change. Questions: hello@zalize.com</p>
+</article>`,
+})));
+
 app.get('/privacy', c => html(c, layout({
   title: `Privacy Policy | ${SITE}`,
   desc: 'NameChart privacy policy: no cookies, no third-party trackers, first-party anonymous analytics only.',
@@ -398,28 +444,56 @@ app.get('/privacy', c => html(c, layout({
 <p class="mt-4 text-slate-600">Effective: August 2026</p>
 <ul class="mt-4 list-disc pl-5 space-y-2 text-slate-700">
 <li><strong>No cookies.</strong> We set no cookies and use no third-party trackers or ad networks.</li>
-<li><strong>Anonymous analytics.</strong> We count page views (path + day only) via a first-party beacon. No IP addresses, fingerprints, or identifiers are stored.</li>
-<li><strong>Email.</strong> If you subscribe for updates we store only your email address, used solely for product updates. Unsubscribe anytime by emailing hello@zalize.com.</li>
-<li><strong>Data requests.</strong> Email hello@zalize.com to request deletion of your email address.</li>
+<li><strong>Anonymous analytics.</strong> We count page views (path + day only) via a first-party beacon. No IP addresses, fingerprints, or identifiers are stored. To limit abuse we hash your IP with the current date into a short-lived counter key; the raw IP is never written to storage.</li>
+<li><strong>Email.</strong> If you subscribe for updates we store your email address, the date, and the page you signed up from, used solely for product updates. Unsubscribe anytime by replying to any email or writing to hello@zalize.com.</li>
+<li><strong>Processors.</strong> The site runs on Cloudflare (Workers, D1, DNS/CDN). Cloudflare processes connection data, including IP addresses, at its edge for delivery, caching, and security, and may transfer it internationally under its own terms; Cloudflare also collects network error reports (NEL) for our domain. Cloudflare&rsquo;s cookieless Web Analytics script is enabled at the zalize.com zone level, but our Content-Security-Policy blocks it from loading on NameChart. We use no ad networks, no cross-site trackers, and no third-party marketing tools.</li>
+<li><strong>Controller &amp; rights.</strong> Controller: Zalize (hello@zalize.com). Legal basis for the email list is your consent; for anonymous counts, legitimate interest. Email addresses are kept until you unsubscribe; anonymous page counts are aggregate and retained indefinitely. You may request access, correction, or deletion — including under GDPR and CCPA — at hello@zalize.com.</li>
+<li><strong>Children.</strong> NameChart is aimed at adults choosing names and is not directed to children under 13. We do not knowingly collect personal information from children.</li>
 </ul>
 </article>`,
 })));
 
 // ---------- APIs ----------
+// Same-origin only: blocks cross-site form/beacon abuse without needing cookies or tokens.
+function sameOrigin(c) {
+  const src = c.req.header('Origin') || c.req.header('Referer');
+  if (!src) return false;
+  try { return new URL(src).host === new URL(c.req.url).host; } catch { return false; }
+}
+
+// Per-day, per-client write budget stored in D1 (no cookies, IP is hashed and never persisted raw).
+async function overQuota(c, kind, limit) {
+  const ip = c.req.header('CF-Connecting-IP') || '0.0.0.0';
+  const buf = await crypto.subtle.digest('SHA-256', new TextEncoder().encode(kind + '|' + ip + '|' + new Date().toISOString().slice(0, 10)));
+  const key = [...new Uint8Array(buf)].slice(0, 12).map(b => b.toString(16).padStart(2, '0')).join('');
+  const row = await c.env.DB.prepare('INSERT INTO rate_limits (key, count) VALUES (?, 1) ON CONFLICT(key) DO UPDATE SET count = count + 1 RETURNING count')
+    .bind(key).first();
+  return (row?.count ?? 0) > limit;
+}
+
+const subscribePage = (c, title, heading, sub, status) => htmlPrivate(c, layout({
+  title: `${title} | ${SITE}`, desc: '', path: '/subscribe', noindex: true,
+  body: `<div class="text-center py-20"><h1 class="text-2xl font-bold">${heading}</h1><p class="mt-2 text-slate-500">${sub}</p><a href="/" class="inline-block mt-6 text-indigo-600 hover:underline">← Back to NameChart</a></div>`,
+}), status);
+
 app.post('/api/subscribe', async c => {
+  if (!sameOrigin(c)) return subscribePage(c, 'Blocked', 'Request blocked', 'Subscriptions can only be submitted from namechart.zalize.com.', 403);
   const form = await c.req.formData().catch(() => null);
   const email = (form?.get('email') || '').toString().trim().toLowerCase();
   if (!/^[^\s@]+@[^\s@]+\.[^\s@]{2,}$/.test(email) || email.length > 254) {
-    return html(c, layout({ title: 'Invalid email | ' + SITE, desc: '', path: '/subscribe', noindex: true, body: `<div class="text-center py-20"><h1 class="text-2xl font-bold">That email doesn't look right</h1><a href="javascript:history.back()" class="inline-block mt-4 text-indigo-600 hover:underline">← Go back</a></div>` }), 400);
+    return subscribePage(c, 'Invalid email', "That email doesn't look right", 'Please go back and check the address.', 400);
   }
-  await c.env.DB.prepare('INSERT OR IGNORE INTO subscribers (email) VALUES (?)').bind(email).run();
-  return html(c, layout({ title: 'Subscribed | ' + SITE, desc: '', path: '/subscribe', noindex: true, body: `<div class="text-center py-20"><h1 class="text-2xl font-bold">🎉 You're on the list</h1><p class="mt-2 text-slate-500">We'll email you when new data and tools land.</p><a href="/" class="inline-block mt-6 text-indigo-600 hover:underline">← Back to NameChart</a></div>` }));
+  if (await overQuota(c, 'sub', 5)) return subscribePage(c, 'Too many requests', 'Too many sign-ups', 'Please try again tomorrow.', 429);
+  await c.env.DB.prepare('INSERT OR IGNORE INTO subscribers (email, source) VALUES (?, ?)')
+    .bind(email, (c.req.header('Referer') || '').slice(0, 200)).run();
+  return subscribePage(c, 'Subscribed', "🎉 You're on the list", "We'll email you when new data and tools land. Unsubscribe anytime via hello@zalize.com.");
 });
 
 app.post('/api/beacon', async c => {
+  if (!sameOrigin(c)) return c.body(null, 204);
   try {
     const { p } = await c.req.json();
-    if (typeof p === 'string' && p.length <= 100 && p.startsWith('/')) {
+    if (typeof p === 'string' && p.length <= 100 && p.startsWith('/') && !(await overQuota(c, 'beacon', 300))) {
       const day = new Date().toISOString().slice(0, 10);
       await c.env.DB.prepare('INSERT INTO hits (day, path, count) VALUES (?, ?, 1) ON CONFLICT(day, path) DO UPDATE SET count = count + 1')
         .bind(day, p).run();
@@ -429,14 +503,14 @@ app.post('/api/beacon', async c => {
 });
 
 app.get('/api/search', async c => {
-  const q = (c.req.query('q') || '').trim().toLowerCase().replace(/[^a-z'-]/g, '');
+  const q = slugify(c.req.query('q'));
   if (!q) return c.json({ results: [] });
   const rows = await c.env.DB.prepare('SELECT slug,name,total FROM names WHERE slug LIKE ? ORDER BY total DESC LIMIT 8').bind(q + '%').all();
   return c.json({ results: rows.results }, 200, cache);
 });
 
 // ---------- SEO plumbing ----------
-app.get('/robots.txt', c => c.text(`User-agent: *\nAllow: /\nSitemap: ${ORIGIN}/sitemap.xml\n`, 200, cache));
+app.get('/robots.txt', c => c.text(`User-agent: *\nAllow: /\nDisallow: /api/\nDisallow: /search\nSitemap: ${ORIGIN}/sitemap.xml\n`, 200, cache));
 
 const SM_PAGE = 5000;
 app.get('/sitemap.xml', async c => {
@@ -453,7 +527,7 @@ app.get('/sitemaps/:shard{.+\\.xml}', async c => {
   const shard = c.req.param('shard').replace(/\.xml$/, '');
   const urls = [];
   if (shard === 'static') {
-    urls.push('/', '/top/girls', '/top/boys', '/unisex', '/trending', '/browse', '/about', '/privacy');
+    urls.push('/', '/top/girls', '/top/boys', '/unisex', '/trending', '/browse', '/about', '/privacy', '/terms');
     for (const ch of 'abcdefghijklmnopqrstuvwxyz') urls.push(`/letter/${ch}`);
     for (let y = START_YEAR; y <= END_YEAR; y++) urls.push(`/year/${y}`);
     for (let d = 1880; d <= 2020; d += 10) urls.push(`/decade/${d}s`);
@@ -477,6 +551,6 @@ app.get('/:key{[a-f0-9]{32}\\.txt}', c => {
   return c.env.INDEXNOW_KEY === key ? c.text(key) : c.notFound();
 });
 
-app.notFound(c => html(c, layout({ title: 'Page not found | ' + SITE, desc: 'Not found', path: c.req.path, noindex: true, body: `<div class="text-center py-20"><h1 class="text-3xl font-extrabold">404</h1><p class="mt-2 text-slate-500">That page doesn't exist.</p><a href="/" class="inline-block mt-6 text-indigo-600 hover:underline">← Back to NameChart</a></div>` }), 404));
+app.notFound(c => htmlPrivate(c, layout({ title: 'Page not found | ' + SITE, desc: 'Not found', path: '/404', noindex: true, body: `<div class="text-center py-20"><h1 class="text-3xl font-extrabold">404</h1><p class="mt-2 text-slate-500">That page doesn't exist.</p><a href="/" class="inline-block mt-6 text-indigo-600 hover:underline">← Back to NameChart</a></div>` }), 404));
 
 export default app;
