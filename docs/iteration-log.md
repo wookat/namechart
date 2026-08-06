@@ -404,3 +404,13 @@
 
 **回归证据**
 - Playwright 真实浏览器走查输出见本轮记录。
+
+## Round 39（2026-08-06）
+**发现**
+- ③性能审计：抽测 5 类关键页面 TTFB/传输体积 + 真实浏览器 LCP。
+
+**修复**
+- 无缺陷：TTFB 75–197ms（边缘缓存生效）；压缩后 HTML 3–21KB；/name/liam 实测 LCP 92ms。无需优化动作。
+
+**回归证据**
+- curl 计时与 PerformanceObserver LCP 输出见本轮记录。
