@@ -31,10 +31,19 @@ if (init.upload_url) {
   globalThis.__bm = ing.at_bookmark ?? null;
 }
 let bookmark = globalThis.__bm ?? null;
+// No upload URL and no bookmark: this exact file (same etag) was already ingested.
+if (!init.upload_url && !bookmark) { console.log('already imported (etag match):', file); process.exit(0); }
 for (;;) {
-  const r = await api(bookmark ? { action: 'poll', current_bookmark: bookmark } : { action: 'poll' });
+  let r;
+  try {
+    r = await api(bookmark ? { action: 'poll', current_bookmark: bookmark } : { action: 'poll' });
+  } catch (e) {
+    // "Not currently importing anything" means the ingest already completed.
+    if (/Not currently importing/i.test(e.message)) break;
+    throw e;
+  }
   bookmark = r.at_bookmark ?? bookmark;
-  if (r.error) throw new Error(r.error);
+  if (r.error) { if (/Not currently importing/i.test(r.error)) break; throw new Error(r.error); }
   const st = r.status || (r.success && r.result?.final ? 'complete' : '');
   process.stdout.write(`\r${st || 'polling'} ${JSON.stringify(r.messages?.slice(-1) ?? '')}        `);
   if (st === 'complete' || r.result?.final || r.success && r.messages?.some(m => /finished/i.test(m))) break;

@@ -27,3 +27,16 @@
 
 **回归证据**
 - /name/luna 含 BreadcrumbList、FAQPage，JSON-LD 解析有效；7 条核心路由 200；XSS 404；CSP script-src 'self' 不变。
+
+## Round 3（2026-08-06，版本 5a0e9afe）
+**发现**
+- ⑤数据/内容：含义与名人覆盖仅 Top ~6000/1500 热门名 → 内容扩容是纯增益（pSEO 页面质量）。
+- ①QA：d1-import.mjs 两个健壮性 bug（ingest 完成后 poll 报 "Not currently importing"；同 etag 重跑时 poll 缺 bookmark 报 7400）。
+
+**修复（全部上线）**
+- 内容扩容：meanings 2,810→2,864 行（Wiktionary，Top 6,500 候选）；famous 1,284→1,552 行（Wikidata，Top 2,000 候选），已导入 D1 并 bump CACHE_VER=7 上线。
+- d1-import.mjs 修复两处 poll 边界（视为完成/etag 命中即跳过）。
+- IndexNow 提交下一批 2,194 URL（200）。
+
+**回归证据**
+- D1 计数 meanings=2864、famous=1552；/name/luna 新缓存含 Famous 区块；首页 200。
