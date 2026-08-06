@@ -119,3 +119,13 @@
 
 **回归证据**
 - IndexNow API 返回 200，submitted 3200 urls；累计已提交约 10.6k URL。
+
+## Round 11（2026-08-06，版本 4a989c20）
+**发现**
+- ④竞品反推：Nameberry「Names That Mean X」是其订阅墙内的高流量列表族；NameChart 有 2,864 条词源数据但未做含义检索（P1，pSEO 新页面族+差异化：我们免费）。
+
+**修复（全部上线）**
+- 新增 /meaning/:word 页面族（16 个高频含义词：moon/light/star/love/strong/fire/peace/king/flower/sea/beautiful/brave/joy/grace/warrior/night），词边界正则过滤误匹配（sea 不吃 season），带词源摘录+CC BY-SA 标注；接入 browse、static sitemap、beacon 白名单。
+
+**回归证据**
+- 16 个 /meaning/ 全部 200（自定义域+workers.dev），无效词 404；/meaning/sea 无 season 误匹配；sitemap 含 16 个 meaning URL。

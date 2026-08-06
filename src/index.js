@@ -44,7 +44,7 @@ const slugify = s => (s || '').toLowerCase().replace(/[^a-z'-]/g, '').slice(0, 4
 // Prefix search via index-friendly range scan (LIKE on a BINARY PK can't use the index
 // and D1 rejects patterns >= 50 chars).
 const NAME_COUNT = 105954; // rows in `names`; update when reimporting data
-const CACHE_VER = 15; // bump to invalidate the edge HTML cache on deploys that change rendering/data
+const CACHE_VER = 16; // bump to invalidate the edge HTML cache on deploys that change rendering/data
 // '~' (0x7E) sorts after every character allowed in slugs (a-z, apostrophe, hyphen).
 const prefixWhere = "slug >= ?1 AND slug < (?1 || '~')";
 
@@ -571,6 +571,28 @@ ${emailForm()}`;
   return html(c, layout({ title: `${def.title} | ${SITE}`, desc: def.desc, path: `/list/${c.req.param('slug')}`, body }));
 });
 
+// ---------- names by meaning ----------
+const MEANING_WORDS = ['moon', 'light', 'star', 'love', 'strong', 'fire', 'peace', 'king', 'flower', 'sea', 'beautiful', 'brave', 'joy', 'grace', 'warrior', 'night'];
+
+app.get('/meaning/:word', async c => {
+  const word = c.req.param('word').toLowerCase();
+  if (!MEANING_WORDS.includes(word)) return c.notFound();
+  const cand = await c.env.DB.prepare(`SELECT m.slug, m.etymology, n.name, n.total, n.f_total, n.m_total, n.first_year
+      FROM meanings m JOIN names n ON n.slug = m.slug
+      WHERE m.etymology LIKE ? ORDER BY n.total DESC LIMIT 200`).bind(`%${word}%`).all();
+  const re = new RegExp(`\\b${word}\\b`, 'i');
+  const rows = cand.results.filter(r => re.test(r.etymology)).slice(0, 48);
+  const capWord = cap(word);
+  const body = `
+<h1 class="text-3xl font-extrabold">Names That Mean ${capWord}</h1>
+<p class="mt-2 text-slate-600 max-w-2xl">${rows.length} names whose etymology relates to “${word}” — drawn from documented origins, sorted by all-time U.S. popularity.</p>
+<div class="mt-6 space-y-3">${rows.map(r => `<div class="rounded-xl bg-white border border-slate-200 p-4 flex flex-wrap items-baseline gap-x-4 gap-y-1"><a href="/name/${r.slug}" class="font-semibold text-indigo-700 hover:underline">${esc(r.name)}</a><span class="text-sm text-slate-600">${esc(r.etymology.length > 180 ? r.etymology.slice(0, 177) + '…' : r.etymology)}</span></div>`).join('')}</div>
+<section class="mt-10"><h2 class="font-bold mb-2">More meanings</h2><div class="flex flex-wrap gap-2 text-sm">${MEANING_WORDS.filter(w => w !== word).map(w => `<a href="/meaning/${w}" class="px-3 py-1.5 rounded-full bg-white border border-slate-200 hover:border-indigo-400">${cap(w)}</a>`).join('')}</div></section>
+<p class="mt-6 text-xs text-slate-500">Etymologies adapted from <a class="underline hover:text-indigo-600" href="https://en.wiktionary.org" rel="license noopener">Wiktionary</a>, licensed <a class="underline hover:text-indigo-600" href="https://creativecommons.org/licenses/by-sa/4.0/" rel="license noopener">CC BY-SA 4.0</a>.</p>
+${emailForm()}`;
+  return html(c, layout({ title: `Names That Mean ${capWord} — ${rows.length} Names with Origins | ${SITE}`, desc: `${rows.length} baby names that mean or relate to “${word}”, with documented etymologies and U.S. popularity data.`, path: `/meaning/${word}`, body }));
+});
+
 // ---------- browse hub ----------
 app.get('/browse', async c => {
   const decades = Array.from({ length: 15 }, (_, i) => 1880 + i * 10);
@@ -578,6 +600,8 @@ app.get('/browse', async c => {
 <h1 class="text-3xl font-extrabold">Browse all names</h1>
 <section class="mt-6"><h2 class="font-bold mb-2">Curated lists</h2>
 <div class="flex flex-wrap gap-1.5 text-sm">${Object.entries(LISTS).map(([s, d]) => `<a href="/list/${s}" class="px-3 py-1.5 rounded-lg bg-white border border-slate-200 hover:border-indigo-400">${d.title}</a>`).join('')}</div></section>
+<section class="mt-6"><h2 class="font-bold mb-2">By meaning</h2>
+<div class="flex flex-wrap gap-1.5 text-sm">${MEANING_WORDS.map(w => `<a href="/meaning/${w}" class="px-3 py-1.5 rounded-lg bg-white border border-slate-200 hover:border-indigo-400">${cap(w)}</a>`).join('')}</div></section>
 <section class="mt-6"><h2 class="font-bold mb-2">By first letter</h2>
 <div class="flex flex-wrap gap-1.5">${'abcdefghijklmnopqrstuvwxyz'.split('').map(ch => `<a href="/letter/${ch}" class="w-9 h-9 grid place-items-center rounded-lg bg-white border border-slate-200 hover:border-indigo-400">${ch.toUpperCase()}</a>`).join('')}</div></section>
 <section class="mt-6"><h2 class="font-bold mb-2">By decade</h2>
@@ -705,7 +729,7 @@ app.post('/api/beacon', async c => {
   try {
     const { p } = await c.req.json();
     // Only count paths that match a real route family, so forged beacons can't pollute analytics.
-    const VALID_PATH = /^\/$|^\/(name|letter|year|state|compare|list|og\/name)\/[a-z0-9'.-]{1,60}$|^\/decade\/\d{4}s$|^\/(top\/girls|top\/boys|trending|unisex|browse|about|privacy|terms|favorites|search)$/;
+    const VALID_PATH = /^\/$|^\/(name|letter|year|state|compare|list|meaning|og\/name)\/[a-z0-9'.-]{1,60}$|^\/decade\/\d{4}s$|^\/(top\/girls|top\/boys|trending|unisex|browse|about|privacy|terms|favorites|search)$/;
     if (typeof p === 'string' && p.length <= 100 && VALID_PATH.test(p) && !(await overQuota(c, 'beacon', 300))) {
       const day = new Date().toISOString().slice(0, 10);
       await c.env.DB.prepare('INSERT INTO hits (day, path, count) VALUES (?, ?, 1) ON CONFLICT(day, path) DO UPDATE SET count = count + 1')
@@ -741,6 +765,7 @@ app.get('/sitemaps/:shard{.+\\.xml}', async c => {
   if (shard === 'static') {
     urls.push('/', '/top/girls', '/top/boys', '/unisex', '/trending', '/browse', '/about', '/privacy', '/terms');
     for (const s of Object.keys(LISTS)) urls.push(`/list/${s}`);
+    for (const w of MEANING_WORDS) urls.push(`/meaning/${w}`);
     for (const ch of 'abcdefghijklmnopqrstuvwxyz') urls.push(`/letter/${ch}`);
     for (let y = START_YEAR; y <= END_YEAR; y++) urls.push(`/year/${y}`);
     for (let d = 1880; d <= 2020; d += 10) urls.push(`/decade/${d}s`);
