@@ -434,3 +434,13 @@
 
 **回归证据**
 - /name/luna 出现 adeline-vs-luna / ivy-vs-luna / luna-vs-mila / luna-vs-quinn 四个规范序链接。
+
+## Round 42（2026-08-06）
+**发现**
+- ④竞品深度对照（Nameberry /b/girl-baby-name-luna 实测抓取）：其名字页区块 = About / Popularity / World rankings / Famous / Variations(语言变体) / Community。逐项对照：About(含义词源)✔ Popularity(我们免费全曲线反超)✔ Famous✔ 拼写变体✔；差距项：World rankings（跨国排名）与语言变体（Lune/French 等）需非美国数据源。
+
+**修复/结论**
+- 两项差距均超出本产品「美国 SSA 数据」定位，且无免费可编程权威数据源（不伪造数据红线），列 P2 backlog（候选源：Wiktionary 跨语言表，需评估质量）；本轮无代码变更。
+
+**回归证据**
+- 竞品页区块抓取输出见本轮记录；我方对应区块线上均在（/name/luna）。
