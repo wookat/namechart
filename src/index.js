@@ -44,7 +44,7 @@ const slugify = s => (s || '').toLowerCase().replace(/[^a-z'-]/g, '').slice(0, 4
 // Prefix search via index-friendly range scan (LIKE on a BINARY PK can't use the index
 // and D1 rejects patterns >= 50 chars).
 const NAME_COUNT = 105954; // rows in `names`; update when reimporting data
-const CACHE_VER = 41; // bump to invalidate the edge HTML cache on deploys that change rendering/data
+const CACHE_VER = 42; // bump to invalidate the edge HTML cache on deploys that change rendering/data
 // '~' (0x7E) sorts after every character allowed in slugs (a-z, apostrophe, hyphen).
 const prefixWhere = "slug >= ?1 AND slug < (?1 || '~')";
 
@@ -516,17 +516,23 @@ app.get('/state/:st', async c => {
   const db = c.env.DB;
   const st = c.req.param('st').toUpperCase();
   if (!STATES[st]) return c.notFound();
-  const [g, b] = await Promise.all([
+  const [g, b, nat] = await Promise.all([
     db.prepare('SELECT * FROM state_ranks WHERE state=? AND sex=? ORDER BY rank LIMIT 100').bind(st, 'F').all(),
     db.prepare('SELECT * FROM state_ranks WHERE state=? AND sex=? ORDER BY rank LIMIT 100').bind(st, 'M').all(),
+    db.prepare('SELECT name, sex FROM year_ranks WHERE year=? AND rank<=100').bind(END_YEAR).all(),
   ]);
+  const natSet = new Set(nat.results.map(r => r.sex + '|' + r.name));
+  const local = [...g.results, ...b.results].filter(r => !natSet.has(r.sex + '|' + r.name)).sort((x, y) => x.rank - y.rank).slice(0, 12);
+  const intro = g.results[0] && b.results[0]
+    ? `<p class="mt-2 text-slate-600">${STATES[st]}'s favorites in ${END_YEAR}: <a class="text-indigo-600 underline" href="/name/${g.results[0].name.toLowerCase()}">${esc(g.results[0].name)}</a> for girls and <a class="text-indigo-600 underline" href="/name/${b.results[0].name.toLowerCase()}">${esc(b.results[0].name)}</a> for boys.</p>` : '';
   const body = `
-<h1 class="text-3xl font-extrabold">Most popular names in ${STATES[st]} (${END_YEAR})</h1>
+<h1 class="text-3xl font-extrabold">Most popular names in ${STATES[st]} (${END_YEAR})</h1>${intro}
 <div class="mt-4 flex flex-wrap gap-1.5 text-xs">${Object.keys(STATES).map(s => `<a href="/state/${s.toLowerCase()}" class="px-2 py-1 rounded ${s === st ? 'bg-indigo-600 text-white' : 'bg-white border border-slate-200 hover:border-indigo-400'}">${s}</a>`).join('')}</div>
 <div class="mt-6 grid md:grid-cols-2 gap-6">
   <div class="rounded-2xl bg-white border border-slate-200 p-4"><h2 class="font-bold mb-2">Girls</h2>${rankTable(g.results)}</div>
   <div class="rounded-2xl bg-white border border-slate-200 p-4"><h2 class="font-bold mb-2">Boys</h2>${rankTable(b.results)}</div>
 </div>
+${local.length ? `<section class="mt-8"><h2 class="font-bold text-lg mb-2">Local favorites</h2><p class="text-sm text-slate-500 mb-3">In the ${STATES[st]} top 100 but outside the national top 100 in ${END_YEAR}.</p><div class="flex flex-wrap gap-2 text-sm">${local.map(r => `<a href="/name/${r.name.toLowerCase()}" class="px-3 py-1.5 rounded-full bg-white border border-slate-200 hover:border-indigo-400">${esc(r.name)} <span class="text-slate-500">#${r.rank} ${r.sex === 'F' ? 'girls' : 'boys'}</span></a>`).join('')}</div></section>` : ''}
 ${emailForm()}`;
   return html(c, layout({ title: `Top Baby Names in ${STATES[st]} ${END_YEAR} | ${SITE}`, desc: `The 100 most popular girl and boy names in ${STATES[st]} in ${END_YEAR}, from official state birth records.`, path: `/state/${st.toLowerCase()}`, body }));
 });
