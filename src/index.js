@@ -41,7 +41,7 @@ const slugify = s => (s || '').toLowerCase().replace(/[^a-z'-]/g, '').slice(0, 4
 // Prefix search via index-friendly range scan (LIKE on a BINARY PK can't use the index
 // and D1 rejects patterns >= 50 chars).
 const NAME_COUNT = 105954; // rows in `names`; update when reimporting data
-const CACHE_VER = 2; // bump to invalidate the edge HTML cache on deploys that change rendering/data
+const CACHE_VER = 3; // bump to invalidate the edge HTML cache on deploys that change rendering/data
 // '~' (0x7E) sorts after every character allowed in slugs (a-z, apostrophe, hyphen).
 const prefixWhere = "slug >= ?1 AND slug < (?1 || '~')";
 
@@ -165,7 +165,7 @@ ${meaning && (meaning.etymology || meaning.ipa) ? `
 <section class="mt-6 rounded-2xl bg-white border border-slate-200 p-4 sm:p-6">
   <h2 class="font-bold mb-2">Meaning &amp; origin${meaning.ipa ? ` <span class="font-normal text-slate-400 text-base">${esc(meaning.ipa)}</span>` : ''}</h2>
   ${meaning.etymology ? `<p class="text-slate-700">${esc(meaning.etymology)}</p>` : ''}
-  ${meaning.origin ? `<p class="mt-2 text-sm text-slate-500">Origin: ${esc(meaning.origin)}${meaning.diminutive_of ? ` · Short form of ${esc(meaning.diminutive_of)}` : ''}</p>` : (meaning.diminutive_of ? `<p class="mt-2 text-sm text-slate-500">Short form of ${esc(meaning.diminutive_of)}</p>` : '')}
+  ${meaning.origin ? `<p class="mt-2 text-sm text-slate-500">Origin: ${esc(meaning.origin.replace(/,\s*/g, ', '))}${meaning.diminutive_of ? ` · Short form of ${esc(meaning.diminutive_of)}` : ''}</p>` : (meaning.diminutive_of ? `<p class="mt-2 text-sm text-slate-500">Short form of ${esc(meaning.diminutive_of)}</p>` : '')}
   <p class="mt-3 text-xs text-slate-400">Etymology adapted from <a class="underline hover:text-indigo-600" href="https://en.wiktionary.org/wiki/${encodeURIComponent(r.name)}" rel="license noopener">Wiktionary</a>, licensed <a class="underline hover:text-indigo-600" href="https://creativecommons.org/licenses/by-sa/4.0/" rel="license noopener">CC BY-SA 4.0</a>.</p>
 </section>` : ''}
 <div class="mt-6 rounded-2xl bg-white border border-slate-200 p-4 sm:p-6">
@@ -475,7 +475,7 @@ app.get('/terms', c => html(c, layout({
 <h2 class="text-xl font-bold mt-8">Acceptable use</h2>
 <p class="mt-2 text-slate-700">You may read, link to, and share pages freely. Do not attempt to disrupt the service, bulk-scrape at a rate that degrades it, or submit email addresses you do not own.</p>
 <h2 class="text-xl font-bold mt-8">Content reuse</h2>
-<p class="mt-2 text-slate-700">The underlying SSA data is in the public domain. Our page text, design, and derived visualizations are © Zalize; you may quote them with attribution and a link.</p>
+<p class="mt-2 text-slate-700">The underlying SSA data is in the public domain. Etymology text in the “Meaning &amp; origin” sections is adapted from <a class="text-indigo-600 hover:underline" href="https://en.wiktionary.org/">Wiktionary</a> and is available under <a class="text-indigo-600 hover:underline" href="https://creativecommons.org/licenses/by-sa/4.0/">CC BY-SA 4.0</a>; if you reuse it, the same license applies. Our other page text, design, and derived visualizations are © Zalize; you may quote them with attribution and a link.</p>
 <h2 class="text-xl font-bold mt-8">Changes &amp; contact</h2>
 <p class="mt-2 text-slate-700">These terms may be updated; the effective date above will change. Questions: hello@zalize.com</p>
 </article>`,
