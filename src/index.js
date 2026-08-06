@@ -44,7 +44,7 @@ const slugify = s => (s || '').toLowerCase().replace(/[^a-z'-]/g, '').slice(0, 4
 // Prefix search via index-friendly range scan (LIKE on a BINARY PK can't use the index
 // and D1 rejects patterns >= 50 chars).
 const NAME_COUNT = 105954; // rows in `names`; update when reimporting data
-const CACHE_VER = 42; // bump to invalidate the edge HTML cache on deploys that change rendering/data
+const CACHE_VER = 43; // bump to invalidate the edge HTML cache on deploys that change rendering/data
 // '~' (0x7E) sorts after every character allowed in slugs (a-z, apostrophe, hyphen).
 const prefixWhere = "slug >= ?1 AND slug < (?1 || '~')";
 
@@ -496,9 +496,10 @@ app.get('/decade/:d', async c => {
   if (!mth) return c.notFound();
   const d = Number(mth[1]);
   if (d % 10 !== 0 || d < 1880 || d > 2020) return c.notFound();
-  const [g, b] = await Promise.all([
+  const [g, b, peaked] = await Promise.all([
     db.prepare('SELECT * FROM decade_ranks WHERE decade=? AND sex=? ORDER BY rank LIMIT 100').bind(d, 'F').all(),
     db.prepare('SELECT * FROM decade_ranks WHERE decade=? AND sex=? ORDER BY rank LIMIT 100').bind(d, 'M').all(),
+    db.prepare('SELECT slug,name,peak_year,peak_count FROM names WHERE peak_year BETWEEN ? AND ? ORDER BY peak_count DESC LIMIT 12').bind(d, d + 9).all(),
   ]);
   const body = `
 <h1 class="text-3xl font-extrabold">Most popular names of the ${d}s</h1>
@@ -507,6 +508,7 @@ app.get('/decade/:d', async c => {
   <div class="rounded-2xl bg-white border border-slate-200 p-4"><h2 class="font-bold mb-2">Girls</h2>${rankTable(g.results)}</div>
   <div class="rounded-2xl bg-white border border-slate-200 p-4"><h2 class="font-bold mb-2">Boys</h2>${rankTable(b.results)}</div>
 </div>
+${peaked.results.length ? `<section class="mt-8"><h2 class="font-bold text-lg mb-2">Names that peaked in the ${d}s</h2><p class="text-sm text-slate-500 mb-3">These names hit their all-time high during this decade — the sound of the era.</p><div class="flex flex-wrap gap-2 text-sm">${peaked.results.map(r => `<a href="/name/${r.slug}" class="px-3 py-1.5 rounded-full bg-white border border-slate-200 hover:border-indigo-400">${esc(r.name)} <span class="text-slate-500">peak ${r.peak_year}</span></a>`).join('')}</div></section>` : ''}
 ${emailForm()}`;
   return html(c, layout({ title: `Top 100 Baby Names of the ${d}s | ${SITE}`, desc: `The 100 most popular girl and boy names of the ${d}s, from official U.S. birth records.`, path: `/decade/${d}s`, body }));
 });

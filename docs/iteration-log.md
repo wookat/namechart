@@ -534,3 +534,13 @@
 
 **回归证据**
 - /state/tx 显示导语与 Local favorites；/state/ut 亦有本地特色区块。
+
+## Round 52（2026-08-06，版本 ec88b0e4）
+**发现**
+- ②内容纵深：15 个年代页只有排名表，缺年代叙事（P2）。
+
+**修复（全部上线）**
+- 年代页新增「Names that peaked in the {d}s」区块：按 peak_year 落在该年代、peak_count 排序取前 12（如 1990s：Jacob/Tyler/Brandon/Taylor），胶囊链接名字页。
+
+**回归证据**
+- /decade/1990s 显示区块与真实数据胶囊。
