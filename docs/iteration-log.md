@@ -85,3 +85,16 @@
 
 **回归证据**
 - 线上 /search?q=testquery123 → searches 表出现 {day, q:'testquery', results:0, count:1}（测试行已清理）；/privacy 含 "search terms" 披露；搜索页 200。
+
+## Round 8（2026-08-06，版本 7931786b）
+**发现**
+- ②UX：Playwright 真实流程走查（搜索补全/收藏/图表 hover 读数/收藏页/对比表单）全部通过，无回归。
+- ⑤数据/②UX：首页未展示新 /list 榜单（内部链接与发现性缺口，P1）。
+- ①QA：zone 边缘缓存 s-maxage=86400，部署后旧 HTML 最长存活 24h（且 token 无 purge 权限），发布一致性风险（P1）。
+
+**修复（全部上线）**
+- 首页新增 Curated lists 区块（6 个榜单入口）。
+- HTML s-maxage 86400→3600，把部署后陈旧窗口收敛到 ≤1h。
+
+**回归证据**
+- 首页渲染 "Curated lists" 与 6 个 /list/ 链接；新响应头 cache-control: public, max-age=3600, s-maxage=3600；UX 流程 5 项全过。

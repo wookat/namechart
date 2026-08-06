@@ -31,7 +31,9 @@ app.use('*', async (c, next) => {
   }
 });
 
-const cache = { 'Cache-Control': 'public, max-age=3600, s-maxage=86400' };
+// s-maxage capped at 1h: the zone edge cache sits in front of the Worker and can't
+// see CACHE_VER, so this bounds how long stale HTML survives a deploy.
+const cache = { 'Cache-Control': 'public, max-age=3600, s-maxage=3600' };
 const noStore = { 'Cache-Control': 'no-store' };
 const html = (c, body, status = 200) => c.html(body, status, status === 200 ? cache : noStore);
 const htmlPrivate = (c, body, status = 200) => c.html(body, status, noStore);
@@ -42,7 +44,7 @@ const slugify = s => (s || '').toLowerCase().replace(/[^a-z'-]/g, '').slice(0, 4
 // Prefix search via index-friendly range scan (LIKE on a BINARY PK can't use the index
 // and D1 rejects patterns >= 50 chars).
 const NAME_COUNT = 105954; // rows in `names`; update when reimporting data
-const CACHE_VER = 13; // bump to invalidate the edge HTML cache on deploys that change rendering/data
+const CACHE_VER = 14; // bump to invalidate the edge HTML cache on deploys that change rendering/data
 // '~' (0x7E) sorts after every character allowed in slugs (a-z, apostrophe, hyphen).
 const prefixWhere = "slug >= ?1 AND slug < (?1 || '~')";
 
@@ -109,6 +111,10 @@ app.get('/', async c => {
 <section class="mt-8">
   <h2 class="font-bold text-lg mb-3">All-time favorites</h2>
   <div class="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 gap-3">${popular.results.map(nameCard).join('')}</div>
+</section>
+<section class="mt-8">
+  <h2 class="font-bold text-lg mb-3">Curated lists</h2>
+  <div class="flex flex-wrap gap-2 text-sm">${Object.entries(LISTS).map(([s, d]) => `<a href="/list/${s}" class="px-3 py-1.5 rounded-full bg-white border border-slate-200 hover:border-indigo-400">${d.title}</a>`).join('')}</div>
 </section>
 <section class="mt-8 grid sm:grid-cols-3 gap-4 text-sm">
   <a href="/trending" class="rounded-xl border border-slate-200 bg-white p-4 hover:border-indigo-400"><p class="font-semibold">📈 Rising &amp; falling</p><p class="text-slate-500 mt-1">Names climbing or crashing right now.</p></a>
