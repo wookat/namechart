@@ -44,7 +44,7 @@ const slugify = s => (s || '').toLowerCase().replace(/[^a-z'-]/g, '').slice(0, 4
 // Prefix search via index-friendly range scan (LIKE on a BINARY PK can't use the index
 // and D1 rejects patterns >= 50 chars).
 const NAME_COUNT = 105954; // rows in `names`; update when reimporting data
-const CACHE_VER = 32; // bump to invalidate the edge HTML cache on deploys that change rendering/data
+const CACHE_VER = 34; // bump to invalidate the edge HTML cache on deploys that change rendering/data
 // '~' (0x7E) sorts after every character allowed in slugs (a-z, apostrophe, hyphen).
 const prefixWhere = "slug >= ?1 AND slug < (?1 || '~')";
 
@@ -103,7 +103,7 @@ app.get('/', async c => {
     <button class="shrink-0 rounded-full bg-indigo-600 text-white font-semibold px-4 sm:px-6 py-3 hover:bg-indigo-700">Search</button>
   </form>
 </section>
-${notd ? `<section class="mb-8 rounded-2xl bg-gradient-to-r from-indigo-600 to-violet-600 text-white p-5 sm:p-6 flex flex-wrap items-center justify-between gap-4">
+${notd ? `<section class="mb-8 rounded-2xl bg-indigo-700 text-white p-5 sm:p-6 flex flex-wrap items-center justify-between gap-4">
   <div><p class="text-indigo-200 text-xs font-semibold uppercase tracking-wide">Name of the day · ${today}</p>
   <p class="mt-1 text-2xl font-extrabold">${esc(notd.name)}</p>
   <p class="mt-1 text-indigo-100 text-sm">${fmt(notd.total)} babies since ${notd.first_year} · peaked in ${notd.peak_year}</p></div>

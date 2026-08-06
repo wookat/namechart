@@ -343,3 +343,13 @@
 
 **回归证据**
 - 4 页均 200 且各 40 张名字卡；/og/list/short-girl-names.png 200 image/png；IndexNow batch 200。
+
+## Round 33（2026-08-06，版本 45378484）
+**发现**
+- ③视觉/无障碍：axe 在首页报 serious 对比度违规——根因是轮 31 新卡片用了 bg-indigo-700/渐变类但 CSS 未重建，样式未生效（白字落在浅背景上）。
+
+**修复（全部上线）**
+- 重建 Tailwind CSS（补 bg-indigo-700 等新类），ASSET_VER 4→5；卡片渐变改纯色 bg-indigo-700 保证可计算对比度。
+
+**回归证据**
+- 首页与 /list/short-girl-names axe 全 clean；375px 零溢出；截图确认卡片深底白字正常渲染。
