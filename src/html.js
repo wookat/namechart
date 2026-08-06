@@ -3,6 +3,7 @@
 export const SITE = 'NameChart';
 export const ORIGIN = 'https://namechart.zalize.com';
 export const START_YEAR = 1880;
+export const ASSET_VER = 2; // bump when styles.css or app.js change, to bust the long asset cache
 export const END_YEAR = 2025;
 
 export const SISTER_SITES = [
@@ -40,7 +41,7 @@ ${noindex ? '<meta name="robots" content="noindex">' : ''}
 <meta property="og:image" content="${esc(ogImage || ORIGIN + '/img/og-default.png')}">
 <meta name="twitter:card" content="summary_large_image">
 <link rel="icon" href="/img/favicon.svg" type="image/svg+xml">
-<link rel="stylesheet" href="/styles.css">
+<link rel="stylesheet" href="/styles.css?v=${ASSET_VER}">
 ${jsonld ? `<script type="application/ld+json">${JSON.stringify(jsonld)}</script>` : ''}
 </head>
 <body class="min-h-screen bg-slate-50 text-slate-800 antialiased flex flex-col">
@@ -99,7 +100,7 @@ ${jsonld ? `<script type="application/ld+json">${JSON.stringify(jsonld)}</script
     <p>NameChart is not affiliated with, endorsed by, or sponsored by the U.S. Social Security Administration or any government agency.</p>
   </div>
 </footer>
-<script src="/js/app.js" defer></script>
+<script src="/js/app.js?v=${ASSET_VER}" defer></script>
 </body>
 </html>`;
 }

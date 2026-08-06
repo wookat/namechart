@@ -139,3 +139,13 @@
 
 **回归证据**
 - 线上 JSON-LD 解析通过（ItemList + itemListElement）；375px 移动端 /meaning/moon、/list/timeless-girl-names、/name/james 水平溢出 0。
+
+## Round 13（2026-08-06，版本 4f3f8db2）
+**发现**
+- ③性能：静态资产（styles.css 19KB、app.js 4.4KB）响应 max-age=0 must-revalidate，每次访问都回源验证（P1 性能）；HTML TTFB 0.15–0.26s 良好；/top/girls HTML 原始 324KB（压缩后 ~33KB，可接受）。
+
+**修复（全部上线）**
+- 新增 public/_headers：styles.css 与 /js/* 一年 immutable、/img/* 7 天；HTML 引用改带 ?v=ASSET_VER 版本参数用于失效。
+
+**回归证据**
+- /styles.css?v=2 响应 cache-control: public, max-age=31536000, immutable；页面 HTML 引用 styles.css?v=2 / app.js?v=2。
