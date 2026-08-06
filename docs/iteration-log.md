@@ -233,3 +233,13 @@
 
 **回归证据**
 - /name/luna →「1 in 265 girls」、/name/liam →「1 in 82 boys」（与 SSA 2025 总量 160.7万F/170.8万M 交叉验证一致）；无当年出生的名字不显示该句。
+
+## Round 22（2026-08-06，版本 81ea6552）
+**发现**
+- ④竞品反推（BabyCenter）：其「Baby Name Generator」是高流量互动工具（"baby name generator" 为大搜索词），我们没有互动生成器（P1）。
+
+**修复（全部上线）**
+- 新增 /generator：按性别（任意/女/男）× 风格（当下流行/百年前 Vintage/较少见）× 首字母生成 12 个真实名字（year_ranks 索引查询 + Fisher-Yates 洗牌，无伪造），SSR、无 JS 依赖、radio 胶囊用 Tailwind has-checked；入口在 /browse，进 sitemap 与 beacon 白名单。
+
+**回归证据**
+- /generator 各参数组合 200 且返回 12 张名字卡；桌面/375px 截图无溢出；洗牌每次结果不同。

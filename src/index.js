@@ -44,7 +44,7 @@ const slugify = s => (s || '').toLowerCase().replace(/[^a-z'-]/g, '').slice(0, 4
 // Prefix search via index-friendly range scan (LIKE on a BINARY PK can't use the index
 // and D1 rejects patterns >= 50 chars).
 const NAME_COUNT = 105954; // rows in `names`; update when reimporting data
-const CACHE_VER = 25; // bump to invalidate the edge HTML cache on deploys that change rendering/data
+const CACHE_VER = 26; // bump to invalidate the edge HTML cache on deploys that change rendering/data
 // '~' (0x7E) sorts after every character allowed in slugs (a-z, apostrophe, hyphen).
 const prefixWhere = "slug >= ?1 AND slug < (?1 || '~')";
 
@@ -583,6 +583,61 @@ ${emailForm()}`;
   } }));
 });
 
+// ---------- name generator ----------
+app.get('/generator', async c => {
+  const db = c.env.DB;
+  const sexQ = c.req.query('sex') === 'boy' ? 'M' : c.req.query('sex') === 'girl' ? 'F' : null;
+  const letter = /^[a-z]$/.test(c.req.query('letter') || '') ? c.req.query('letter') : null;
+  const style = ['popular', 'vintage', 'uncommon'].includes(c.req.query('style')) ? c.req.query('style') : 'popular';
+  const hasQuery = sexQ || letter || c.req.query('style');
+  let results = [];
+  if (hasQuery) {
+    const rankCap = style === 'popular' ? 200 : style === 'vintage' ? 500 : 1000;
+    const yr = style === 'vintage' ? END_YEAR - 100 : END_YEAR;
+    const sexes = sexQ ? [sexQ] : ['F', 'M'];
+    const cands = [];
+    for (const s of sexes) {
+      const rows = await db.prepare('SELECT name, rank FROM year_ranks WHERE year=? AND sex=? AND rank<=? ORDER BY rank').bind(yr, s, rankCap).all();
+      cands.push(...rows.results.map(r => r.name));
+    }
+    let slugs = [...new Set(cands.map(n => n.toLowerCase()))];
+    if (letter) slugs = slugs.filter(s => s.startsWith(letter));
+    if (style === 'uncommon') slugs = slugs.slice(Math.floor(slugs.length / 2));
+    // Fisher-Yates shuffle for a fresh set on every visit
+    for (let i = slugs.length - 1; i > 0; i--) { const j = Math.floor(Math.random() * (i + 1)); [slugs[i], slugs[j]] = [slugs[j], slugs[i]]; }
+    results = await namesBySlugs(db, slugs.slice(0, 12));
+  }
+  const sel = (v, cur) => v === cur ? ' checked' : '';
+  const body = `
+<h1 class="text-3xl font-extrabold">Baby Name Generator</h1>
+<p class="mt-2 text-slate-600 max-w-2xl">Pick a style and get 12 real names drawn from 146 years of U.S. birth data — hit generate again for a fresh batch.</p>
+<form method="get" action="/generator" class="mt-6 rounded-2xl bg-white border border-slate-200 p-4 sm:p-6 space-y-4">
+  <fieldset><legend class="font-semibold text-sm mb-1.5">Gender</legend>
+    <div class="flex flex-wrap gap-2 text-sm">
+      <label class="px-3 py-1.5 rounded-full border border-slate-300 has-checked:bg-indigo-600 has-checked:text-white has-checked:border-indigo-600 cursor-pointer"><input class="sr-only" type="radio" name="sex" value=""${sel('', c.req.query('sex') || '')}>Any</label>
+      <label class="px-3 py-1.5 rounded-full border border-slate-300 has-checked:bg-indigo-600 has-checked:text-white has-checked:border-indigo-600 cursor-pointer"><input class="sr-only" type="radio" name="sex" value="girl"${sel('girl', c.req.query('sex'))}>Girl</label>
+      <label class="px-3 py-1.5 rounded-full border border-slate-300 has-checked:bg-indigo-600 has-checked:text-white has-checked:border-indigo-600 cursor-pointer"><input class="sr-only" type="radio" name="sex" value="boy"${sel('boy', c.req.query('sex'))}>Boy</label>
+    </div></fieldset>
+  <fieldset><legend class="font-semibold text-sm mb-1.5">Style</legend>
+    <div class="flex flex-wrap gap-2 text-sm">
+      <label class="px-3 py-1.5 rounded-full border border-slate-300 has-checked:bg-indigo-600 has-checked:text-white has-checked:border-indigo-600 cursor-pointer"><input class="sr-only" type="radio" name="style" value="popular"${sel('popular', style)}>Popular now</label>
+      <label class="px-3 py-1.5 rounded-full border border-slate-300 has-checked:bg-indigo-600 has-checked:text-white has-checked:border-indigo-600 cursor-pointer"><input class="sr-only" type="radio" name="style" value="vintage"${sel('vintage', style)}>Vintage (top ${END_YEAR - 100})</label>
+      <label class="px-3 py-1.5 rounded-full border border-slate-300 has-checked:bg-indigo-600 has-checked:text-white has-checked:border-indigo-600 cursor-pointer"><input class="sr-only" type="radio" name="style" value="uncommon"${sel('uncommon', style)}>Less common</label>
+    </div></fieldset>
+  <div class="flex flex-wrap items-center gap-3">
+    <label class="text-sm font-semibold" for="gen-letter">Starts with</label>
+    <select id="gen-letter" name="letter" class="rounded-lg border border-slate-300 px-3 py-1.5 text-sm bg-white">
+      <option value="">Any letter</option>
+      ${'abcdefghijklmnopqrstuvwxyz'.split('').map(ch => `<option value="${ch}"${ch === letter ? ' selected' : ''}>${ch.toUpperCase()}</option>`).join('')}
+    </select>
+    <button class="rounded-full bg-indigo-600 text-white px-6 py-2 text-sm font-semibold hover:bg-indigo-700">Generate names</button>
+  </div>
+</form>
+${results.length ? `<div class="mt-6 grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 gap-3">${results.map(nameCard).join('')}</div>` : hasQuery ? '<p class="mt-6 text-slate-500">No matches — try a different letter or style.</p>' : ''}
+${emailForm()}`;
+  return htmlPrivate(c, layout({ title: `Baby Name Generator — Real Names from Real Data | ${SITE}`, desc: 'Generate baby name ideas by gender, style and first letter, drawn from 146 years of U.S. SSA data. Free, no ads.', path: '/generator', body }));
+});
+
 // ---------- names by meaning ----------
 const MEANING_WORDS = ['moon', 'light', 'star', 'love', 'strong', 'fire', 'peace', 'king', 'flower', 'sea', 'beautiful', 'brave', 'joy', 'grace', 'warrior', 'night'];
 
@@ -638,6 +693,7 @@ app.get('/browse', async c => {
 <h1 class="text-3xl font-extrabold">Browse all names</h1>
 <section class="mt-6"><h2 class="font-bold mb-2">Curated lists</h2>
 <div class="flex flex-wrap gap-1.5 text-sm">${Object.entries(LISTS).map(([s, d]) => `<a href="/list/${s}" class="px-3 py-1.5 rounded-lg bg-white border border-slate-200 hover:border-indigo-400">${d.title}</a>`).join('')}</div></section>
+<p class="mt-4"><a href="/generator" class="inline-block rounded-full bg-indigo-600 text-white px-5 py-2 text-sm font-semibold hover:bg-indigo-700">Try the baby name generator →</a></p>
 <section class="mt-6"><h2 class="font-bold mb-2">By meaning</h2>
 <div class="flex flex-wrap gap-1.5 text-sm">${MEANING_WORDS.map(w => `<a href="/meaning/${w}" class="px-3 py-1.5 rounded-lg bg-white border border-slate-200 hover:border-indigo-400">${cap(w)}</a>`).join('')}</div></section>
 <section class="mt-6"><h2 class="font-bold mb-2">By first letter</h2>
@@ -767,7 +823,7 @@ app.post('/api/beacon', async c => {
   try {
     const { p } = await c.req.json();
     // Only count paths that match a real route family, so forged beacons can't pollute analytics.
-    const VALID_PATH = /^\/$|^\/(name|letter|year|state|compare|list|meaning|og\/name|og\/list|og\/meaning)\/[a-z0-9'.-]{1,60}$|^\/decade\/\d{4}s$|^\/(top\/girls|top\/boys|trending|unisex|browse|about|privacy|terms|favorites|search)$/;
+    const VALID_PATH = /^\/$|^\/(name|letter|year|state|compare|list|meaning|og\/name|og\/list|og\/meaning)\/[a-z0-9'.-]{1,60}$|^\/decade\/\d{4}s$|^\/(top\/girls|top\/boys|trending|unisex|browse|about|privacy|terms|favorites|search|generator)$/;
     if (typeof p === 'string' && p.length <= 100 && VALID_PATH.test(p) && !(await overQuota(c, 'beacon', 300))) {
       const day = new Date().toISOString().slice(0, 10);
       await c.env.DB.prepare('INSERT INTO hits (day, path, count) VALUES (?, ?, 1) ON CONFLICT(day, path) DO UPDATE SET count = count + 1')
@@ -801,7 +857,7 @@ app.get('/sitemaps/:shard{.+\\.xml}', async c => {
   const shard = c.req.param('shard').replace(/\.xml$/, '');
   const urls = [];
   if (shard === 'static') {
-    urls.push('/', '/top/girls', '/top/boys', '/unisex', '/trending', '/browse', '/about', '/privacy', '/terms');
+    urls.push('/', '/top/girls', '/top/boys', '/unisex', '/trending', '/browse', '/generator', '/about', '/privacy', '/terms');
     for (const s of Object.keys(LISTS)) urls.push(`/list/${s}`);
     for (const w of MEANING_WORDS) urls.push(`/meaning/${w}`);
     for (const ch of 'abcdefghijklmnopqrstuvwxyz') urls.push(`/letter/${ch}`);
