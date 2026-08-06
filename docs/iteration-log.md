@@ -363,3 +363,14 @@
 
 **回归证据**
 - 命令输出见本轮记录；hits 表无伪造路径写入。
+
+## Round 35（2026-08-06）
+**发现**
+- ⑤数据：日 PV 73（较昨日 42 上升，仍以内部为主）；订阅意向 5 条；自然搜索词仍为零。
+- ①sitemap 抽查：static.xml 已含 10 个榜单 + 34 词含义页 + /generator（45 条特色 URL），全站分片 23 个正常。
+
+**修复**
+- 无缺陷；分发面（sitemap/IndexNow/OG/内链）本周期已全部就绪，等待搜索引擎收录生效。
+
+**回归证据**
+- static.xml 含 short-girl-names 与 /generator；hits/subscribers/searches 查询见本轮输出。
