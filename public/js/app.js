@@ -1,6 +1,27 @@
 (function () {
   try { navigator.sendBeacon('/api/beacon', JSON.stringify({ p: location.pathname })); } catch (e) { /* noop */ }
 
+  var inputs = document.querySelectorAll('input[name=q]');
+  if (inputs.length) {
+    var dl = document.createElement('datalist');
+    dl.id = 'nc-suggest';
+    document.body.appendChild(dl);
+    var t;
+    inputs.forEach(function (inp) {
+      inp.setAttribute('list', 'nc-suggest');
+      inp.addEventListener('input', function () {
+        clearTimeout(t);
+        var q = inp.value.trim();
+        if (q.length < 2) return;
+        t = setTimeout(function () {
+          fetch('/api/search?q=' + encodeURIComponent(q)).then(function (r) { return r.json(); }).then(function (d) {
+            dl.innerHTML = d.results.map(function (r) { return '<option value="' + r.name.replace(/[<>&"]/g, '') + '">'; }).join('');
+          }).catch(function () {});
+        }, 150);
+      });
+    });
+  }
+
   var el = document.getElementById('nc-readout');
   var hit = document.getElementById('nc-hit');
   if (!el || !hit) return;
