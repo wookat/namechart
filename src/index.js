@@ -44,7 +44,7 @@ const slugify = s => (s || '').toLowerCase().replace(/[^a-z'-]/g, '').slice(0, 4
 // Prefix search via index-friendly range scan (LIKE on a BINARY PK can't use the index
 // and D1 rejects patterns >= 50 chars).
 const NAME_COUNT = 105954; // rows in `names`; update when reimporting data
-const CACHE_VER = 48; // bump to invalidate the edge HTML cache on deploys that change rendering/data
+const CACHE_VER = 49; // bump to invalidate the edge HTML cache on deploys that change rendering/data
 // '~' (0x7E) sorts after every character allowed in slugs (a-z, apostrophe, hyphen).
 const prefixWhere = "slug >= ?1 AND slug < (?1 || '~')";
 
@@ -824,6 +824,8 @@ app.get('/browse', async c => {
   const decades = Array.from({ length: 15 }, (_, i) => 1880 + i * 10);
   const body = `
 <h1 class="text-3xl font-extrabold">Browse all names</h1>
+<section class="mt-6"><h2 class="font-bold mb-2">Quick picks</h2>
+<div class="flex flex-wrap gap-1.5 text-sm">${[['/top/girls', `Top girl names ${END_YEAR}`], ['/top/boys', `Top boy names ${END_YEAR}`], ['/trending', 'Trending names'], ['/unisex', 'Unisex names']].map(([h, t]) => `<a href="${h}" class="px-3 py-1.5 rounded-lg bg-indigo-50 text-indigo-700 border border-indigo-100 hover:border-indigo-400">${t}</a>`).join('')}</div></section>
 <section class="mt-6"><h2 class="font-bold mb-2">Curated lists</h2>
 <div class="flex flex-wrap gap-1.5 text-sm">${Object.entries(LISTS).map(([s, d]) => `<a href="/list/${s}" class="px-3 py-1.5 rounded-lg bg-white border border-slate-200 hover:border-indigo-400">${d.title}</a>`).join('')}</div></section>
 <p class="mt-4"><a href="/generator" class="inline-block rounded-full bg-indigo-600 text-white px-5 py-2 text-sm font-semibold hover:bg-indigo-700">Try the baby name generator →</a></p>

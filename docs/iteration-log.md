@@ -724,3 +724,13 @@
 
 **回归证据**
 - hits/subscribers 查询输出见本轮记录。
+
+## Round 71（2026-08-06，版本 5937d844）
+**发现**
+- ②发现面：/browse 枢纽页缺 Top/Trending/Unisex 高频入口（P2）。
+
+**修复（全部上线）**
+- browse 顶部新增「Quick picks」区块（Top girls/boys、Trending、Unisex 四入口）。
+
+**回归证据**
+- /browse 渲染 Quick picks 与四链接。
