@@ -182,3 +182,13 @@
 
 **回归证据**
 - D1 COUNT(meanings)=3289；新覆盖长尾名（radha/hyacinth/algernon）名字页出现 Meaning & origin 区块。
+
+## Round 17（2026-08-06，版本更新至 CACHE_VER 22）
+**发现**
+- ⑤内容覆盖：famous（名人同名）只覆盖 1,552 个名字，长尾名字页缺该区块。
+
+**修复（全部上线）**
+- fetch-famous.mjs 扩到 Top 5,000 候选重跑（Wikidata CC0）：famous 1,552 → 2,574 行，导入 D1。
+
+**回归证据**
+- D1 COUNT(famous)=2574；抽查长尾名字页出现 Famous 区块。
