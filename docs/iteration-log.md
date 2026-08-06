@@ -223,3 +223,13 @@
 
 **回归证据**
 - /og/list/vintage-girl-names.png 与 /og/meaning/moon.png 均 200 image/png（~230KB）；渲染截图检查通过；/meaning/moon og:image 指向动态图。
+
+## Round 21（2026-08-06，版本 81177873）
+**发现**
+- ④竞品反推（BabyCenter 名字页）：其「Popularity in real life」以“1 in N babies”给直观频率感，我们只有绝对数与排名（P1 内容差距）。
+
+**修复（全部上线）**
+- 从 seed 数据聚合全国每年出生数生成 year_totals 表（1880–2025，含 F/M 分列，数据来源仍为 SSA 公有领域，无伪造）；名字页首段自动输出「In 2025, about 1 in N girls/boys was named X」。
+
+**回归证据**
+- /name/luna →「1 in 265 girls」、/name/liam →「1 in 82 boys」（与 SSA 2025 总量 160.7万F/170.8万M 交叉验证一致）；无当年出生的名字不显示该句。

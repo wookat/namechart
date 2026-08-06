@@ -44,7 +44,7 @@ const slugify = s => (s || '').toLowerCase().replace(/[^a-z'-]/g, '').slice(0, 4
 // Prefix search via index-friendly range scan (LIKE on a BINARY PK can't use the index
 // and D1 rejects patterns >= 50 chars).
 const NAME_COUNT = 105954; // rows in `names`; update when reimporting data
-const CACHE_VER = 24; // bump to invalidate the edge HTML cache on deploys that change rendering/data
+const CACHE_VER = 25; // bump to invalidate the edge HTML cache on deploys that change rendering/data
 // '~' (0x7E) sorts after every character allowed in slugs (a-z, apostrophe, hyphen).
 const prefixWhere = "slug >= ?1 AND slug < (?1 || '~')";
 
@@ -151,11 +151,12 @@ app.get('/name/:slug', async c => {
   const rankBits = [];
   if (r.latest_rank_f && r.latest_rank_f <= 1000) rankBits.push(`#${fmt(r.latest_rank_f)} for girls`);
   if (r.latest_rank_m && r.latest_rank_m <= 1000) rankBits.push(`#${fmt(r.latest_rank_m)} for boys`);
-  const [similar, meaning, famousRow, rankHist] = await Promise.all([
+  const [similar, meaning, famousRow, rankHist, yearTot] = await Promise.all([
     similarNames(db, r),
     db.prepare('SELECT * FROM meanings WHERE slug = ?').bind(slug).first().catch(() => null),
     db.prepare('SELECT people FROM famous WHERE slug = ?').bind(slug).first().catch(() => null),
     db.prepare('SELECT year, sex, rank FROM year_ranks WHERE name = ? AND (year % 25 = 0 OR year = ' + END_YEAR + ') ORDER BY year').bind(r.name).all().catch(() => ({ results: [] })),
+    db.prepare('SELECT f, m FROM year_totals WHERE year = ?').bind(END_YEAR).first().catch(() => null),
   ]);
   let famous = [];
   try { famous = famousRow ? JSON.parse(famousRow.people) : []; } catch { famous = []; }
@@ -174,7 +175,14 @@ app.get('/name/:slug', async c => {
   <h1 class="text-4xl font-extrabold tracking-tight">${esc(r.name)}</h1>
   ${unisex ? '<span class="text-sm rounded-full bg-purple-100 text-purple-700 px-3 py-1">Unisex</span>' : `<span class="text-sm rounded-full ${primary === 'girl' ? 'bg-pink-100 text-pink-700' : 'bg-blue-100 text-blue-700'} px-3 py-1">${cap(primary)} name</span>`}
 </div>
-<p class="mt-2 text-slate-600 max-w-2xl">${esc(r.name)} has been given to <strong>${fmt(r.total)}</strong> babies in the U.S. since ${r.first_year}. It peaked in <strong>${r.peak_year}</strong>${rankBits.length ? ` and currently ranks <strong>${rankBits.join(' and ')}</strong> (${END_YEAR})` : ''}.</p>
+<p class="mt-2 text-slate-600 max-w-2xl">${esc(r.name)} has been given to <strong>${fmt(r.total)}</strong> babies in the U.S. since ${r.first_year}. It peaked in <strong>${r.peak_year}</strong>${rankBits.length ? ` and currently ranks <strong>${rankBits.join(' and ')}</strong> (${END_YEAR})` : ''}.${(() => {
+  if (!yearTot || !latest) return '';
+  const denom = primary === 'girl' ? yearTot.f : yearTot.m;
+  const sexLatest = primary === 'girl' ? f[f.length - 1] : m[m.length - 1];
+  if (!sexLatest || !denom) return '';
+  const oneIn = Math.round(denom / sexLatest);
+  return ` In ${END_YEAR}, about <strong>1 in ${fmt(oneIn)}</strong> ${primary === 'girl' ? 'girls' : 'boys'} was named ${esc(r.name)}.`;
+})()}</p>
 ${meaning && (meaning.etymology || meaning.ipa) ? `
 <section class="mt-6 rounded-2xl bg-white border border-slate-200 p-4 sm:p-6">
   <h2 class="font-bold mb-2">Meaning &amp; origin${meaning.ipa ? ` <span class="font-normal text-slate-500 text-base">${esc(meaning.ipa)}</span>` : ''}</h2>
