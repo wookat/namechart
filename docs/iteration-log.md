@@ -62,3 +62,14 @@
 
 **回归证据**
 - axe-core 复测 /、/name/luna、/list/vintage-girl-names、/trending、/year/2025 全部 clean（0 violations）。
+
+## Round 6（2026-08-06，版本 f009cc4e）
+**发现**
+- ④竞品：Nameberry/BehindTheName 名字页有历年排名表，NameChart 只有当年排名（P1 内容差距）。
+- ①QA：year_ranks 按 name 查询无索引（全表 29 万行扫描会超 Worker 预算）。
+
+**修复（全部上线）**
+- D1 新增 idx_year_ranks_name 索引；名字页新增「Rank through the decades」区块（25 年里程碑排名表，girls/boys 分列，— 表示当年跌出 top 1000）。
+
+**回归证据**
+- /name/james 渲染 1900–2025 六个里程碑行；/name/luna 渲染 1900 #651、2025 #27；页面响应 <150ms；核心路由 200。
