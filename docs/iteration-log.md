@@ -634,3 +634,13 @@
 
 **回归证据**
 - /name/luna 与 /name/liam 均渲染 Sisters/Brothers 胶囊（如 Luna → Quinn 等）。
+
+## Round 62（2026-08-06）
+**发现**
+- ③无障碍/视觉：兄弟姐妹名区块上线后名字页复查（含长尾名）。
+
+**修复**
+- 无缺陷：/name/luna、/name/liam、/name/aloysius axe 全 clean（pink-700/blue-700 on white 对比达标）；375px 零溢出。
+
+**回归证据**
+- axe 输出见本轮记录。
