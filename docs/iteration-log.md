@@ -800,7 +800,7 @@
 - ⑤分发：名字页第 20,000–23,000 段尚未提交 IndexNow；sitemap 索引与 static 分片抽查。
 
 **修复/动作（已执行）**
-- IndexNow 第八批 3,238 URL 提交成功（200），累计约 2.3 万段；sitemap 索引 24 分片正常、static 分片 45 URL 在位。
+- IndexNow 第八批 3,238 URL 提交成功（200），累计约 2.3 万段；sitemap 索引 24 分片正常、static 分片 292 URL 在位（含 list/meaning/year/decade/state 页族）。
 
 **回归证据**
 - submitted 3238 urls；sitemap 抓取输出见本轮记录。
