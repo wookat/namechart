@@ -43,6 +43,49 @@ export async function ogImage(c, r) {
   });
 }
 
+// 1200x630 share card for compare pages: both names with overlaid bar trends.
+export async function ogCompare(c, a, b) {
+  const fontRes = await c.env.ASSETS.fetch('https://assets.local/fonts/inter-bold.woff');
+  const font = await fontRes.arrayBuffer();
+
+  const BARS = 73;
+  const tot = r => {
+    const { f, m } = expandSeries(JSON.parse(r.series));
+    return f.map((v, i) => v + m[i]);
+  };
+  const ds = arr => {
+    const per = Math.ceil(arr.length / BARS);
+    const out = [];
+    for (let i = 0; i < arr.length; i += per) out.push(Math.max(...arr.slice(i, i + per)));
+    return out;
+  };
+  const ba = ds(tot(a)), bb = ds(tot(b));
+  const max = Math.max(1, ...ba, ...bb);
+  const h = v => Math.max(3, Math.round((v / max) * 170));
+  const row = (bars, color) => `<div style="display:flex;align-items:flex-end;height:170px;width:100%;">${bars.map(v => `<div style="display:flex;width:10px;margin-right:4px;height:${h(v)}px;background:${color};"></div>`).join('')}</div>`;
+
+  const html = `
+  <div style="display:flex;flex-direction:column;width:1200px;height:630px;background:linear-gradient(135deg,#312e81,#4f46e5 55%,#7c3aed);color:#fff;font-family:Inter;padding:56px 80px;">
+    <div style="display:flex;align-items:baseline;justify-content:space-between;">
+      <div style="display:flex;font-size:64px;font-weight:700;">${a.name} <span style="color:#a5b4fc;margin:0 18px;">vs</span> ${b.name}</div>
+      <div style="display:flex;font-size:30px;color:#c7d2fe;">namechart.zalize.com</div>
+    </div>
+    <div style="display:flex;align-items:center;font-size:28px;color:#e0e7ff;margin-top:6px;"><div style="display:flex;width:22px;height:22px;background:#818cf8;border-radius:4px;margin-right:12px;"></div>${a.name}: ${fmt(a.total)} babies<div style="display:flex;width:22px;height:22px;background:#fbbf24;border-radius:4px;margin:0 12px 0 36px;"></div>${b.name}: ${fmt(b.total)} babies</div>
+    <div style="display:flex;flex-direction:column;margin-top:34px;">
+      ${row(ba, '#818cf8')}
+      <div style="display:flex;height:12px;"></div>
+      ${row(bb, '#fbbf24')}
+    </div>
+    <div style="display:flex;font-size:24px;color:#c7d2fe;margin-top:auto;">1880–${END_YEAR} · 146 years of U.S. baby name data — free, no ads</div>
+  </div>`;
+
+  return new ImageResponse(html, {
+    width: 1200,
+    height: 630,
+    fonts: [{ name: 'Inter', data: font, weight: 700 }],
+  });
+}
+
 // 1200x630 share card for list-style pages: big title + name chips.
 export async function ogList(c, title, names) {
   const fontRes = await c.env.ASSETS.fetch('https://assets.local/fonts/inter-bold.woff');

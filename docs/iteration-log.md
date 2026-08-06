@@ -374,3 +374,13 @@
 
 **回归证据**
 - static.xml 含 short-girl-names 与 /generator；hits/subscribers/searches 查询见本轮输出。
+
+## Round 36（2026-08-06，版本 acb4df8e）
+**发现**
+- ④分享面：/compare/*（如 luna-vs-aurora）是天然可分享的对比页，但仍用默认 OG 图（P1）。
+
+**修复（全部上线）**
+- 新增 /og/compare/<a>-vs-<b>.png：双名双色柱状趋势对比卡（Satori-safe flexbox），compare 页 og:image 已切换；beacon 白名单同步；首版 &nbsp; 实体与 ■ 字形缺失问题已改为纯 div 色块修复。
+
+**回归证据**
+- /og/compare/mia-vs-zoe.png 渲染截图正常（双色图例+双行趋势）；页面 og:image 指向新端点；luna-vs-luna 等非法组合 404。

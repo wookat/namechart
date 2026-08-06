@@ -1,5 +1,5 @@
 import { Hono } from 'hono';
-import { ogImage, ogList } from './og.js';
+import { ogImage, ogList, ogCompare } from './og.js';
 import {
   layout, esc, fmt, cap, chartSVG, chartReadout, emailForm, nameCard, rankTable,
   expandSeries, genderOf, SITE, ORIGIN, START_YEAR, END_YEAR,
@@ -44,7 +44,7 @@ const slugify = s => (s || '').toLowerCase().replace(/[^a-z'-]/g, '').slice(0, 4
 // Prefix search via index-friendly range scan (LIKE on a BINARY PK can't use the index
 // and D1 rejects patterns >= 50 chars).
 const NAME_COUNT = 105954; // rows in `names`; update when reimporting data
-const CACHE_VER = 34; // bump to invalidate the edge HTML cache on deploys that change rendering/data
+const CACHE_VER = 36; // bump to invalidate the edge HTML cache on deploys that change rendering/data
 // '~' (0x7E) sorts after every character allowed in slugs (a-z, apostrophe, hyphen).
 const prefixWhere = "slug >= ?1 AND slug < (?1 || '~')";
 
@@ -308,8 +308,19 @@ ${emailForm()}`;
     title: `${a.name} vs ${b.name} — Which Name Is More Popular? | ${SITE}`,
     desc: `Head-to-head popularity chart: ${a.name} (${fmt(a.total)} babies) vs ${b.name} (${fmt(b.total)} babies), 1880–${END_YEAR}.`,
     path: `/compare/${a.slug}-vs-${b.slug}`,
+    ogImage: `${ORIGIN}/og/compare/${a.slug}-vs-${b.slug}.png`,
     body,
   }));
+});
+
+app.get('/og/compare/:file', async c => {
+  const mth = c.req.param('file').toLowerCase().match(/^([a-z'-]{1,40})-vs-([a-z'-]{1,40})\.png$/);
+  if (!mth || mth[1] === mth[2]) return c.notFound();
+  const [a, b] = await Promise.all([getName(c.env.DB, mth[1]), getName(c.env.DB, mth[2])]);
+  if (!a || !b) return c.notFound();
+  const res = await ogCompare(c, a, b);
+  res.headers.set('Cache-Control', 'public, max-age=86400, s-maxage=604800');
+  return res;
 });
 app.get('/compare', c => {
   const a = slugify(c.req.query('a')), b = slugify(c.req.query('b'));
@@ -865,7 +876,7 @@ app.post('/api/beacon', async c => {
   try {
     const { p } = await c.req.json();
     // Only count paths that match a real route family, so forged beacons can't pollute analytics.
-    const VALID_PATH = /^\/$|^\/(name|letter|year|state|compare|list|meaning|og\/name|og\/list|og\/meaning)\/[a-z0-9'.-]{1,60}$|^\/decade\/\d{4}s$|^\/(top\/girls|top\/boys|trending|unisex|browse|about|privacy|terms|favorites|search|generator)$/;
+    const VALID_PATH = /^\/$|^\/(name|letter|year|state|compare|list|meaning|og\/name|og\/list|og\/meaning|og\/compare)\/[a-z0-9'.-]{1,60}$|^\/decade\/\d{4}s$|^\/(top\/girls|top\/boys|trending|unisex|browse|about|privacy|terms|favorites|search|generator)$/;
     if (typeof p === 'string' && p.length <= 100 && VALID_PATH.test(p) && !(await overQuota(c, 'beacon', 300))) {
       const day = new Date().toISOString().slice(0, 10);
       await c.env.DB.prepare('INSERT INTO hits (day, path, count) VALUES (?, ?, 1) ON CONFLICT(day, path) DO UPDATE SET count = count + 1')
