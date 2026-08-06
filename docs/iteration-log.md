@@ -834,3 +834,13 @@
 
 **回归证据**
 - /year/1995、/decade/1990s、/state/tx 均输出 "@type":"ItemList"。
+
+## Round 82（2026-08-06）
+**发现**
+- ①QA：全站 7 类页面 JSON-LD 语法与类型校验。
+
+**修复**
+- 无缺陷：全部可解析（WebSite / Dataset+BreadcrumbList+FAQPage / ItemList），无注入或转义问题。
+
+**回归证据**
+- 解析输出见本轮记录。
