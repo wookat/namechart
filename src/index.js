@@ -42,7 +42,7 @@ const slugify = s => (s || '').toLowerCase().replace(/[^a-z'-]/g, '').slice(0, 4
 // Prefix search via index-friendly range scan (LIKE on a BINARY PK can't use the index
 // and D1 rejects patterns >= 50 chars).
 const NAME_COUNT = 105954; // rows in `names`; update when reimporting data
-const CACHE_VER = 4; // bump to invalidate the edge HTML cache on deploys that change rendering/data
+const CACHE_VER = 5; // bump to invalidate the edge HTML cache on deploys that change rendering/data
 // '~' (0x7E) sorts after every character allowed in slugs (a-z, apostrophe, hyphen).
 const prefixWhere = "slug >= ?1 AND slug < (?1 || '~')";
 
@@ -150,6 +150,7 @@ app.get('/name/:slug', async c => {
   ]);
   let famous = [];
   try { famous = famousRow ? JSON.parse(famousRow.people) : []; } catch { famous = []; }
+  const variants = (await fuzzyMatches(db, slug, 1)).filter(v => v.slug !== slug).slice(0, 6);
   const stats = [
     ['Total babies', fmt(r.total)],
     ['Peak year', `${r.peak_year} (${fmt(r.peak_count)} babies)`],
@@ -189,6 +190,7 @@ ${meaning && (meaning.etymology || meaning.ipa) ? `
   <button id="nc-share" class="rounded-full border border-slate-300 px-4 py-2 text-sm font-medium hover:bg-slate-100">↗ Share this chart</button>
   <button id="nc-fav" data-slug="${slug}" data-name="${esc(r.name)}" class="rounded-full border border-rose-200 text-rose-600 px-4 py-2 text-sm font-medium hover:bg-rose-50">♡ Save to shortlist</button>
 </div>
+${variants.length ? `<section class="mt-10"><h2 class="font-bold text-lg mb-3">Spellings &amp; variants</h2><p class="text-sm text-slate-500 -mt-2 mb-3">Names one letter away from ${esc(r.name)} — alternate spellings parents actually use.</p><div class="grid grid-cols-2 sm:grid-cols-3 gap-3">${variants.map(nameCard).join('')}</div></section>` : ''}
 ${famous.length ? `<section class="mt-10"><h2 class="font-bold text-lg mb-3">Famous people named ${esc(r.name)}</h2><div class="grid sm:grid-cols-2 gap-3">${famous.map(p => `<div class="rounded-xl bg-white border border-slate-200 p-4"><p class="font-semibold">${esc(p.n)}</p>${p.d ? `<p class="text-sm text-slate-500 mt-1">${esc(cap(p.d))}</p>` : ''}</div>`).join('')}</div><p class="mt-2 text-xs text-slate-400">Notability data from <a class="underline hover:text-indigo-600" href="https://www.wikidata.org/" rel="noopener">Wikidata</a> (CC0).</p></section>` : ''}
 ${similar.length ? `<section class="mt-10"><h2 class="font-bold text-lg mb-3">Names with a similar vibe</h2><p class="text-sm text-slate-500 -mt-2 mb-3">Same primary gender, peaked around the same years, and roughly as common as ${esc(r.name)}.</p><div class="grid grid-cols-2 sm:grid-cols-4 gap-3">${similar.map(nameCard).join('')}</div></section>` : ''}
 ${emailForm()}`;
@@ -217,6 +219,7 @@ app.get('/compare/:pair', async c => {
   const db = c.env.DB;
   const mth = c.req.param('pair').toLowerCase().match(/^([a-z'-]+)-vs-([a-z'-]+)$/);
   if (!mth) return c.redirect('/');
+  if (mth[1] === mth[2]) return c.redirect(`/name/${mth[1]}`);
   const [a, b] = await Promise.all([getName(db, mth[1]), getName(db, mth[2])]);
   if (!a || !b) return c.redirect(a ? `/name/${mth[1]}` : b ? `/name/${mth[2]}` : '/');
   const sa = expandSeries(JSON.parse(a.series)), sb = expandSeries(JSON.parse(b.series));
@@ -277,13 +280,13 @@ function editDist(a, b) {
   return dp[a.length][b.length];
 }
 
-async function fuzzyMatches(db, slug) {
+async function fuzzyMatches(db, slug, maxDist = 2) {
   const rows = await db.prepare(`SELECT slug,name,total,f_total,m_total,first_year FROM names
       WHERE length(slug) BETWEEN ? AND ? ORDER BY total DESC LIMIT 3000`)
-    .bind(slug.length - 2, slug.length + 2).all();
+    .bind(slug.length - maxDist, slug.length + maxDist).all();
   return rows.results
     .map(r => ({ r, d: editDist(slug, r.slug) }))
-    .filter(x => x.d <= 2)
+    .filter(x => x.d <= maxDist)
     .sort((a, b) => a.d - b.d || b.r.total - a.r.total)
     .slice(0, 8)
     .map(x => x.r);
@@ -582,7 +585,9 @@ app.post('/api/beacon', async c => {
   if (!sameOrigin(c)) return c.body(null, 204);
   try {
     const { p } = await c.req.json();
-    if (typeof p === 'string' && p.length <= 100 && p.startsWith('/') && !(await overQuota(c, 'beacon', 300))) {
+    // Only count paths that match a real route family, so forged beacons can't pollute analytics.
+    const VALID_PATH = /^\/$|^\/(name|letter|year|state|compare|og\/name)\/[a-z0-9'.-]{1,60}$|^\/decade\/\d{4}s$|^\/(top\/girls|top\/boys|trending|unisex|browse|about|privacy|terms|favorites|search)$/;
+    if (typeof p === 'string' && p.length <= 100 && VALID_PATH.test(p) && !(await overQuota(c, 'beacon', 300))) {
       const day = new Date().toISOString().slice(0, 10);
       await c.env.DB.prepare('INSERT INTO hits (day, path, count) VALUES (?, ?, 1) ON CONFLICT(day, path) DO UPDATE SET count = count + 1')
         .bind(day, p).run();
