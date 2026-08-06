@@ -954,3 +954,13 @@
 
 **回归证据**
 - axe 与视口检查输出见本轮记录。
+
+## Round 94（2026-08-06）
+**发现**
+- ①QA：sitemap static 分片覆盖审计。
+
+**修复**
+- 无缺口：letter 26 / year 146 / decade 15 / state 51 / list 10 / meaning 34 / generator+browse 等特色页全部在位（共 292 URL），与线上路由一一对应。
+
+**回归证据**
+- 分片计数输出见本轮记录。
