@@ -42,7 +42,7 @@ const slugify = s => (s || '').toLowerCase().replace(/[^a-z'-]/g, '').slice(0, 4
 // Prefix search via index-friendly range scan (LIKE on a BINARY PK can't use the index
 // and D1 rejects patterns >= 50 chars).
 const NAME_COUNT = 105954; // rows in `names`; update when reimporting data
-const CACHE_VER = 12; // bump to invalidate the edge HTML cache on deploys that change rendering/data
+const CACHE_VER = 13; // bump to invalidate the edge HTML cache on deploys that change rendering/data
 // '~' (0x7E) sorts after every character allowed in slugs (a-z, apostrophe, hyphen).
 const prefixWhere = "slug >= ?1 AND slug < (?1 || '~')";
 
@@ -325,6 +325,12 @@ app.get('/search', async c => {
     : { results: [] };
   let didYouMean = [];
   if (!like.results.length && slug.length >= 3) didYouMean = await fuzzyMatches(db, slug);
+  if (slug) {
+    // Aggregate query counts (no user identifiers) to drive search-term analysis.
+    c.executionCtx.waitUntil(db.prepare(
+      'INSERT INTO searches (day, q, results) VALUES (?, ?, ?) ON CONFLICT(day, q) DO UPDATE SET count = count + 1'
+    ).bind(new Date().toISOString().slice(0, 10), slug, like.results.length).run().catch(() => {}));
+  }
   const body = `
 <h1 class="text-2xl font-bold">Search results for “${esc(q)}”</h1>
 ${like.results.length
@@ -641,7 +647,7 @@ app.get('/privacy', c => html(c, layout({
 <p class="mt-4 text-slate-600">Effective: August 2026</p>
 <ul class="mt-4 list-disc pl-5 space-y-2 text-slate-700">
 <li><strong>No cookies.</strong> We set no cookies and use no third-party trackers or ad networks.</li>
-<li><strong>Anonymous analytics.</strong> We count page views (path + day only) via a first-party beacon. No IP addresses, fingerprints, or identifiers are stored. To limit abuse we hash your IP with the current date into a short-lived counter key; the raw IP is never written to storage.</li>
+<li><strong>Anonymous analytics.</strong> We count page views (path + day only) via a first-party beacon, and keep daily aggregate counts of search terms (the normalized query + day only). No IP addresses, fingerprints, or identifiers are stored with either. To limit abuse we hash your IP with the current date into a short-lived counter key; the raw IP is never written to storage.</li>
 <li><strong>Email.</strong> If you subscribe for updates we store your email address, the date, and the page you signed up from, used solely for product updates. Unsubscribe anytime by replying to any email or writing to hello@zalize.com.</li>
 <li><strong>Processors.</strong> The site runs on Cloudflare (Workers, D1, DNS/CDN). Cloudflare processes connection data, including IP addresses, at its edge for delivery, caching, and security, and may transfer it internationally under its own terms; Cloudflare also collects network error reports (NEL) for our domain. Cloudflare&rsquo;s cookieless Web Analytics script is enabled at the zalize.com zone level, but our Content-Security-Policy blocks it from loading on NameChart. We use no ad networks, no cross-site trackers, and no third-party marketing tools.</li>
 <li><strong>Controller &amp; rights.</strong> Controller: Zalize (hello@zalize.com). Legal basis for the email list is your consent; for anonymous counts, legitimate interest. Email addresses are kept until you unsubscribe; anonymous page counts are aggregate and retained indefinitely. You may request access, correction, or deletion — including under GDPR and CCPA — at hello@zalize.com.</li>
