@@ -44,7 +44,7 @@ const slugify = s => (s || '').toLowerCase().replace(/[^a-z'-]/g, '').slice(0, 4
 // Prefix search via index-friendly range scan (LIKE on a BINARY PK can't use the index
 // and D1 rejects patterns >= 50 chars).
 const NAME_COUNT = 105954; // rows in `names`; update when reimporting data
-const CACHE_VER = 49; // bump to invalidate the edge HTML cache on deploys that change rendering/data
+const CACHE_VER = 50; // bump to invalidate the edge HTML cache on deploys that change rendering/data
 // '~' (0x7E) sorts after every character allowed in slugs (a-z, apostrophe, hyphen).
 const prefixWhere = "slug >= ?1 AND slug < (?1 || '~')";
 
@@ -163,7 +163,10 @@ app.get('/name/:slug', async c => {
   const slug = slugify(raw);
   if (slug && raw !== slug) return c.redirect(`/name/${slug}`, 301);
   const r = await getName(db, slug);
-  if (!r) return html(c, layout({ title: 'Name not found — ' + SITE, desc: 'Name not found', path: '/name/', noindex: true, body: `<div class="text-center py-20"><h1 class="text-2xl font-bold">We don't have data for “${esc(cap(slug))}” yet</h1><p class="mt-2 text-slate-500">It may have fewer than 5 births in any year — the data source only includes names with 5+ births.</p><a href="/" class="inline-block mt-6 text-indigo-600 hover:underline">← Back to search</a></div>` }), 404);
+  if (!r) {
+    const near = slug ? (await fuzzyMatches(db, slug, 2)).slice(0, 6) : [];
+    return html(c, layout({ title: 'Name not found — ' + SITE, desc: 'Name not found', path: '/name/', noindex: true, body: `<div class="text-center py-20"><h1 class="text-2xl font-bold">We don't have data for “${esc(cap(slug))}” yet</h1><p class="mt-2 text-slate-500">It may have fewer than 5 births in any year — the data source only includes names with 5+ births.</p>${near.length ? `<p class="mt-6 font-semibold">Did you mean:</p><div class="mt-3 flex flex-wrap justify-center gap-2 text-sm">${near.map(v => `<a href="/name/${v.slug}" class="px-3 py-1.5 rounded-full bg-white border border-slate-200 hover:border-indigo-400">${esc(v.name)}</a>`).join('')}</div>` : ''}<a href="/" class="inline-block mt-6 text-indigo-600 hover:underline">← Back to search</a></div>` }), 404);
+  }
   const series = JSON.parse(r.series);
   const { f, m } = expandSeries(series);
   const latest = f[f.length - 1] + m[m.length - 1];
