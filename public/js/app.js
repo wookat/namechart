@@ -22,6 +22,42 @@
     });
   }
 
+  function favs() { try { return JSON.parse(localStorage.getItem('nc-favs') || '[]'); } catch (e) { return []; } }
+  function saveFavs(a) { try { localStorage.setItem('nc-favs', JSON.stringify(a)); } catch (e) {} }
+
+  var share = document.getElementById('nc-share');
+  if (share) share.addEventListener('click', function () {
+    if (navigator.share) navigator.share({ title: document.title, url: location.href });
+    else navigator.clipboard.writeText(location.href).then(function () { share.textContent = '\u2713 Link copied'; });
+  });
+
+  var fav = document.getElementById('nc-fav');
+  if (fav) {
+    var slug = fav.dataset.slug, name = fav.dataset.name;
+    var render = function () {
+      var saved = favs().some(function (f) { return f.slug === slug; });
+      fav.textContent = saved ? '\u2665 On your shortlist' : '\u2661 Save to shortlist';
+    };
+    fav.addEventListener('click', function () {
+      var a = favs();
+      if (a.some(function (f) { return f.slug === slug; })) a = a.filter(function (f) { return f.slug !== slug; });
+      else a.push({ slug: slug, name: name });
+      saveFavs(a); render();
+    });
+    render();
+  }
+
+  var list = document.getElementById('nc-fav-list');
+  if (list) {
+    var a = favs();
+    list.innerHTML = a.length
+      ? a.map(function (f) {
+          var s = String(f.slug).replace(/[^a-z'-]/g, ''), n = String(f.name).replace(/[<>&"]/g, '');
+          return '<a href="/name/' + s + '" class="block rounded-xl bg-white border border-slate-200 p-4 hover:border-indigo-400"><span class="font-semibold">' + n + '</span></a>';
+        }).join('')
+      : '<p class="text-slate-400 col-span-full">Nothing saved yet.</p>';
+  }
+
   var el = document.getElementById('nc-readout');
   var hit = document.getElementById('nc-hit');
   if (!el || !hit) return;
