@@ -42,7 +42,7 @@ const slugify = s => (s || '').toLowerCase().replace(/[^a-z'-]/g, '').slice(0, 4
 // Prefix search via index-friendly range scan (LIKE on a BINARY PK can't use the index
 // and D1 rejects patterns >= 50 chars).
 const NAME_COUNT = 105954; // rows in `names`; update when reimporting data
-const CACHE_VER = 7; // bump to invalidate the edge HTML cache on deploys that change rendering/data
+const CACHE_VER = 10; // bump to invalidate the edge HTML cache on deploys that change rendering/data
 // '~' (0x7E) sorts after every character allowed in slugs (a-z, apostrophe, hyphen).
 const prefixWhere = "slug >= ?1 AND slug < (?1 || '~')";
 
@@ -471,11 +471,97 @@ ${emailForm()}`;
   return html(c, layout({ title: `Top Baby Names in ${STATES[st]} ${END_YEAR} | ${SITE}`, desc: `The 100 most popular girl and boy names in ${STATES[st]} in ${END_YEAR}, from official state birth records.`, path: `/state/${st.toLowerCase()}`, body }));
 });
 
+// ---------- curated lists ----------
+async function namesBySlugs(db, slugs) {
+  if (!slugs.length) return [];
+  const bySlug = new Map();
+  for (let i = 0; i < slugs.length; i += 90) { // D1 caps bound params at 100 per statement
+    const chunk = slugs.slice(i, i + 90);
+    const rows = await db.prepare(`SELECT slug,name,total,f_total,m_total,first_year,peak_year FROM names
+        WHERE slug IN (${chunk.map(() => '?').join(',')})`).bind(...chunk).all();
+    for (const r of rows.results) bySlug.set(r.slug, r);
+  }
+  return slugs.map(s => bySlug.get(s)).filter(Boolean);
+}
+
+// Rank-driven lists are computed from year_ranks (indexed by year) plus a slug
+// lookup, because unindexed name joins exceed the Worker D1 scan budget.
+async function rankList(db, sex, opts) {
+  const now = await db.prepare('SELECT name, rank FROM year_ranks WHERE year=? AND sex=? ORDER BY rank').bind(END_YEAR, sex).all();
+  let candidates = now.results;
+  if (opts.alsoTopIn) {
+    const past = await db.prepare('SELECT name FROM year_ranks WHERE year=? AND sex=? AND rank<=?').bind(opts.alsoTopIn.year, sex, opts.alsoTopIn.rank).all();
+    const pastSet = new Set(past.results.map(r => r.name));
+    candidates = candidates.filter(r => r.rank <= opts.alsoTopIn.rank && pastSet.has(r.name));
+  }
+  if (opts.maxRank) candidates = candidates.filter(r => r.rank <= opts.maxRank);
+  let rows = await namesBySlugs(db, candidates.map(r => r.name.toLowerCase()));
+  if (opts.peakBefore) rows = rows.filter(r => r.peak_year < opts.peakBefore);
+  if (opts.primary) rows = rows.filter(r => (opts.primary === 'F' ? r.f_total > r.m_total : r.m_total > r.f_total));
+  return rows.slice(0, 40);
+}
+
+const LISTS = {
+  'vintage-girl-names': {
+    title: 'Vintage Girl Names Making a Comeback',
+    desc: 'Girl names that peaked before 1940 and are back in the current U.S. top 500 — antique charm with modern momentum.',
+    intro: 'These girl names peaked before 1940, faded, and are back in the current U.S. top 500.',
+    rows: db => rankList(db, 'F', { maxRank: 500, peakBefore: 1940, primary: 'F' }),
+  },
+  'vintage-boy-names': {
+    title: 'Vintage Boy Names Making a Comeback',
+    desc: 'Boy names that peaked before 1940 and are back in the current top 500.',
+    intro: 'These boy names peaked before 1940 and are back in the current U.S. top 500.',
+    rows: db => rankList(db, 'M', { maxRank: 500, peakBefore: 1940, primary: 'M' }),
+  },
+  'timeless-girl-names': {
+    title: 'Timeless Girl Names',
+    desc: 'Girl names in the U.S. top 300 both 100 years ago and today — proven for over a century.',
+    intro: `These girl names ranked in the top 300 in both ${END_YEAR - 100} and ${END_YEAR} — a full century of staying power.`,
+    rows: db => rankList(db, 'F', { alsoTopIn: { year: END_YEAR - 100, rank: 300 } }),
+  },
+  'timeless-boy-names': {
+    title: 'Timeless Boy Names',
+    desc: 'Boy names in the U.S. top 300 both 100 years ago and today.',
+    intro: `These boy names ranked in the top 300 in both ${END_YEAR - 100} and ${END_YEAR} — a full century of staying power.`,
+    rows: db => rankList(db, 'M', { alsoTopIn: { year: END_YEAR - 100, rank: 300 } }),
+  },
+  'new-girl-names': {
+    title: 'Modern Girl Names (First Recorded Since 1990)',
+    desc: 'Girl names that first appeared in U.S. records after 1990 and took off.',
+    intro: 'The most popular girl names that first entered U.S. records after 1990.',
+    rows: db => db.prepare(`SELECT slug,name,total,f_total,m_total,first_year FROM names
+          WHERE first_year >= 1990 AND f_total > m_total ORDER BY total DESC LIMIT 40`).all().then(r => r.results),
+  },
+  'new-boy-names': {
+    title: 'Modern Boy Names (First Recorded Since 1990)',
+    desc: 'Boy names that first appeared in U.S. records after 1990 and took off.',
+    intro: 'The most popular boy names that first entered U.S. records after 1990.',
+    rows: db => db.prepare(`SELECT slug,name,total,f_total,m_total,first_year FROM names
+          WHERE first_year >= 1990 AND m_total > f_total ORDER BY total DESC LIMIT 40`).all().then(r => r.results),
+  },
+};
+
+app.get('/list/:slug', async c => {
+  const def = LISTS[c.req.param('slug')];
+  if (!def) return c.notFound();
+  const results = await def.rows(c.env.DB);
+  const body = `
+<h1 class="text-3xl font-extrabold">${def.title}</h1>
+<p class="mt-2 text-slate-600 max-w-2xl">${def.intro}</p>
+<div class="mt-6 grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 gap-3">${results.map(nameCard).join('')}</div>
+<section class="mt-10"><h2 class="font-bold mb-2">More lists</h2><div class="flex flex-wrap gap-2 text-sm">${Object.entries(LISTS).filter(([s]) => s !== c.req.param('slug')).map(([s, d]) => `<a href="/list/${s}" class="px-3 py-1.5 rounded-full bg-white border border-slate-200 hover:border-indigo-400">${d.title}</a>`).join('')}</div></section>
+${emailForm()}`;
+  return html(c, layout({ title: `${def.title} | ${SITE}`, desc: def.desc, path: `/list/${c.req.param('slug')}`, body }));
+});
+
 // ---------- browse hub ----------
 app.get('/browse', async c => {
   const decades = Array.from({ length: 15 }, (_, i) => 1880 + i * 10);
   const body = `
 <h1 class="text-3xl font-extrabold">Browse all names</h1>
+<section class="mt-6"><h2 class="font-bold mb-2">Curated lists</h2>
+<div class="flex flex-wrap gap-1.5 text-sm">${Object.entries(LISTS).map(([s, d]) => `<a href="/list/${s}" class="px-3 py-1.5 rounded-lg bg-white border border-slate-200 hover:border-indigo-400">${d.title}</a>`).join('')}</div></section>
 <section class="mt-6"><h2 class="font-bold mb-2">By first letter</h2>
 <div class="flex flex-wrap gap-1.5">${'abcdefghijklmnopqrstuvwxyz'.split('').map(ch => `<a href="/letter/${ch}" class="w-9 h-9 grid place-items-center rounded-lg bg-white border border-slate-200 hover:border-indigo-400">${ch.toUpperCase()}</a>`).join('')}</div></section>
 <section class="mt-6"><h2 class="font-bold mb-2">By decade</h2>
@@ -603,7 +689,7 @@ app.post('/api/beacon', async c => {
   try {
     const { p } = await c.req.json();
     // Only count paths that match a real route family, so forged beacons can't pollute analytics.
-    const VALID_PATH = /^\/$|^\/(name|letter|year|state|compare|og\/name)\/[a-z0-9'.-]{1,60}$|^\/decade\/\d{4}s$|^\/(top\/girls|top\/boys|trending|unisex|browse|about|privacy|terms|favorites|search)$/;
+    const VALID_PATH = /^\/$|^\/(name|letter|year|state|compare|list|og\/name)\/[a-z0-9'.-]{1,60}$|^\/decade\/\d{4}s$|^\/(top\/girls|top\/boys|trending|unisex|browse|about|privacy|terms|favorites|search)$/;
     if (typeof p === 'string' && p.length <= 100 && VALID_PATH.test(p) && !(await overQuota(c, 'beacon', 300))) {
       const day = new Date().toISOString().slice(0, 10);
       await c.env.DB.prepare('INSERT INTO hits (day, path, count) VALUES (?, ?, 1) ON CONFLICT(day, path) DO UPDATE SET count = count + 1')
@@ -638,6 +724,7 @@ app.get('/sitemaps/:shard{.+\\.xml}', async c => {
   const urls = [];
   if (shard === 'static') {
     urls.push('/', '/top/girls', '/top/boys', '/unisex', '/trending', '/browse', '/about', '/privacy', '/terms');
+    for (const s of Object.keys(LISTS)) urls.push(`/list/${s}`);
     for (const ch of 'abcdefghijklmnopqrstuvwxyz') urls.push(`/letter/${ch}`);
     for (let y = START_YEAR; y <= END_YEAR; y++) urls.push(`/year/${y}`);
     for (let d = 1880; d <= 2020; d += 10) urls.push(`/decade/${d}s`);
