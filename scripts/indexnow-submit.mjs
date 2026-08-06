@@ -9,15 +9,22 @@ const key = readFileSync(new URL('../wrangler.toml', import.meta.url), 'utf8').m
 const maxNames = Number(process.argv[2] ?? 2000);
 
 const urls = ['/', '/top/girls', '/top/boys', '/unisex', '/trending', '/browse', '/about'];
+for (const s of ['vintage-girl-names', 'vintage-boy-names', 'timeless-girl-names', 'timeless-boy-names', 'new-girl-names', 'new-boy-names']) urls.push(`/list/${s}`);
 for (const ch of 'abcdefghijklmnopqrstuvwxyz') urls.push(`/letter/${ch}`);
 for (let y = 1880; y <= 2025; y++) urls.push(`/year/${y}`);
 for (let d = 1880; d <= 2020; d += 10) urls.push(`/decade/${d}s`);
 
-// top N name pages from the live sitemap shards
-const shard = await (await fetch(`${ORIGIN}/sitemaps/names-0.xml`)).text();
-const names = [...shard.matchAll(/<loc>([^<]+)<\/loc>/g)].map(m => m[1]).slice(0, maxNames);
+// name pages from the live sitemap shards, offset by --skip to page through batches
+const skip = Number(process.argv[3] ?? 0);
+const names = [];
+for (let sh = 0; names.length < skip + maxNames; sh++) {
+  const res = await fetch(`${ORIGIN}/sitemaps/names-${sh}.xml`);
+  if (!res.ok) break;
+  names.push(...[...(await res.text()).matchAll(/<loc>([^<]+)<\/loc>/g)].map(m => m[1]));
+}
+const batch = names.slice(skip, skip + maxNames);
 
-const full = [...urls.map(u => ORIGIN + u), ...names];
+const full = [...urls.map(u => ORIGIN + u), ...batch];
 for (let i = 0; i < full.length; i += 10000) {
   const res = await fetch('https://api.indexnow.org/indexnow', {
     method: 'POST',

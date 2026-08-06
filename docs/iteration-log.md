@@ -108,3 +108,14 @@
 
 **回归证据**
 - workers.dev 实测 /name/María → 301 /name/mara、/name/JOSE → 301 /name/jose；规范 URL 仍 200；自定义域旧 200 为存量边缘缓存（≤24h 自然过期，新 s-maxage=3600 后窗口收敛）。
+
+## Round 10（2026-08-06）
+**发现**
+- ⑤数据：第一方统计 8/5–8/6 日 PV 35–42（基本为内部测试流量），searches 表无真实用户查询，5 个邮箱意向；结论=分发仍是最大瓶颈，本轮以分发推进为主。
+- indexnow-submit.mjs 只能提交 names-0 分片前 N 条，无法翻页提交后续名字页。
+
+**修复（全部上线）**
+- indexnow-submit.mjs 支持跨分片+skip 翻页；提交新一批 3,200 URL（含 6 个 /list 榜单页 + names 第 2,000–5,000 名）至 IndexNow（200）。
+
+**回归证据**
+- IndexNow API 返回 200，submitted 3200 urls；累计已提交约 10.6k URL。
