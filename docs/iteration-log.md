@@ -353,3 +353,13 @@
 
 **回归证据**
 - 首页与 /list/short-girl-names axe 全 clean；375px 零溢出；截图确认卡片深底白字正常渲染。
+
+## Round 34（2026-08-06）
+**发现**
+- ①QA：验证轮 32 新表面：4 个新榜单 OG 卡、ItemList 结构化数据、/generator 计数路径与 beacon 同源防护。
+
+**修复**
+- 无缺陷：3 个新榜单 OG 图 200 image/png；长名榜单含 ItemList JSON-LD；同源 beacon 计数正常，跨域 Origin 静默丢弃（204 不落库，符合设计）。
+
+**回归证据**
+- 命令输出见本轮记录；hits 表无伪造路径写入。
