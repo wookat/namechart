@@ -44,7 +44,7 @@ const slugify = s => (s || '').toLowerCase().replace(/[^a-z'-]/g, '').slice(0, 4
 // Prefix search via index-friendly range scan (LIKE on a BINARY PK can't use the index
 // and D1 rejects patterns >= 50 chars).
 const NAME_COUNT = 105954; // rows in `names`; update when reimporting data
-const CACHE_VER = 16; // bump to invalidate the edge HTML cache on deploys that change rendering/data
+const CACHE_VER = 17; // bump to invalidate the edge HTML cache on deploys that change rendering/data
 // '~' (0x7E) sorts after every character allowed in slugs (a-z, apostrophe, hyphen).
 const prefixWhere = "slug >= ?1 AND slug < (?1 || '~')";
 
@@ -568,7 +568,10 @@ app.get('/list/:slug', async c => {
 <div class="mt-6 grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 gap-3">${results.map(nameCard).join('')}</div>
 <section class="mt-10"><h2 class="font-bold mb-2">More lists</h2><div class="flex flex-wrap gap-2 text-sm">${Object.entries(LISTS).filter(([s]) => s !== c.req.param('slug')).map(([s, d]) => `<a href="/list/${s}" class="px-3 py-1.5 rounded-full bg-white border border-slate-200 hover:border-indigo-400">${d.title}</a>`).join('')}</div></section>
 ${emailForm()}`;
-  return html(c, layout({ title: `${def.title} | ${SITE}`, desc: def.desc, path: `/list/${c.req.param('slug')}`, body }));
+  return html(c, layout({ title: `${def.title} | ${SITE}`, desc: def.desc, path: `/list/${c.req.param('slug')}`, body, jsonld: {
+    '@context': 'https://schema.org', '@type': 'ItemList', name: def.title, description: def.desc,
+    itemListElement: results.map((r, i) => ({ '@type': 'ListItem', position: i + 1, name: r.name, url: `${ORIGIN}/name/${r.slug}` })),
+  } }));
 });
 
 // ---------- names by meaning ----------
@@ -590,7 +593,10 @@ app.get('/meaning/:word', async c => {
 <section class="mt-10"><h2 class="font-bold mb-2">More meanings</h2><div class="flex flex-wrap gap-2 text-sm">${MEANING_WORDS.filter(w => w !== word).map(w => `<a href="/meaning/${w}" class="px-3 py-1.5 rounded-full bg-white border border-slate-200 hover:border-indigo-400">${cap(w)}</a>`).join('')}</div></section>
 <p class="mt-6 text-xs text-slate-500">Etymologies adapted from <a class="underline hover:text-indigo-600" href="https://en.wiktionary.org" rel="license noopener">Wiktionary</a>, licensed <a class="underline hover:text-indigo-600" href="https://creativecommons.org/licenses/by-sa/4.0/" rel="license noopener">CC BY-SA 4.0</a>.</p>
 ${emailForm()}`;
-  return html(c, layout({ title: `Names That Mean ${capWord} — ${rows.length} Names with Origins | ${SITE}`, desc: `${rows.length} baby names that mean or relate to “${word}”, with documented etymologies and U.S. popularity data.`, path: `/meaning/${word}`, body }));
+  return html(c, layout({ title: `Names That Mean ${capWord} — ${rows.length} Names with Origins | ${SITE}`, desc: `${rows.length} baby names that mean or relate to “${word}”, with documented etymologies and U.S. popularity data.`, path: `/meaning/${word}`, body, jsonld: {
+    '@context': 'https://schema.org', '@type': 'ItemList', name: `Names That Mean ${capWord}`,
+    itemListElement: rows.map((r, i) => ({ '@type': 'ListItem', position: i + 1, name: r.name, url: `${ORIGIN}/name/${r.slug}` })),
+  } }));
 });
 
 // ---------- browse hub ----------

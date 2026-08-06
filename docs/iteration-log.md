@@ -129,3 +129,13 @@
 
 **回归证据**
 - 16 个 /meaning/ 全部 200（自定义域+workers.dev），无效词 404；/meaning/sea 无 season 误匹配；sitemap 含 16 个 meaning URL。
+
+## Round 12（2026-08-06，版本 88c33346）
+**发现**
+- ①QA/SEO：新 /list 与 /meaning 页面族缺结构化数据（名字页已有 Dataset/FAQ/Breadcrumb，列表页无 ItemList，P1）。
+
+**修复（全部上线）**
+- /list/* 与 /meaning/* 全部输出 schema.org ItemList JSON-LD（含每项 name+url）。
+
+**回归证据**
+- 线上 JSON-LD 解析通过（ItemList + itemListElement）；375px 移动端 /meaning/moon、/list/timeless-girl-names、/name/james 水平溢出 0。
