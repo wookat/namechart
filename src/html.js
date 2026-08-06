@@ -21,7 +21,7 @@ export function esc(s) {
 export const fmt = n => Number(n ?? 0).toLocaleString('en-US');
 export const cap = s => s ? s[0].toUpperCase() + s.slice(1) : s;
 
-export function layout({ title, desc, path, body, jsonld, noindex }) {
+export function layout({ title, desc, path, body, jsonld, noindex, ogImage }) {
   const canonical = ORIGIN + path;
   return `<!doctype html>
 <html lang="en">
@@ -37,7 +37,7 @@ ${noindex ? '<meta name="robots" content="noindex">' : ''}
 <meta property="og:title" content="${esc(title)}">
 <meta property="og:description" content="${esc(desc)}">
 <meta property="og:url" content="${esc(canonical)}">
-<meta property="og:image" content="${ORIGIN}/img/og-default.png">
+<meta property="og:image" content="${esc(ogImage || ORIGIN + '/img/og-default.png')}">
 <meta name="twitter:card" content="summary_large_image">
 <link rel="icon" href="/img/favicon.svg" type="image/svg+xml">
 <link rel="stylesheet" href="/styles.css">

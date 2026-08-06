@@ -1,4 +1,5 @@
 import { Hono } from 'hono';
+import { ogImage } from './og.js';
 import {
   layout, esc, fmt, cap, chartSVG, chartReadout, emailForm, nameCard, rankTable,
   expandSeries, genderOf, SITE, ORIGIN, START_YEAR, END_YEAR,
@@ -41,7 +42,7 @@ const slugify = s => (s || '').toLowerCase().replace(/[^a-z'-]/g, '').slice(0, 4
 // Prefix search via index-friendly range scan (LIKE on a BINARY PK can't use the index
 // and D1 rejects patterns >= 50 chars).
 const NAME_COUNT = 105954; // rows in `names`; update when reimporting data
-const CACHE_VER = 3; // bump to invalidate the edge HTML cache on deploys that change rendering/data
+const CACHE_VER = 4; // bump to invalidate the edge HTML cache on deploys that change rendering/data
 // '~' (0x7E) sorts after every character allowed in slugs (a-z, apostrophe, hyphen).
 const prefixWhere = "slug >= ?1 AND slug < (?1 || '~')";
 
@@ -142,10 +143,13 @@ app.get('/name/:slug', async c => {
   const rankBits = [];
   if (r.latest_rank_f && r.latest_rank_f <= 1000) rankBits.push(`#${fmt(r.latest_rank_f)} for girls`);
   if (r.latest_rank_m && r.latest_rank_m <= 1000) rankBits.push(`#${fmt(r.latest_rank_m)} for boys`);
-  const [similar, meaning] = await Promise.all([
+  const [similar, meaning, famousRow] = await Promise.all([
     similarNames(db, r),
     db.prepare('SELECT * FROM meanings WHERE slug = ?').bind(slug).first().catch(() => null),
+    db.prepare('SELECT people FROM famous WHERE slug = ?').bind(slug).first().catch(() => null),
   ]);
+  let famous = [];
+  try { famous = famousRow ? JSON.parse(famousRow.people) : []; } catch { famous = []; }
   const stats = [
     ['Total babies', fmt(r.total)],
     ['Peak year', `${r.peak_year} (${fmt(r.peak_count)} babies)`],
@@ -185,15 +189,27 @@ ${meaning && (meaning.etymology || meaning.ipa) ? `
   <button id="nc-share" class="rounded-full border border-slate-300 px-4 py-2 text-sm font-medium hover:bg-slate-100">↗ Share this chart</button>
   <button id="nc-fav" data-slug="${slug}" data-name="${esc(r.name)}" class="rounded-full border border-rose-200 text-rose-600 px-4 py-2 text-sm font-medium hover:bg-rose-50">♡ Save to shortlist</button>
 </div>
+${famous.length ? `<section class="mt-10"><h2 class="font-bold text-lg mb-3">Famous people named ${esc(r.name)}</h2><div class="grid sm:grid-cols-2 gap-3">${famous.map(p => `<div class="rounded-xl bg-white border border-slate-200 p-4"><p class="font-semibold">${esc(p.n)}</p>${p.d ? `<p class="text-sm text-slate-500 mt-1">${esc(cap(p.d))}</p>` : ''}</div>`).join('')}</div><p class="mt-2 text-xs text-slate-400">Notability data from <a class="underline hover:text-indigo-600" href="https://www.wikidata.org/" rel="noopener">Wikidata</a> (CC0).</p></section>` : ''}
 ${similar.length ? `<section class="mt-10"><h2 class="font-bold text-lg mb-3">Names with a similar vibe</h2><p class="text-sm text-slate-500 -mt-2 mb-3">Same primary gender, peaked around the same years, and roughly as common as ${esc(r.name)}.</p><div class="grid grid-cols-2 sm:grid-cols-4 gap-3">${similar.map(nameCard).join('')}</div></section>` : ''}
 ${emailForm()}`;
   return html(c, layout({
     title: `${r.name} — Name Popularity, Rank & Chart (1880–${END_YEAR}) | ${SITE}`,
     desc: `${r.name}: given to ${fmt(r.total)} U.S. babies since ${r.first_year}, peaked in ${r.peak_year}.${rankBits.length ? ` Ranked ${rankBits.join(', ')} in ${END_YEAR}.` : ''} Full 146-year popularity chart, free.`,
     path: `/name/${slug}`,
+    ogImage: `${ORIGIN}/og/name/${slug}.png`,
     body,
     jsonld: { '@context': 'https://schema.org', '@type': 'Dataset', name: `${r.name} name popularity 1880–${END_YEAR}`, description: `Births per year for the name ${r.name} in the United States.`, license: 'https://www.usa.gov/government-works', creator: { '@type': 'Organization', name: 'U.S. Social Security Administration' } },
   }));
+});
+
+// ---------- og image ----------
+app.get('/og/name/:file', async c => {
+  const mth = c.req.param('file').match(/^([a-z'-]{1,40})\.png$/);
+  const r = mth && await getName(c.env.DB, mth[1]);
+  if (!r) return c.notFound();
+  const res = await ogImage(c, r);
+  res.headers.set('Cache-Control', 'public, max-age=86400, s-maxage=604800');
+  return res;
 });
 
 // ---------- compare ----------
@@ -248,6 +264,31 @@ app.get('/compare', c => {
   return c.redirect(a && b ? `/compare/${a}-vs-${b}` : '/');
 });
 
+// Edit-distance ≤2 suggestions for misspelled searches, over a popularity-capped candidate set.
+function editDist(a, b) {
+  if (Math.abs(a.length - b.length) > 2) return 3;
+  const dp = Array.from({ length: a.length + 1 }, (_, i) => [i, ...Array(b.length).fill(0)]);
+  for (let j = 1; j <= b.length; j++) dp[0][j] = j;
+  for (let i = 1; i <= a.length; i++) {
+    for (let j = 1; j <= b.length; j++) {
+      dp[i][j] = Math.min(dp[i - 1][j] + 1, dp[i][j - 1] + 1, dp[i - 1][j - 1] + (a[i - 1] === b[j - 1] ? 0 : 1));
+    }
+  }
+  return dp[a.length][b.length];
+}
+
+async function fuzzyMatches(db, slug) {
+  const rows = await db.prepare(`SELECT slug,name,total,f_total,m_total,first_year FROM names
+      WHERE length(slug) BETWEEN ? AND ? ORDER BY total DESC LIMIT 3000`)
+    .bind(slug.length - 2, slug.length + 2).all();
+  return rows.results
+    .map(r => ({ r, d: editDist(slug, r.slug) }))
+    .filter(x => x.d <= 2)
+    .sort((a, b) => a.d - b.d || b.r.total - a.r.total)
+    .slice(0, 8)
+    .map(x => x.r);
+}
+
 // ---------- search ----------
 app.get('/search', async c => {
   const db = c.env.DB;
@@ -260,11 +301,13 @@ app.get('/search', async c => {
   const like = slug
     ? await db.prepare(`SELECT slug,name,total,f_total,m_total,first_year FROM names WHERE ${prefixWhere} ORDER BY total DESC LIMIT 24`).bind(slug).all()
     : { results: [] };
+  let didYouMean = [];
+  if (!like.results.length && slug.length >= 3) didYouMean = await fuzzyMatches(db, slug);
   const body = `
 <h1 class="text-2xl font-bold">Search results for “${esc(q)}”</h1>
 ${like.results.length
     ? `<div class="mt-6 grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 gap-3">${like.results.map(nameCard).join('')}</div>`
-    : `<p class="mt-4 text-slate-500">No names found. The data only includes names given to 5+ babies in a single year.</p>`}
+    : `<p class="mt-4 text-slate-500">No names found. The data only includes names given to 5+ babies in a single year.</p>${didYouMean.length ? `<h2 class="mt-6 font-bold">Did you mean…</h2><div class="mt-3 grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 gap-3">${didYouMean.map(nameCard).join('')}</div>` : ''}`}
 ${emailForm()}`;
   return htmlPrivate(c, layout({ title: `“${q}” — name search | ${SITE}`, desc: `Search results for ${q}`, path: '/search', noindex: true, body }));
 });
