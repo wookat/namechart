@@ -44,7 +44,7 @@ const slugify = s => (s || '').toLowerCase().replace(/[^a-z'-]/g, '').slice(0, 4
 // Prefix search via index-friendly range scan (LIKE on a BINARY PK can't use the index
 // and D1 rejects patterns >= 50 chars).
 const NAME_COUNT = 105954; // rows in `names`; update when reimporting data
-const CACHE_VER = 47; // bump to invalidate the edge HTML cache on deploys that change rendering/data
+const CACHE_VER = 48; // bump to invalidate the edge HTML cache on deploys that change rendering/data
 // '~' (0x7E) sorts after every character allowed in slugs (a-z, apostrophe, hyphen).
 const prefixWhere = "slug >= ?1 AND slug < (?1 || '~')";
 
@@ -552,7 +552,17 @@ app.get('/state/:st', async c => {
 </div>
 ${local.length ? `<section class="mt-8"><h2 class="font-bold text-lg mb-2">Local favorites</h2><p class="text-sm text-slate-500 mb-3">In the ${STATES[st]} top 100 but outside the national top 100 in ${END_YEAR}.</p><div class="flex flex-wrap gap-2 text-sm">${local.map(r => `<a href="/name/${r.name.toLowerCase()}" class="px-3 py-1.5 rounded-full bg-white border border-slate-200 hover:border-indigo-400">${esc(r.name)} <span class="text-slate-500">#${r.rank} ${r.sex === 'F' ? 'girls' : 'boys'}</span></a>`).join('')}</div></section>` : ''}
 ${emailForm()}`;
-  return html(c, layout({ title: `Top Baby Names in ${STATES[st]} ${END_YEAR} | ${SITE}`, desc: `The 100 most popular girl and boy names in ${STATES[st]} in ${END_YEAR}, from official state birth records.`, path: `/state/${st.toLowerCase()}`, body }));
+  return html(c, layout({ title: `Top Baby Names in ${STATES[st]} ${END_YEAR} | ${SITE}`, desc: `The 100 most popular girl and boy names in ${STATES[st]} in ${END_YEAR}, from official state birth records.`, path: `/state/${st.toLowerCase()}`, ogImage: `${ORIGIN}/og/state/${st.toLowerCase()}.png`, body }));
+});
+
+app.get('/og/state/:file', async c => {
+  const mth = c.req.param('file').match(/^([a-z]{2})\.png$/);
+  const st = mth && mth[1].toUpperCase();
+  if (!st || !STATES[st]) return c.notFound();
+  const rows = await c.env.DB.prepare('SELECT name FROM state_ranks WHERE state=? AND rank<=6 ORDER BY sex, rank').bind(st).all();
+  const res = await ogList(c, `Top Names in ${STATES[st]}`, rows.results.map(r => r.name));
+  res.headers.set('Cache-Control', 'public, max-age=86400, s-maxage=604800');
+  return res;
 });
 
 // ---------- curated lists ----------

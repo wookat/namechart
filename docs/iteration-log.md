@@ -684,3 +684,13 @@
 
 **回归证据**
 - /og/year/1995.png 与 /og/year/1990s.png 均 200 image/png（截图验证渲染正确）；1875 → 404；页面 og:image 指向新端点。
+
+## Round 67（2026-08-06，版本 87fc49cb）
+**发现**
+- ④分享面：51 个州页仍用默认 OG 图。
+
+**修复（全部上线）**
+- 新增 /og/state/{st}.png 动态分享卡（州名 + 男女 Top6 胶囊），州页 og:image 已切换；非法州码 404。
+
+**回归证据**
+- /og/state/tx.png 200 image/png；zz → 404；页面 og:image 指向新端点。全站 4 大页面族（name/list+meaning/compare/year+decade+state）分享卡齐备。
