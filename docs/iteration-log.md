@@ -424,3 +424,13 @@
 
 **回归证据**
 - IndexNow 200 / submitted 3238 urls；hits 路径分布见本轮输出。
+
+## Round 41（2026-08-06，版本 6619ab31）
+**发现**
+- ④pSEO：compare 页族无任何站内入链（仅表单可达），搜索引擎无法发现（P1）。
+
+**修复（全部上线）**
+- 名字页「similar vibe」区块下新增 4 个规范序对比链接（如 luna → ivy-vs-luna / luna-vs-mila），10 万名字页 × 4 = 大规模 compare 页内链发现面；CSS 重建（bg-amber-50）+ ASSET_VER 6。
+
+**回归证据**
+- /name/luna 出现 adeline-vs-luna / ivy-vs-luna / luna-vs-mila / luna-vs-quinn 四个规范序链接。
