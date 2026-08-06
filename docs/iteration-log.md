@@ -333,3 +333,13 @@
 
 **回归证据**
 - 首页出现「Name of the day · 2026-08-06 · Danny」卡片，多次请求同日结果一致。
+
+## Round 32（2026-08-06，版本 2b24e989）
+**发现**
+- ④竞品（Nameberry 列表矩阵）：短名/长名是高频列表主题（"short girl names" 等大搜索词），我们榜单页族只有 6 个（P1 pSEO 覆盖）。
+
+**修复（全部上线）**
+- 新增 4 个榜单页：/list/short-girl-names、short-boy-names（≤4 字母）、long-girl-names、long-boy-names（≥9 字母），按全时段出生数排序（纯 SQL，数据真实）；自动进 sitemap/OG 卡/互链；IndexNow 词表同步并提交。
+
+**回归证据**
+- 4 页均 200 且各 40 张名字卡；/og/list/short-girl-names.png 200 image/png；IndexNow batch 200。

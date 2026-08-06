@@ -44,7 +44,7 @@ const slugify = s => (s || '').toLowerCase().replace(/[^a-z'-]/g, '').slice(0, 4
 // Prefix search via index-friendly range scan (LIKE on a BINARY PK can't use the index
 // and D1 rejects patterns >= 50 chars).
 const NAME_COUNT = 105954; // rows in `names`; update when reimporting data
-const CACHE_VER = 31; // bump to invalidate the edge HTML cache on deploys that change rendering/data
+const CACHE_VER = 32; // bump to invalidate the edge HTML cache on deploys that change rendering/data
 // '~' (0x7E) sorts after every character allowed in slugs (a-z, apostrophe, hyphen).
 const prefixWhere = "slug >= ?1 AND slug < (?1 || '~')";
 
@@ -577,6 +577,34 @@ const LISTS = {
     intro: 'The most popular boy names that first entered U.S. records after 1990.',
     rows: db => db.prepare(`SELECT slug,name,total,f_total,m_total,first_year FROM names
           WHERE first_year >= 1990 AND m_total > f_total ORDER BY total DESC LIMIT 40`).all().then(r => r.results),
+  },
+  'short-girl-names': {
+    title: 'Short Girl Names (4 Letters or Fewer)',
+    desc: 'The most popular short girl names in U.S. history — 4 letters or fewer, big impact.',
+    intro: 'The most-given girl names with 4 letters or fewer, ranked by all-time U.S. births.',
+    rows: db => db.prepare(`SELECT slug,name,total,f_total,m_total,first_year FROM names
+          WHERE LENGTH(name) <= 4 AND f_total > m_total ORDER BY total DESC LIMIT 40`).all().then(r => r.results),
+  },
+  'short-boy-names': {
+    title: 'Short Boy Names (4 Letters or Fewer)',
+    desc: 'The most popular short boy names in U.S. history — 4 letters or fewer.',
+    intro: 'The most-given boy names with 4 letters or fewer, ranked by all-time U.S. births.',
+    rows: db => db.prepare(`SELECT slug,name,total,f_total,m_total,first_year FROM names
+          WHERE LENGTH(name) <= 4 AND m_total > f_total ORDER BY total DESC LIMIT 40`).all().then(r => r.results),
+  },
+  'long-girl-names': {
+    title: 'Long & Elegant Girl Names (9+ Letters)',
+    desc: 'Popular long girl names with 9 or more letters — elegant, formal, nickname-rich.',
+    intro: 'The most-given girl names with 9 or more letters, ranked by all-time U.S. births.',
+    rows: db => db.prepare(`SELECT slug,name,total,f_total,m_total,first_year FROM names
+          WHERE LENGTH(name) >= 9 AND f_total > m_total ORDER BY total DESC LIMIT 40`).all().then(r => r.results),
+  },
+  'long-boy-names': {
+    title: 'Long & Distinguished Boy Names (9+ Letters)',
+    desc: 'Popular long boy names with 9 or more letters — classic, formal, nickname-rich.',
+    intro: 'The most-given boy names with 9 or more letters, ranked by all-time U.S. births.',
+    rows: db => db.prepare(`SELECT slug,name,total,f_total,m_total,first_year FROM names
+          WHERE LENGTH(name) >= 9 AND m_total > f_total ORDER BY total DESC LIMIT 40`).all().then(r => r.results),
   },
 };
 
