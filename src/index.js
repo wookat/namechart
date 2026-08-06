@@ -44,7 +44,7 @@ const slugify = s => (s || '').toLowerCase().replace(/[^a-z'-]/g, '').slice(0, 4
 // Prefix search via index-friendly range scan (LIKE on a BINARY PK can't use the index
 // and D1 rejects patterns >= 50 chars).
 const NAME_COUNT = 105954; // rows in `names`; update when reimporting data
-const CACHE_VER = 30; // bump to invalidate the edge HTML cache on deploys that change rendering/data
+const CACHE_VER = 31; // bump to invalidate the edge HTML cache on deploys that change rendering/data
 // '~' (0x7E) sorts after every character allowed in slugs (a-z, apostrophe, hyphen).
 const prefixWhere = "slug >= ?1 AND slug < (?1 || '~')";
 
@@ -83,10 +83,15 @@ async function similarNames(db, r) {
 // ---------- home ----------
 app.get('/', async c => {
   const db = c.env.DB;
-  const [girls, boys, popular] = await Promise.all([
+  // Deterministic daily pick from the all-time top 2000 so every visitor sees the same name each day.
+  const today = new Date().toISOString().slice(0, 10);
+  let seed = 0;
+  for (const ch of today) seed = (seed * 31 + ch.charCodeAt(0)) >>> 0;
+  const [girls, boys, popular, notd] = await Promise.all([
     db.prepare('SELECT * FROM year_ranks WHERE year=? AND sex=? ORDER BY rank LIMIT 10').bind(END_YEAR, 'F').all(),
     db.prepare('SELECT * FROM year_ranks WHERE year=? AND sex=? ORDER BY rank LIMIT 10').bind(END_YEAR, 'M').all(),
     db.prepare('SELECT slug,name,total,f_total,m_total,first_year FROM names ORDER BY total DESC LIMIT 12').all(),
+    db.prepare('SELECT slug,name,total,f_total,m_total,first_year,peak_year FROM names ORDER BY total DESC LIMIT 1 OFFSET ?').bind(seed % 2000).first(),
   ]);
   const body = `
 <section class="text-center py-10">
@@ -98,6 +103,12 @@ app.get('/', async c => {
     <button class="shrink-0 rounded-full bg-indigo-600 text-white font-semibold px-4 sm:px-6 py-3 hover:bg-indigo-700">Search</button>
   </form>
 </section>
+${notd ? `<section class="mb-8 rounded-2xl bg-gradient-to-r from-indigo-600 to-violet-600 text-white p-5 sm:p-6 flex flex-wrap items-center justify-between gap-4">
+  <div><p class="text-indigo-200 text-xs font-semibold uppercase tracking-wide">Name of the day · ${today}</p>
+  <p class="mt-1 text-2xl font-extrabold">${esc(notd.name)}</p>
+  <p class="mt-1 text-indigo-100 text-sm">${fmt(notd.total)} babies since ${notd.first_year} · peaked in ${notd.peak_year}</p></div>
+  <a href="/name/${notd.slug}" class="rounded-full bg-white text-indigo-700 font-semibold px-5 py-2 text-sm hover:bg-indigo-50">See the chart →</a>
+</section>` : ''}
 <section class="grid sm:grid-cols-2 gap-6">
   <div class="rounded-2xl bg-white border border-slate-200 p-5">
     <div class="flex items-baseline justify-between"><h2 class="font-bold text-lg">Top girl names ${END_YEAR}</h2><a href="/top/girls" class="text-sm text-indigo-600 hover:underline">All 1000 →</a></div>
