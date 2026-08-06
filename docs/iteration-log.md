@@ -384,3 +384,13 @@
 
 **回归证据**
 - /og/compare/mia-vs-zoe.png 渲染截图正常（双色图例+双行趋势）；页面 og:image 指向新端点；luna-vs-luna 等非法组合 404。
+
+## Round 37（2026-08-06，版本 22f119f3）
+**发现**
+- ①SEO/QA：/compare/a-vs-b 与 b-vs-a 内容相同但 canonical 各自独立，会作为重复内容分别被收录（P1）。
+
+**修复（全部上线）**
+- compare 路由按字母序 301 规范化（olivia-vs-emma → emma-vs-olivia）；首页入口链接同步改为规范序，避免二跳。
+
+**回归证据**
+- /compare/olivia-vs-emma 返回 301 → /compare/emma-vs-olivia；规范序请求 200。

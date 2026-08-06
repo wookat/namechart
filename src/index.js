@@ -44,7 +44,7 @@ const slugify = s => (s || '').toLowerCase().replace(/[^a-z'-]/g, '').slice(0, 4
 // Prefix search via index-friendly range scan (LIKE on a BINARY PK can't use the index
 // and D1 rejects patterns >= 50 chars).
 const NAME_COUNT = 105954; // rows in `names`; update when reimporting data
-const CACHE_VER = 36; // bump to invalidate the edge HTML cache on deploys that change rendering/data
+const CACHE_VER = 37; // bump to invalidate the edge HTML cache on deploys that change rendering/data
 // '~' (0x7E) sorts after every character allowed in slugs (a-z, apostrophe, hyphen).
 const prefixWhere = "slug >= ?1 AND slug < (?1 || '~')";
 
@@ -130,7 +130,7 @@ ${notd ? `<section class="mb-8 rounded-2xl bg-indigo-700 text-white p-5 sm:p-6 f
 <section class="mt-8 grid sm:grid-cols-3 gap-4 text-sm">
   <a href="/trending" class="rounded-xl border border-slate-200 bg-white p-4 hover:border-indigo-400"><p class="font-semibold">📈 Rising &amp; falling</p><p class="text-slate-500 mt-1">Names climbing or crashing right now.</p></a>
   <a href="/browse" class="rounded-xl border border-slate-200 bg-white p-4 hover:border-indigo-400"><p class="font-semibold">🗂 Browse everything</p><p class="text-slate-500 mt-1">A–Z, every year since 1880, decades, all 50 states.</p></a>
-  <a href="/compare/olivia-vs-emma" class="rounded-xl border border-slate-200 bg-white p-4 hover:border-indigo-400"><p class="font-semibold">⚔️ Compare names</p><p class="text-slate-500 mt-1">Two names, head-to-head on one chart.</p></a>
+  <a href="/compare/emma-vs-olivia" class="rounded-xl border border-slate-200 bg-white p-4 hover:border-indigo-400"><p class="font-semibold">⚔️ Compare names</p><p class="text-slate-500 mt-1">Two names, head-to-head on one chart.</p></a>
 </section>
 ${emailForm()}`;
   return html(c, layout({
@@ -269,6 +269,8 @@ app.get('/compare/:pair', async c => {
   const mth = c.req.param('pair').toLowerCase().match(/^([a-z'-]+)-vs-([a-z'-]+)$/);
   if (!mth) return c.redirect('/');
   if (mth[1] === mth[2]) return c.redirect(`/name/${mth[1]}`);
+  // Canonical order is alphabetical so a-vs-b and b-vs-a don't index as duplicates.
+  if (mth[1] > mth[2]) return c.redirect(`/compare/${mth[2]}-vs-${mth[1]}`, 301);
   const [a, b] = await Promise.all([getName(db, mth[1]), getName(db, mth[2])]);
   if (!a || !b) return c.redirect(a ? `/name/${mth[1]}` : b ? `/name/${mth[2]}` : '/');
   const sa = expandSeries(JSON.parse(a.series)), sb = expandSeries(JSON.parse(b.series));
