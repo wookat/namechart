@@ -44,7 +44,7 @@ const slugify = s => (s || '').toLowerCase().replace(/[^a-z'-]/g, '').slice(0, 4
 // Prefix search via index-friendly range scan (LIKE on a BINARY PK can't use the index
 // and D1 rejects patterns >= 50 chars).
 const NAME_COUNT = 105954; // rows in `names`; update when reimporting data
-const CACHE_VER = 38; // bump to invalidate the edge HTML cache on deploys that change rendering/data
+const CACHE_VER = 39; // bump to invalidate the edge HTML cache on deploys that change rendering/data
 // '~' (0x7E) sorts after every character allowed in slugs (a-z, apostrophe, hyphen).
 const prefixWhere = "slug >= ?1 AND slug < (?1 || '~')";
 
@@ -466,10 +466,13 @@ app.get('/year/:y', async c => {
   const db = c.env.DB;
   const y = Number(c.req.param('y'));
   if (!(y >= START_YEAR && y <= END_YEAR)) return c.notFound();
-  const [g, b] = await Promise.all([
+  const [g, b, prev] = await Promise.all([
     db.prepare('SELECT * FROM year_ranks WHERE year=? AND sex=? ORDER BY rank LIMIT 100').bind(y, 'F').all(),
     db.prepare('SELECT * FROM year_ranks WHERE year=? AND sex=? ORDER BY rank LIMIT 100').bind(y, 'M').all(),
+    y > START_YEAR ? db.prepare('SELECT name, sex FROM year_ranks WHERE year=? AND rank<=100').bind(y - 1).all() : Promise.resolve({ results: [] }),
   ]);
+  const prevSet = new Set(prev.results.map(r => r.sex + '|' + r.name));
+  const entrants = [...g.results, ...b.results].filter(r => prev.results.length && !prevSet.has(r.sex + '|' + r.name));
   const nav = `<div class="flex gap-2 text-sm mt-2">${y > START_YEAR ? `<a class="text-indigo-600 hover:underline" href="/year/${y - 1}">← ${y - 1}</a>` : ''}${y < END_YEAR ? `<a class="text-indigo-600 hover:underline" href="/year/${y + 1}">${y + 1} →</a>` : ''}</div>`;
   const body = `
 <h1 class="text-3xl font-extrabold">Most popular names of ${y}</h1>${nav}
@@ -477,6 +480,7 @@ app.get('/year/:y', async c => {
   <div class="rounded-2xl bg-white border border-slate-200 p-4"><h2 class="font-bold mb-2">Girls</h2>${rankTable(g.results)}</div>
   <div class="rounded-2xl bg-white border border-slate-200 p-4"><h2 class="font-bold mb-2">Boys</h2>${rankTable(b.results)}</div>
 </div>
+${entrants.length ? `<section class="mt-8"><h2 class="font-bold text-lg mb-2">New to the top 100 in ${y}</h2><p class="text-sm text-slate-500 mb-3">Names that entered the top 100 this year after ranking below it in ${y - 1}.</p><div class="flex flex-wrap gap-2 text-sm">${entrants.map(r => `<a href="/name/${r.name.toLowerCase()}" class="px-3 py-1.5 rounded-full bg-white border border-slate-200 hover:border-indigo-400">${esc(r.name)} <span class="text-slate-500">#${r.rank} ${r.sex === 'F' ? 'girls' : 'boys'}</span></a>`).join('')}</div></section>` : ''}
 ${emailForm()}`;
   return html(c, layout({ title: `Top 100 Baby Names of ${y} (Girls & Boys) | ${SITE}`, desc: `The 100 most popular girl and boy names of ${y} from official U.S. birth records.`, path: `/year/${y}`, body }));
 });
