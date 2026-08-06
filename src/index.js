@@ -44,7 +44,7 @@ const slugify = s => (s || '').toLowerCase().replace(/[^a-z'-]/g, '').slice(0, 4
 // Prefix search via index-friendly range scan (LIKE on a BINARY PK can't use the index
 // and D1 rejects patterns >= 50 chars).
 const NAME_COUNT = 105954; // rows in `names`; update when reimporting data
-const CACHE_VER = 52; // bump to invalidate the edge HTML cache on deploys that change rendering/data
+const CACHE_VER = 53; // bump to invalidate the edge HTML cache on deploys that change rendering/data
 // '~' (0x7E) sorts after every character allowed in slugs (a-z, apostrophe, hyphen).
 const prefixWhere = "slug >= ?1 AND slug < (?1 || '~')";
 
@@ -481,7 +481,17 @@ app.get('/letter/:l', async c => {
 <div class="mt-4 flex flex-wrap gap-1.5 text-sm">${'abcdefghijklmnopqrstuvwxyz'.split('').map(ch => `<a href="/letter/${ch}" class="w-8 h-8 grid place-items-center rounded-lg ${ch === l ? 'bg-indigo-600 text-white' : 'bg-white border border-slate-200 hover:border-indigo-400'}">${ch.toUpperCase()}</a>`).join('')}</div>
 <div class="mt-6 grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 gap-3">${rows.results.map(nameCard).join('')}</div>
 ${emailForm()}`;
-  return html(c, layout({ title: `Baby Names Starting With ${l.toUpperCase()} — Top 200 | ${SITE}`, desc: `The 200 most popular baby names starting with ${l.toUpperCase()}, ranked by 146 years of U.S. birth data.`, path: `/letter/${l}`, body }));
+  return html(c, layout({ title: `Baby Names Starting With ${l.toUpperCase()} — Top 200 | ${SITE}`, desc: `The 200 most popular baby names starting with ${l.toUpperCase()}, ranked by 146 years of U.S. birth data.`, path: `/letter/${l}`, ogImage: `${ORIGIN}/og/letter/${l}.png`, body }));
+});
+
+app.get('/og/letter/:file', async c => {
+  const mth = c.req.param('file').match(/^([a-z])\.png$/);
+  if (!mth) return c.notFound();
+  const l = mth[1];
+  const rows = await c.env.DB.prepare('SELECT name FROM names WHERE slug >= ? AND slug < ? ORDER BY total DESC LIMIT 12').bind(l, String.fromCharCode(l.charCodeAt(0) + 1)).all();
+  const res = await ogList(c, `Names Starting With ${l.toUpperCase()}`, rows.results.map(r => r.name));
+  res.headers.set('Cache-Control', 'public, max-age=86400, s-maxage=604800');
+  return res;
 });
 
 // ---------- year ----------
