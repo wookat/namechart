@@ -44,7 +44,7 @@ const slugify = s => (s || '').toLowerCase().replace(/[^a-z'-]/g, '').slice(0, 4
 // Prefix search via index-friendly range scan (LIKE on a BINARY PK can't use the index
 // and D1 rejects patterns >= 50 chars).
 const NAME_COUNT = 105954; // rows in `names`; update when reimporting data
-const CACHE_VER = 54; // bump to invalidate the edge HTML cache on deploys that change rendering/data
+const CACHE_VER = 55; // bump to invalidate the edge HTML cache on deploys that change rendering/data
 // '~' (0x7E) sorts after every character allowed in slugs (a-z, apostrophe, hyphen).
 const prefixWhere = "slug >= ?1 AND slug < (?1 || '~')";
 
@@ -874,7 +874,7 @@ app.get('/about', c => html(c, layout({
 <h1 class="text-3xl font-extrabold">About NameChart</h1>
 <p class="mt-4">NameChart gives every name a free, complete popularity chart — no ads, no paywall, no signup. Other sites lock trend data behind subscriptions; we believe public-domain data should stay public.</p>
 <h2 class="text-xl font-bold mt-8">Data sources</h2>
-<p class="mt-2">All national data comes from the <a class="text-indigo-600 hover:underline" href="https://www.ssa.gov/oact/babynames/">U.S. Social Security Administration</a> baby names dataset (1880–${END_YEAR}), which is in the public domain. State rankings come from the SSA state-level dataset. Names given to fewer than 5 babies of a gender in a year are excluded at the source to protect privacy.</p>
+<p class="mt-2">All national data comes from the <a class="text-indigo-600 underline" href="https://www.ssa.gov/oact/babynames/">U.S. Social Security Administration</a> baby names dataset (1880–${END_YEAR}), which is in the public domain. State rankings come from the SSA state-level dataset. Names given to fewer than 5 babies of a gender in a year are excluded at the source to protect privacy.</p>
 <p class="mt-2">Note on wording: our &ldquo;Peak year&rdquo; is the year with the <em>most babies</em> given a name. SSA&rsquo;s &ldquo;most popular year&rdquo; refers to the year a name achieved its <em>highest rank</em>, so the two can differ. Data snapshot: SSA release covering births through ${END_YEAR}.</p>
 <h2 class="text-xl font-bold mt-8">Methodology</h2>
 <ul class="mt-2 list-disc pl-5 space-y-1">
@@ -896,7 +896,7 @@ app.get('/favorites', c => html(c, layout({
   body: `<h1 class="text-3xl font-extrabold">My shortlist</h1>
 <p class="mt-2 text-slate-600">Names you save are stored only in this browser — no account, nothing sent to us.</p>
 <div id="nc-fav-list" class="mt-6 grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 gap-3"><p class="text-slate-500 col-span-full">Loading…</p></div>
-<p class="mt-6 text-sm text-slate-500">Tip: open any <a href="/top/girls" class="text-indigo-600 hover:underline">name page</a> and tap “♡ Save to shortlist”.</p>`,
+<p class="mt-6 text-sm text-slate-500">Tip: open any <a href="/top/girls" class="text-indigo-600 underline">name page</a> and tap “♡ Save to shortlist”.</p>`,
 })));
 
 app.get('/terms', c => html(c, layout({
@@ -915,7 +915,7 @@ app.get('/terms', c => html(c, layout({
 <h2 class="text-xl font-bold mt-8">Acceptable use</h2>
 <p class="mt-2 text-slate-700">You may read, link to, and share pages freely. Do not attempt to disrupt the service, bulk-scrape at a rate that degrades it, or submit email addresses you do not own.</p>
 <h2 class="text-xl font-bold mt-8">Content reuse</h2>
-<p class="mt-2 text-slate-700">The underlying SSA data is in the public domain. Etymology text in the “Meaning &amp; origin” sections is adapted from <a class="text-indigo-600 hover:underline" href="https://en.wiktionary.org/">Wiktionary</a> and is available under <a class="text-indigo-600 hover:underline" href="https://creativecommons.org/licenses/by-sa/4.0/">CC BY-SA 4.0</a>; if you reuse it, the same license applies. Our other page text, design, and derived visualizations are © Zalize; you may quote them with attribution and a link.</p>
+<p class="mt-2 text-slate-700">The underlying SSA data is in the public domain. Etymology text in the “Meaning &amp; origin” sections is adapted from <a class="text-indigo-600 underline" href="https://en.wiktionary.org/">Wiktionary</a> and is available under <a class="text-indigo-600 underline" href="https://creativecommons.org/licenses/by-sa/4.0/">CC BY-SA 4.0</a>; if you reuse it, the same license applies. Our other page text, design, and derived visualizations are © Zalize; you may quote them with attribution and a link.</p>
 <h2 class="text-xl font-bold mt-8">Changes &amp; contact</h2>
 <p class="mt-2 text-slate-700">These terms may be updated; the effective date above will change. Questions: hello@zalize.com</p>
 </article>`,

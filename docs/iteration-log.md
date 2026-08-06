@@ -994,3 +994,13 @@
 
 **回归证据**
 - D1 查询输出见本轮记录。
+
+## Round 98（2026-08-06，版本 156d4f47）
+**发现**
+- ③收尾无障碍审计：axe 全站 18 页面族扫描，/favorites、/about、/terms 各报 link-in-text-block（段落内链接无非颜色区分）。
+
+**修复（全部上线）**
+- 三处段落内链接 hover:underline → 常驻 underline。
+
+**回归证据**
+- 三页 axe 复测全 clean；其余 15 页首扫即 clean。
