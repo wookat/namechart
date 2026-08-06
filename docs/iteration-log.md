@@ -494,3 +494,13 @@
 
 **回归证据**
 - /letter/q：「561 recorded U.S. names begin with Q — 268 girls / 293 boys」；/letter/m 导语链接 Mary 与 Michael。
+
+## Round 48（2026-08-06）
+**发现**
+- ①QA 全量回归：25 条路由（含轮 46/47 新区块页面）、XSS、安全头。
+
+**修复**
+- 无缺陷：24 路由 200、/search?q=aud 302 精确命中重定向（预期行为）、XSS payload 404、CSP/HSTS 在位。
+
+**回归证据**
+- 状态码清单与响应头见本轮记录。
