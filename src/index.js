@@ -44,7 +44,7 @@ const slugify = s => (s || '').toLowerCase().replace(/[^a-z'-]/g, '').slice(0, 4
 // Prefix search via index-friendly range scan (LIKE on a BINARY PK can't use the index
 // and D1 rejects patterns >= 50 chars).
 const NAME_COUNT = 105954; // rows in `names`; update when reimporting data
-const CACHE_VER = 40; // bump to invalidate the edge HTML cache on deploys that change rendering/data
+const CACHE_VER = 41; // bump to invalidate the edge HTML cache on deploys that change rendering/data
 // '~' (0x7E) sorts after every character allowed in slugs (a-z, apostrophe, hyphen).
 const prefixWhere = "slug >= ?1 AND slug < (?1 || '~')";
 
@@ -458,7 +458,7 @@ app.get('/letter/:l', async c => {
   const topG = rows.results.find(r => r.f_total > r.m_total), topB = rows.results.find(r => r.m_total > r.f_total);
   const body = `
 <h1 class="text-3xl font-extrabold">Names starting with ${l.toUpperCase()}</h1>
-<p class="mt-2 text-slate-600">${fmt(stats.n)} recorded U.S. names begin with ${l.toUpperCase()} — ${fmt(stats.girls)} mostly given to girls, ${fmt(stats.n - stats.girls)} to boys.${topG ? ` The all-time favorites: <a class="text-indigo-600 hover:underline" href="/name/${topG.slug}">${esc(topG.name)}</a>${topB ? ` and <a class="text-indigo-600 hover:underline" href="/name/${topB.slug}">${esc(topB.name)}</a>` : ''}.` : ''} Showing the top 200 by all-time popularity.</p>
+<p class="mt-2 text-slate-600">${fmt(stats.n)} recorded U.S. names begin with ${l.toUpperCase()} — ${fmt(stats.girls)} mostly given to girls, ${fmt(stats.n - stats.girls)} to boys.${topG ? ` The all-time favorites: <a class="text-indigo-600 underline" href="/name/${topG.slug}">${esc(topG.name)}</a>${topB ? ` and <a class="text-indigo-600 underline" href="/name/${topB.slug}">${esc(topB.name)}</a>` : ''}.` : ''} Showing the top 200 by all-time popularity.</p>
 <div class="mt-4 flex flex-wrap gap-1.5 text-sm">${'abcdefghijklmnopqrstuvwxyz'.split('').map(ch => `<a href="/letter/${ch}" class="w-8 h-8 grid place-items-center rounded-lg ${ch === l ? 'bg-indigo-600 text-white' : 'bg-white border border-slate-200 hover:border-indigo-400'}">${ch.toUpperCase()}</a>`).join('')}</div>
 <div class="mt-6 grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 gap-3">${rows.results.map(nameCard).join('')}</div>
 ${emailForm()}`;
