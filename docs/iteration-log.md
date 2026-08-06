@@ -202,3 +202,14 @@
 
 **回归证据**
 - /name/luna → 「Names that mean moon」、/name/grace → 「Names that mean grace」链接实测出现。
+
+## Round 19（2026-08-06）
+**发现**
+- ⑤数据分析：日 PV 42→55 仍以内部测试为主；searches 表仅 2 条=本轮安全探针残留（已清）；订阅意向 5 条持平；自然流量未起量（收录期）。
+
+**修复/动作（已执行）**
+- IndexNow 第三批 3,216 URL 提交成功（200），本批含 16 个 /meaning/* 新页族 + 名字页第 5,000–8,000 段。
+- indexnow-submit.mjs 纳入 meaning URL；清理 2 条测试搜索词。
+
+**回归证据**
+- IndexNow API 返回 batch 0: 200 / submitted 3216 urls；searches 表清零。
