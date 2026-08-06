@@ -54,7 +54,7 @@ ${jsonld ? `<script type="application/ld+json">${JSON.stringify(jsonld)}</script
       <input name="q" placeholder="Search any name…" autocomplete="off"
         class="w-full rounded-full border border-slate-300 bg-slate-50 px-4 py-1.5 text-sm focus:outline-none focus:ring-2 focus:ring-indigo-400">
     </form>
-    <nav class="flex items-center gap-2 sm:gap-3 text-xs sm:text-sm font-medium text-slate-600">
+    <nav aria-label="Primary" class="flex items-center gap-2 sm:gap-3 text-xs sm:text-sm font-medium text-slate-600">
       <a class="hover:text-indigo-700" href="/top/girls">Girls</a>
       <a class="hover:text-indigo-700" href="/top/boys">Boys</a>
       <a class="hover:text-indigo-700" href="/trending">Trending</a>
@@ -90,11 +90,11 @@ ${jsonld ? `<script type="application/ld+json">${JSON.stringify(jsonld)}</script
     <div>
       <p class="font-semibold mb-2">More from Zalize</p>
       <ul class="space-y-1 text-slate-500">
-        ${SISTER_SITES.map(([n, u, d]) => `<li><a class="hover:text-indigo-700" href="${u}" title="${esc(d)}">${n}</a> <span class="text-slate-400">— ${esc(d)}</span></li>`).join('')}
+        ${SISTER_SITES.map(([n, u, d]) => `<li><a class="hover:text-indigo-700" href="${u}" title="${esc(d)}">${n}</a> <span class="text-slate-500">— ${esc(d)}</span></li>`).join('')}
       </ul>
     </div>
   </div>
-  <div class="border-t border-slate-100 py-4 px-4 text-center text-xs text-slate-400 space-y-1">
+  <div class="border-t border-slate-100 py-4 px-4 text-center text-xs text-slate-500 space-y-1">
     <p>© ${new Date().getFullYear()} NameChart · A Zalize project · hello@zalize.com</p>
     <p>NameChart is not affiliated with, endorsed by, or sponsored by the U.S. Social Security Administration or any government agency.</p>
   </div>
@@ -156,7 +156,7 @@ export function emailForm() {
       class="flex-1 rounded-full px-4 py-2 text-slate-800 bg-white text-sm focus:outline-none focus:ring-2 focus:ring-white">
     <button class="rounded-full bg-white text-indigo-700 font-semibold px-5 py-2 text-sm hover:bg-indigo-50">Notify me</button>
   </form>
-  <p class="mt-3 text-xs text-indigo-200">By subscribing you agree to our <a class="underline" href="/privacy">privacy policy</a>. We store only your email address and the date you signed up.</p>
+  <p class="mt-3 text-xs text-indigo-100">By subscribing you agree to our <a class="underline" href="/privacy">privacy policy</a>. We store only your email address and the date you signed up.</p>
 </section>`;
 }
 
@@ -183,7 +183,7 @@ export function nameCard(r) {
 export function rankTable(rows, { showCount = true } = {}) {
   return `<ol class="divide-y divide-slate-100">
     ${rows.map(r => `<li><a href="/name/${r.name.toLowerCase()}" class="flex items-center gap-4 px-2 py-2.5 hover:bg-indigo-50 rounded-lg">
-      <span class="w-8 text-right text-sm text-slate-400 tabular-nums">${r.rank}</span>
+      <span class="w-8 text-right text-sm text-slate-500 tabular-nums">${r.rank}</span>
       <span class="font-medium flex-1">${esc(r.name)}</span>
       ${showCount ? `<span class="text-sm text-slate-500 tabular-nums">${fmt(r.count)}</span>` : ''}
     </a></li>`).join('')}

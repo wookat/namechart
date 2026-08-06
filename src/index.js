@@ -42,7 +42,7 @@ const slugify = s => (s || '').toLowerCase().replace(/[^a-z'-]/g, '').slice(0, 4
 // Prefix search via index-friendly range scan (LIKE on a BINARY PK can't use the index
 // and D1 rejects patterns >= 50 chars).
 const NAME_COUNT = 105954; // rows in `names`; update when reimporting data
-const CACHE_VER = 10; // bump to invalidate the edge HTML cache on deploys that change rendering/data
+const CACHE_VER = 11; // bump to invalidate the edge HTML cache on deploys that change rendering/data
 // '~' (0x7E) sorts after every character allowed in slugs (a-z, apostrophe, hyphen).
 const prefixWhere = "slug >= ?1 AND slug < (?1 || '~')";
 
@@ -160,7 +160,7 @@ app.get('/name/:slug', async c => {
     ['Gender split', r.f_total && r.m_total ? `${girlPct}% girls / ${100 - girlPct}% boys` : (r.f_total ? 'All girls' : 'All boys')],
   ];
   const body = `
-<nav class="text-sm text-slate-500 mb-4"><a href="/" class="hover:text-indigo-600">Home</a> › <a href="/letter/${slug[0]}" class="hover:text-indigo-600">Names starting with ${slug[0].toUpperCase()}</a> › <span>${esc(r.name)}</span></nav>
+<nav aria-label="Breadcrumb" class="text-sm text-slate-500 mb-4"><a href="/" class="hover:text-indigo-600">Home</a> › <a href="/letter/${slug[0]}" class="hover:text-indigo-600">Names starting with ${slug[0].toUpperCase()}</a> › <span>${esc(r.name)}</span></nav>
 <div class="flex flex-wrap items-baseline gap-3">
   <h1 class="text-4xl font-extrabold tracking-tight">${esc(r.name)}</h1>
   ${unisex ? '<span class="text-sm rounded-full bg-purple-100 text-purple-700 px-3 py-1">Unisex</span>' : `<span class="text-sm rounded-full ${primary === 'girl' ? 'bg-pink-100 text-pink-700' : 'bg-blue-100 text-blue-700'} px-3 py-1">${cap(primary)} name</span>`}
@@ -168,18 +168,18 @@ app.get('/name/:slug', async c => {
 <p class="mt-2 text-slate-600 max-w-2xl">${esc(r.name)} has been given to <strong>${fmt(r.total)}</strong> babies in the U.S. since ${r.first_year}. It peaked in <strong>${r.peak_year}</strong>${rankBits.length ? ` and currently ranks <strong>${rankBits.join(' and ')}</strong> (${END_YEAR})` : ''}.</p>
 ${meaning && (meaning.etymology || meaning.ipa) ? `
 <section class="mt-6 rounded-2xl bg-white border border-slate-200 p-4 sm:p-6">
-  <h2 class="font-bold mb-2">Meaning &amp; origin${meaning.ipa ? ` <span class="font-normal text-slate-400 text-base">${esc(meaning.ipa)}</span>` : ''}</h2>
+  <h2 class="font-bold mb-2">Meaning &amp; origin${meaning.ipa ? ` <span class="font-normal text-slate-500 text-base">${esc(meaning.ipa)}</span>` : ''}</h2>
   ${meaning.etymology ? `<p class="text-slate-700">${esc(meaning.etymology)}</p>` : ''}
   ${meaning.origin ? `<p class="mt-2 text-sm text-slate-500">Origin: ${esc(meaning.origin.replace(/,\s*/g, ', '))}${meaning.diminutive_of ? ` · Short form of ${esc(meaning.diminutive_of)}` : ''}</p>` : (meaning.diminutive_of ? `<p class="mt-2 text-sm text-slate-500">Short form of ${esc(meaning.diminutive_of)}</p>` : '')}
-  <p class="mt-3 text-xs text-slate-400">Etymology adapted from <a class="underline hover:text-indigo-600" href="https://en.wiktionary.org/wiki/${encodeURIComponent(r.name)}" rel="license noopener">Wiktionary</a>, licensed <a class="underline hover:text-indigo-600" href="https://creativecommons.org/licenses/by-sa/4.0/" rel="license noopener">CC BY-SA 4.0</a>.</p>
+  <p class="mt-3 text-xs text-slate-500">Etymology adapted from <a class="underline hover:text-indigo-600" href="https://en.wiktionary.org/wiki/${encodeURIComponent(r.name)}" rel="license noopener">Wiktionary</a>, licensed <a class="underline hover:text-indigo-600" href="https://creativecommons.org/licenses/by-sa/4.0/" rel="license noopener">CC BY-SA 4.0</a>.</p>
 </section>` : ''}
 <div class="mt-6 rounded-2xl bg-white border border-slate-200 p-4 sm:p-6">
-  <h2 class="font-bold mb-2">Popularity over time <span class="font-normal text-sm text-slate-400">births per year, 1880–${END_YEAR}</span></h2>
+  <h2 class="font-bold mb-2">Popularity over time <span class="font-normal text-sm text-slate-500">births per year, 1880–${END_YEAR}</span></h2>
   ${chartSVG(series)}
   ${chartReadout(series)}
 </div>
 <div class="mt-6 grid grid-cols-2 sm:grid-cols-3 gap-3">
-  ${stats.map(([k, v]) => `<div class="rounded-xl bg-white border border-slate-200 p-4"><p class="text-xs uppercase tracking-wide text-slate-400">${k}</p><p class="font-semibold mt-1">${v}</p></div>`).join('')}
+  ${stats.map(([k, v]) => `<div class="rounded-xl bg-white border border-slate-200 p-4"><p class="text-xs uppercase tracking-wide text-slate-500">${k}</p><p class="font-semibold mt-1">${v}</p></div>`).join('')}
 </div>
 <div class="mt-6 flex flex-wrap gap-3">
   <form action="/compare" method="get" class="flex gap-2 items-center">
@@ -188,10 +188,10 @@ ${meaning && (meaning.etymology || meaning.ipa) ? `
     <button class="rounded-full border border-indigo-300 text-indigo-700 px-4 py-2 text-sm font-medium hover:bg-indigo-50">⚔️ Compare</button>
   </form>
   <button id="nc-share" class="rounded-full border border-slate-300 px-4 py-2 text-sm font-medium hover:bg-slate-100">↗ Share this chart</button>
-  <button id="nc-fav" data-slug="${slug}" data-name="${esc(r.name)}" class="rounded-full border border-rose-200 text-rose-600 px-4 py-2 text-sm font-medium hover:bg-rose-50">♡ Save to shortlist</button>
+  <button id="nc-fav" data-slug="${slug}" data-name="${esc(r.name)}" class="rounded-full border border-rose-200 text-rose-700 px-4 py-2 text-sm font-medium hover:bg-rose-50">♡ Save to shortlist</button>
 </div>
 ${variants.length ? `<section class="mt-10"><h2 class="font-bold text-lg mb-3">Spellings &amp; variants</h2><p class="text-sm text-slate-500 -mt-2 mb-3">Names one letter away from ${esc(r.name)} — alternate spellings parents actually use.</p><div class="grid grid-cols-2 sm:grid-cols-3 gap-3">${variants.map(nameCard).join('')}</div></section>` : ''}
-${famous.length ? `<section class="mt-10"><h2 class="font-bold text-lg mb-3">Famous people named ${esc(r.name)}</h2><div class="grid sm:grid-cols-2 gap-3">${famous.map(p => `<div class="rounded-xl bg-white border border-slate-200 p-4"><p class="font-semibold">${esc(p.n)}</p>${p.d ? `<p class="text-sm text-slate-500 mt-1">${esc(cap(p.d))}</p>` : ''}</div>`).join('')}</div><p class="mt-2 text-xs text-slate-400">Notability data from <a class="underline hover:text-indigo-600" href="https://www.wikidata.org/" rel="noopener">Wikidata</a> (CC0).</p></section>` : ''}
+${famous.length ? `<section class="mt-10"><h2 class="font-bold text-lg mb-3">Famous people named ${esc(r.name)}</h2><div class="grid sm:grid-cols-2 gap-3">${famous.map(p => `<div class="rounded-xl bg-white border border-slate-200 p-4"><p class="font-semibold">${esc(p.n)}</p>${p.d ? `<p class="text-sm text-slate-500 mt-1">${esc(cap(p.d))}</p>` : ''}</div>`).join('')}</div><p class="mt-2 text-xs text-slate-500">Notability data from <a class="underline hover:text-indigo-600" href="https://www.wikidata.org/" rel="noopener">Wikidata</a> (CC0).</p></section>` : ''}
 ${similar.length ? `<section class="mt-10"><h2 class="font-bold text-lg mb-3">Names with a similar vibe</h2><p class="text-sm text-slate-500 -mt-2 mb-3">Same primary gender, peaked around the same years, and roughly as common as ${esc(r.name)}.</p><div class="grid grid-cols-2 sm:grid-cols-4 gap-3">${similar.map(nameCard).join('')}</div></section>` : ''}
 <section class="mt-10"><h2 class="font-bold text-lg mb-3">FAQ</h2><div class="space-y-3">
   <div class="rounded-xl bg-white border border-slate-200 p-4"><p class="font-semibold">How popular is the name ${esc(r.name)}?</p><p class="text-sm text-slate-600 mt-1">${esc(r.name)} has been given to ${fmt(r.total)} babies in the U.S. since ${r.first_year}.${rankBits.length ? ` In ${END_YEAR} it ranked ${rankBits.join(' and ')}.` : ` It ranked below the top 1000 in ${END_YEAR}.`}</p></div>
@@ -257,7 +257,7 @@ app.get('/compare/:pair', async c => {
   </svg>`;
   const winner = a.total >= b.total ? a : b;
   const body = `
-<h1 class="text-3xl font-extrabold tracking-tight">${esc(a.name)} <span class="text-slate-400">vs</span> ${esc(b.name)}</h1>
+<h1 class="text-3xl font-extrabold tracking-tight">${esc(a.name)} <span class="text-slate-500">vs</span> ${esc(b.name)}</h1>
 <p class="mt-2 text-slate-600">All-time, <strong>${esc(winner.name)}</strong> leads: ${fmt(winner.total)} babies vs ${fmt(winner === a ? b.total : a.total)}.</p>
 <div class="mt-6 rounded-2xl bg-white border border-slate-200 p-4 sm:p-6">${svg}</div>
 <div class="mt-6 grid grid-cols-2 gap-3">
@@ -379,9 +379,9 @@ app.get('/trending', async c => {
   const rising = moves.filter(r => r.delta > 0).sort((a, b) => b.delta - a.delta).slice(0, 30);
   const falling = moves.filter(r => r.delta < 0).sort((a, b) => a.delta - b.delta).slice(0, 30);
   const list = rows => `<ol class="divide-y divide-slate-100">${rows.map(r => `<li><a href="/name/${r.name.toLowerCase()}" class="flex items-center gap-3 px-2 py-2.5 hover:bg-indigo-50 rounded-lg">
-    <span class="text-sm font-semibold tabular-nums ${r.delta > 0 ? 'text-emerald-600' : 'text-rose-600'} w-14">${r.delta > 0 ? '▲ +' + r.delta : '▼ ' + r.delta}</span>
+    <span class="text-sm font-semibold tabular-nums ${r.delta > 0 ? 'text-emerald-700' : 'text-rose-700'} w-14">${r.delta > 0 ? '▲ +' + r.delta : '▼ ' + r.delta}</span>
     <span class="font-medium flex-1">${esc(r.name)}</span>
-    <span class="text-xs text-slate-400">${r.sex === 'F' ? 'girl' : 'boy'} · now #${r.rank}</span>
+    <span class="text-xs text-slate-500">${r.sex === 'F' ? 'girl' : 'boy'} · now #${r.rank}</span>
   </a></li>`).join('')}</ol>`;
   const body = `
 <h1 class="text-3xl font-extrabold">Rising &amp; falling names</h1>
@@ -604,7 +604,7 @@ app.get('/favorites', c => html(c, layout({
   noindex: true,
   body: `<h1 class="text-3xl font-extrabold">My shortlist</h1>
 <p class="mt-2 text-slate-600">Names you save are stored only in this browser — no account, nothing sent to us.</p>
-<div id="nc-fav-list" class="mt-6 grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 gap-3"><p class="text-slate-400 col-span-full">Loading…</p></div>
+<div id="nc-fav-list" class="mt-6 grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 gap-3"><p class="text-slate-500 col-span-full">Loading…</p></div>
 <p class="mt-6 text-sm text-slate-500">Tip: open any <a href="/top/girls" class="text-indigo-600 hover:underline">name page</a> and tap “♡ Save to shortlist”.</p>`,
 })));
 

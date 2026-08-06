@@ -55,13 +55,13 @@
           var s = String(f.slug).replace(/[^a-z'-]/g, ''), n = String(f.name).replace(/[<>&"]/g, '');
           return '<div class="relative rounded-xl bg-white border border-slate-200 p-4 hover:border-indigo-400"><a href="/name/' + s + '" class="font-semibold">' + n + '</a><button data-rm="' + s + '" aria-label="Remove" class="absolute top-2 right-2 text-slate-300 hover:text-rose-500 px-1">\u00d7</button></div>';
         }).join('')
-      : '<p class="text-slate-400 col-span-full">Nothing saved yet.</p>';
+      : '<p class="text-slate-500 col-span-full">Nothing saved yet.</p>';
     list.addEventListener('click', function (e) {
       var rm = e.target.getAttribute && e.target.getAttribute('data-rm');
       if (!rm) return;
       saveFavs(favs().filter(function (f) { return f.slug !== rm; }));
       e.target.parentNode.remove();
-      if (!favs().length) list.innerHTML = '<p class="text-slate-400 col-span-full">Nothing saved yet.</p>';
+      if (!favs().length) list.innerHTML = '<p class="text-slate-500 col-span-full">Nothing saved yet.</p>';
     });
   }
 
