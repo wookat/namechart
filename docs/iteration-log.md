@@ -754,3 +754,13 @@
 
 **回归证据**
 - axe 输出见本轮记录。
+
+## Round 74（2026-08-06）
+**发现**
+- ④竞品：Behind the Name 名字页栏目对照（Meaning & History/Popularity/Related Names/Namesakes/Ratings/Name Days/Categories）。
+
+**修复/结论**
+- 我方已覆盖：含义与词源、流行度（更强：146 年曲线+州分布+频率句）、相关名（similar/siblings/variants）、名人同名。差距项均为社区型功能（用户评分/评论/投稿）与名字日（宗教历法数据），不符合本站无账号定位或缺可靠免费数据源，维持 P2 不做。本轮无代码变更。
+
+**回归证据**
+- 竞品页面栏目抓取输出见本轮记录。
