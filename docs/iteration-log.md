@@ -604,3 +604,13 @@
 
 **回归证据**
 - 6 组 fuzz 输出见本轮记录。
+
+## Round 59（2026-08-06）
+**发现**
+- ④竞品：BabyCenter 名字生成器维度对照——其筛选含 Letter/Origin/Meaning/Last name 搭配/Sibling names。我方已覆盖 gender/style/letter/meaning；差距项：姓氏搭配建议与兄弟姐妹名推荐。
+
+**修复/结论**
+- 姓氏搭配（音节/头韵启发式）列 P2 backlog：可用纯规则实现（避免头韵与尾韵冲突），但需谨慎避免伪科学表述；兄弟姐妹名可复用现有 similar-vibe 算法，列入下批候选。本轮无代码变更。
+
+**回归证据**
+- 竞品特征抓取输出见本轮记录。
