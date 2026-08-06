@@ -283,3 +283,13 @@
 
 **回归证据**
 - /name/liam 出现该区块（California #… 等），非 Top100 名字不显示；查询走 10,200 行小表，无性能风险。
+
+## Round 27（2026-08-06，版本 36af0987）
+**发现**
+- ④pSEO 覆盖：meanings 扩容至 3,289 行后，可支撑更多「Names That Mean X」页（原仅 16 词）。
+
+**修复（全部上线）**
+- MEANING_WORDS 16→34 词（新增 bright/water/ruler/victory/noble/life/earth/heaven/rose/white/wolf/lion/queen/holy/river/stone/bear/honor）；数据抽查后剔除样本过薄的 rain(2)/angel(4)，保证每页 ≥5 个真实词源命中；IndexNow 词表同步。
+
+**回归证据**
+- 新词全部 200 且词边界过滤后条数：bright 14 / queen 16 / river 26 / stone 17 等；被剔除的 rain 已 404。
