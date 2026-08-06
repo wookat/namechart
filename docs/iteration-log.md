@@ -213,3 +213,13 @@
 
 **回归证据**
 - IndexNow API 返回 batch 0: 200 / submitted 3216 urls；searches 表清零。
+
+## Round 20（2026-08-06，版本 c1ad6877）
+**发现**
+- ④分享面：/list 与 /meaning 页族的 og:image 仍是通用默认图，分享点击率弱于名字页的动态卡片。
+
+**修复（全部上线）**
+- 新增 ogList 分享卡（标题+名字胶囊+品牌），路由 /og/list/<slug>.png 与 /og/meaning/<word>.png，对应页面 og:image 已切换；beacon 白名单同步。
+
+**回归证据**
+- /og/list/vintage-girl-names.png 与 /og/meaning/moon.png 均 200 image/png（~230KB）；渲染截图检查通过；/meaning/moon og:image 指向动态图。
