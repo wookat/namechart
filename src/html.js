@@ -98,9 +98,7 @@ ${jsonld ? `<script type="application/ld+json">${JSON.stringify(jsonld)}</script
     <p>NameChart is not affiliated with, endorsed by, or sponsored by the U.S. Social Security Administration or any government agency.</p>
   </div>
 </footer>
-<script>
-(function(){try{navigator.sendBeacon('/api/beacon',JSON.stringify({p:location.pathname}))}catch(e){}})();
-</script>
+<script src="/js/app.js" defer></script>
 </body>
 </html>`;
 }
@@ -145,28 +143,7 @@ export function chartSVG(series, { width = 800, height = 280 } = {}) {
 export function chartReadout(series) {
   const { f, m } = expandSeries(series);
   const data = JSON.stringify({ s: series.s, f, m });
-  return `<div id="nc-readout" class="mt-2 text-sm text-slate-500 tabular-nums" data-series='${esc(data)}'>Hover or tap the chart to read any year.</div>
-<script>
-(function(){
-  var el=document.getElementById('nc-readout');if(!el)return;
-  var d=JSON.parse(el.dataset.series);
-  var svg=document.querySelector('#nc-hit');if(!svg)return;
-  var cur=document.getElementById('nc-cursor');
-  var box=svg.ownerSVGElement.viewBox.baseVal, hx=+svg.getAttribute('x'), hw=+svg.getAttribute('width');
-  var n=d.f.length;
-  function show(ev){
-    var r=svg.ownerSVGElement.getBoundingClientRect();
-    var cx=((ev.touches?ev.touches[0].clientX:ev.clientX)-r.left)/r.width*box.width;
-    var i=Math.round((cx-hx)/hw*(n-1)); if(i<0)i=0; if(i>n-1)i=n-1;
-    var yr=d.s+i, g=d.f[i], b=d.m[i];
-    cur.setAttribute('x1',hx+i/(n-1)*hw);cur.setAttribute('x2',hx+i/(n-1)*hw);cur.style.display='';
-    el.textContent=yr+': '+(g?g.toLocaleString()+' girls':'')+(g&&b?' \u00b7 ':'')+(b?b.toLocaleString()+' boys':'')+(!g&&!b?'no recorded births':'');
-  }
-  svg.ownerSVGElement.addEventListener('mousemove',show);
-  svg.ownerSVGElement.addEventListener('touchmove',function(e){show(e);e.preventDefault();},{passive:false});
-  svg.ownerSVGElement.addEventListener('touchstart',show);
-})();
-</script>`;
+  return `<div id="nc-readout" class="mt-2 text-sm text-slate-500 tabular-nums" data-series='${esc(data)}'>Hover or tap the chart to read any year.</div>`;
 }
 
 export function emailForm() {

@@ -26,7 +26,7 @@ app.use('*', async (c, next) => {
   c.header('Permissions-Policy', 'camera=(), microphone=(), geolocation=()');
   c.header('Strict-Transport-Security', 'max-age=31536000; includeSubDomains');
   if ((c.res.headers.get('Content-Type') || '').includes('text/html')) {
-    c.header('Content-Security-Policy', "default-src 'self'; script-src 'self' 'unsafe-inline'; style-src 'self' 'unsafe-inline'; img-src 'self' data:; connect-src 'self'; frame-ancestors 'none'; base-uri 'self'; form-action 'self'");
+    c.header('Content-Security-Policy', "default-src 'self'; script-src 'self'; style-src 'self' 'unsafe-inline'; img-src 'self' data:; connect-src 'self'; frame-ancestors 'none'; base-uri 'self'; form-action 'self'");
   }
 });
 
@@ -37,6 +37,26 @@ const htmlPrivate = (c, body, status = 200) => c.html(body, status, noStore);
 
 const SLUG_RE = /^[a-z][a-z'-]{0,39}$/;
 const slugify = s => (s || '').toLowerCase().replace(/[^a-z'-]/g, '').slice(0, 40);
+
+// Prefix search via index-friendly range scan (LIKE on a BINARY PK can't use the index
+// and D1 rejects patterns >= 50 chars).
+const NAME_COUNT = 105954; // rows in `names`; update when reimporting data
+// '~' (0x7E) sorts after every character allowed in slugs (a-z, apostrophe, hyphen).
+const prefixWhere = "slug >= ?1 AND slug < (?1 || '~')";
+
+// Edge-cache successful HTML/XML GETs so repeat traffic doesn't hit D1.
+app.use('*', async (c, next) => {
+  if (c.req.method !== 'GET') return next();
+  const url = new URL(c.req.url);
+  if (url.pathname.startsWith('/api/') || url.pathname === '/search') return next();
+  const key = new Request(url.origin + url.pathname, { method: 'GET' });
+  const hit = await caches.default.match(key);
+  if (hit) return new Response(hit.body, hit);
+  await next();
+  if (c.res.status === 200 && (c.res.headers.get('Cache-Control') || '').includes('s-maxage')) {
+    c.executionCtx.waitUntil(caches.default.put(key, c.res.clone()));
+  }
+});
 
 async function getName(db, slug) {
   if (!SLUG_RE.test(slug)) return null;
@@ -67,7 +87,7 @@ app.get('/', async c => {
   const body = `
 <section class="text-center py-10">
   <h1 class="text-3xl sm:text-5xl font-extrabold tracking-tight">Every name tells a story.<br class="hidden sm:block"> <span class="text-indigo-600">See it in one chart.</span></h1>
-  <p class="mt-4 text-slate-500 max-w-xl mx-auto">Free popularity charts, rankings and insights for ${fmt(105966)} names — from 146 years of official U.S. birth records. No ads, no paywall.</p>
+  <p class="mt-4 text-slate-500 max-w-xl mx-auto">Free popularity charts, rankings and insights for ${fmt(NAME_COUNT)} names — from 146 years of official U.S. birth records. No ads, no paywall.</p>
   <form action="/search" method="get" class="mt-6 max-w-md mx-auto flex gap-2">
     <input name="q" placeholder="Try “Olivia”, “Theodore”, “Luna”…" autocomplete="off"
       class="flex-1 min-w-0 rounded-full border border-slate-300 bg-white px-4 sm:px-5 py-3 shadow-sm focus:outline-none focus:ring-2 focus:ring-indigo-400">
@@ -96,7 +116,7 @@ app.get('/', async c => {
 ${emailForm()}`;
   return html(c, layout({
     title: `${SITE} — Baby Name Popularity Charts, 1880–${END_YEAR}`,
-    desc: `Free interactive popularity charts and rankings for 105,966 baby names from 146 years of official U.S. birth data. No ads, no paywall.`,
+    desc: `Free interactive popularity charts and rankings for ${fmt(NAME_COUNT)} baby names from 146 years of official U.S. birth data. No ads, no paywall.`,
     path: '/',
     body,
     jsonld: { '@context': 'https://schema.org', '@type': 'WebSite', name: SITE, url: ORIGIN, potentialAction: { '@type': 'SearchAction', target: `${ORIGIN}/search?q={search_term_string}`, 'query-input': 'required name=search_term_string' } },
@@ -225,7 +245,9 @@ app.get('/search', async c => {
     const exact = await getName(db, slug);
     if (exact) return c.redirect(`/name/${slug}`);
   }
-  const like = await db.prepare('SELECT slug,name,total,f_total,m_total,first_year FROM names WHERE slug LIKE ? ORDER BY total DESC LIMIT 24').bind(slug + '%').all();
+  const like = slug
+    ? await db.prepare(`SELECT slug,name,total,f_total,m_total,first_year FROM names WHERE ${prefixWhere} ORDER BY total DESC LIMIT 24`).bind(slug).all()
+    : { results: [] };
   const body = `
 <h1 class="text-2xl font-bold">Search results for “${esc(q)}”</h1>
 ${like.results.length
@@ -388,7 +410,7 @@ app.get('/browse', async c => {
 <section class="mt-6"><h2 class="font-bold mb-2">By state (${END_YEAR})</h2>
 <div class="flex flex-wrap gap-1.5 text-sm">${Object.entries(STATES).map(([s, n]) => `<a href="/state/${s.toLowerCase()}" class="px-3 py-1.5 rounded-lg bg-white border border-slate-200 hover:border-indigo-400">${n}</a>`).join('')}</div></section>
 ${emailForm()}`;
-  return html(c, layout({ title: `Browse Baby Names: A–Z, Years, Decades, States | ${SITE}`, desc: 'Browse 105,966 baby names by first letter, every year since 1880, every decade, and all 50 U.S. states.', path: '/browse', body }));
+  return html(c, layout({ title: `Browse Baby Names: A–Z, Years, Decades, States | ${SITE}`, desc: 'Browse 105,000+ baby names by first letter, every year since 1880, every decade, and all 50 U.S. states.', path: '/browse', body }));
 });
 
 // ---------- about & privacy ----------
@@ -401,6 +423,7 @@ app.get('/about', c => html(c, layout({
 <p class="mt-4">NameChart gives every name a free, complete popularity chart — no ads, no paywall, no signup. Other sites lock trend data behind subscriptions; we believe public-domain data should stay public.</p>
 <h2 class="text-xl font-bold mt-8">Data sources</h2>
 <p class="mt-2">All national data comes from the <a class="text-indigo-600 hover:underline" href="https://www.ssa.gov/oact/babynames/">U.S. Social Security Administration</a> baby names dataset (1880–${END_YEAR}), which is in the public domain. State rankings come from the SSA state-level dataset. Names given to fewer than 5 babies of a gender in a year are excluded at the source to protect privacy.</p>
+<p class="mt-2">Note on wording: our &ldquo;Peak year&rdquo; is the year with the <em>most babies</em> given a name. SSA&rsquo;s &ldquo;most popular year&rdquo; refers to the year a name achieved its <em>highest rank</em>, so the two can differ. Data snapshot: SSA release covering births through ${END_YEAR}.</p>
 <h2 class="text-xl font-bold mt-8">Methodology</h2>
 <ul class="mt-2 list-disc pl-5 space-y-1">
 <li>Charts show raw births per year, split by gender.</li>
@@ -504,8 +527,8 @@ app.post('/api/beacon', async c => {
 
 app.get('/api/search', async c => {
   const q = slugify(c.req.query('q'));
-  if (!q) return c.json({ results: [] });
-  const rows = await c.env.DB.prepare('SELECT slug,name,total FROM names WHERE slug LIKE ? ORDER BY total DESC LIMIT 8').bind(q + '%').all();
+  if (!q) return c.json({ results: [] }, 200, noStore);
+  const rows = await c.env.DB.prepare(`SELECT slug,name,total FROM names WHERE ${prefixWhere} ORDER BY total DESC LIMIT 8`).bind(q).all();
   return c.json({ results: rows.results }, 200, cache);
 });
 
@@ -513,9 +536,8 @@ app.get('/api/search', async c => {
 app.get('/robots.txt', c => c.text(`User-agent: *\nAllow: /\nDisallow: /api/\nDisallow: /search\nSitemap: ${ORIGIN}/sitemap.xml\n`, 200, cache));
 
 const SM_PAGE = 5000;
-app.get('/sitemap.xml', async c => {
-  const { total } = await c.env.DB.prepare('SELECT COUNT(*) AS total FROM names').first();
-  const nameShards = Math.ceil(total / SM_PAGE);
+app.get('/sitemap.xml', c => {
+  const nameShards = Math.ceil(NAME_COUNT / SM_PAGE);
   const shards = ['static', ...Array.from({ length: nameShards }, (_, i) => `names-${i}`)];
   return c.body(`<?xml version="1.0" encoding="UTF-8"?>
 <sitemapindex xmlns="http://www.sitemaps.org/schemas/sitemap/0.9">
