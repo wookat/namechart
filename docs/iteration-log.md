@@ -172,3 +172,13 @@
 
 **回归证据**
 - 见上（21 路由/安全头/XSS/重定向/移动端全绿）。
+
+## Round 16（2026-08-06，版本 d13ac4ed）
+**发现**
+- ⑤内容覆盖：meanings 仅覆盖 Top 6,500 候选（2,864 行），长尾名字页缺含义区块。
+
+**修复（全部上线）**
+- fetch-meanings.mjs 扩到 Top 12,000 候选并带上轮清洗规则重跑：meanings 2,864 → 3,289 行，已导入 D1 并 bump 缓存。
+
+**回归证据**
+- D1 COUNT(meanings)=3289；新覆盖长尾名（radha/hyacinth/algernon）名字页出现 Meaning & origin 区块。
