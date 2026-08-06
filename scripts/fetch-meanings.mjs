@@ -132,10 +132,21 @@ for (let i = 0; i < withEty.length; i += BATCH) {
 writeFileSync(CACHE, JSON.stringify(cache));
 
 const esc = s => `'${String(s).replace(/'/g, "''")}'`;
+// Final cleanup of expansion artifacts (tracking sup text, entities, stray file caption remnants).
+const clean = s => String(s || '')
+  .replace(/(?<=[A-Za-z\u00C0-\u024F])(?:API)+\b/g, '')
+  .replace(/&#(\d+);/g, (_, d) => String.fromCharCode(Number(d)))
+  .replace(/\[\[[^\]]*\]\]/g, '')
+  .replace(/^.{0,80}?\]\]\s*/, '')
+  .replace(/^[^A-Za-z\u00C0-\u024F]+/, '')
+  .replace(/\s+/g, ' ')
+  .trim();
 const rows = [];
 for (const n of names) {
   const c = cache[n.slug];
-  if (!c || (!c.ety && !c.ipa)) continue;
+  if (!c) continue;
+  c.ety = clean(c.ety);
+  if (!c.ety && !c.ipa) continue;
   rows.push(`(${esc(n.slug)},${esc(c.ety || '')},${esc(c.ipa || '')},${esc(c.genders || '')},${esc(c.from || '')},${esc(c.dim || '')})`);
 }
 const sql = ['CREATE TABLE IF NOT EXISTS meanings (slug TEXT PRIMARY KEY, etymology TEXT, ipa TEXT, wiktionary_gender TEXT, origin TEXT, diminutive_of TEXT);'];

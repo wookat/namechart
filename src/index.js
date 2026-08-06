@@ -41,6 +41,7 @@ const slugify = s => (s || '').toLowerCase().replace(/[^a-z'-]/g, '').slice(0, 4
 // Prefix search via index-friendly range scan (LIKE on a BINARY PK can't use the index
 // and D1 rejects patterns >= 50 chars).
 const NAME_COUNT = 105954; // rows in `names`; update when reimporting data
+const CACHE_VER = 2; // bump to invalidate the edge HTML cache on deploys that change rendering/data
 // '~' (0x7E) sorts after every character allowed in slugs (a-z, apostrophe, hyphen).
 const prefixWhere = "slug >= ?1 AND slug < (?1 || '~')";
 
@@ -49,7 +50,7 @@ app.use('*', async (c, next) => {
   if (c.req.method !== 'GET') return next();
   const url = new URL(c.req.url);
   if (url.pathname.startsWith('/api/') || url.pathname === '/search') return next();
-  const key = new Request(url.origin + url.pathname, { method: 'GET' });
+  const key = new Request(url.origin + '/__v' + CACHE_VER + url.pathname, { method: 'GET' });
   const hit = await caches.default.match(key);
   if (hit) return new Response(hit.body, hit);
   await next();
