@@ -44,7 +44,7 @@ const slugify = s => (s || '').toLowerCase().replace(/[^a-z'-]/g, '').slice(0, 4
 // Prefix search via index-friendly range scan (LIKE on a BINARY PK can't use the index
 // and D1 rejects patterns >= 50 chars).
 const NAME_COUNT = 105954; // rows in `names`; update when reimporting data
-const CACHE_VER = 22; // bump to invalidate the edge HTML cache on deploys that change rendering/data
+const CACHE_VER = 23; // bump to invalidate the edge HTML cache on deploys that change rendering/data
 // '~' (0x7E) sorts after every character allowed in slugs (a-z, apostrophe, hyphen).
 const prefixWhere = "slug >= ?1 AND slug < (?1 || '~')";
 
@@ -180,6 +180,7 @@ ${meaning && (meaning.etymology || meaning.ipa) ? `
   <h2 class="font-bold mb-2">Meaning &amp; origin${meaning.ipa ? ` <span class="font-normal text-slate-500 text-base">${esc(meaning.ipa)}</span>` : ''}</h2>
   ${meaning.etymology ? `<p class="text-slate-700">${esc(meaning.etymology)}</p>` : ''}
   ${meaning.origin ? `<p class="mt-2 text-sm text-slate-500">Origin: ${esc(meaning.origin.replace(/,\s*/g, ', '))}${meaning.diminutive_of ? ` · Short form of ${esc(meaning.diminutive_of)}` : ''}</p>` : (meaning.diminutive_of ? `<p class="mt-2 text-sm text-slate-500">Short form of ${esc(meaning.diminutive_of)}</p>` : '')}
+  ${(() => { const ws = meaning.etymology ? MEANING_WORDS.filter(w => new RegExp(`\\b${w}\\b`, 'i').test(meaning.etymology)) : []; return ws.length ? `<div class="mt-3 flex flex-wrap gap-2 text-sm">${ws.map(w => `<a href="/meaning/${w}" class="px-3 py-1 rounded-full bg-indigo-50 text-indigo-700 hover:bg-indigo-100">Names that mean ${w}</a>`).join('')}</div>` : ''; })()}
   <p class="mt-3 text-xs text-slate-500">Etymology adapted from <a class="underline hover:text-indigo-600" href="https://en.wiktionary.org/wiki/${encodeURIComponent(r.name)}" rel="license noopener">Wiktionary</a>, licensed <a class="underline hover:text-indigo-600" href="https://creativecommons.org/licenses/by-sa/4.0/" rel="license noopener">CC BY-SA 4.0</a>.</p>
 </section>` : ''}
 <div class="mt-6 rounded-2xl bg-white border border-slate-200 p-4 sm:p-6">

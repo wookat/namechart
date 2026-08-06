@@ -192,3 +192,13 @@
 
 **回归证据**
 - D1 COUNT(famous)=2574；抽查长尾名字页出现 Famous 区块。
+
+## Round 18（2026-08-06，版本 93f99238）
+**发现**
+- ②UX/内链：名字页含义区块与 /meaning/* 页族无双向内链（用户无法从名字跳到同含义列表，SEO 内链弱）。
+
+**修复（全部上线）**
+- 名字页 Meaning & origin 区块自动检测词源命中的含义词，输出「Names that mean X」胶囊链接（词边界匹配）。
+
+**回归证据**
+- /name/luna → 「Names that mean moon」、/name/grace → 「Names that mean grace」链接实测出现。
