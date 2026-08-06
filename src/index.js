@@ -42,7 +42,7 @@ const slugify = s => (s || '').toLowerCase().replace(/[^a-z'-]/g, '').slice(0, 4
 // Prefix search via index-friendly range scan (LIKE on a BINARY PK can't use the index
 // and D1 rejects patterns >= 50 chars).
 const NAME_COUNT = 105954; // rows in `names`; update when reimporting data
-const CACHE_VER = 5; // bump to invalidate the edge HTML cache on deploys that change rendering/data
+const CACHE_VER = 6; // bump to invalidate the edge HTML cache on deploys that change rendering/data
 // '~' (0x7E) sorts after every character allowed in slugs (a-z, apostrophe, hyphen).
 const prefixWhere = "slug >= ?1 AND slug < (?1 || '~')";
 
@@ -193,6 +193,11 @@ ${meaning && (meaning.etymology || meaning.ipa) ? `
 ${variants.length ? `<section class="mt-10"><h2 class="font-bold text-lg mb-3">Spellings &amp; variants</h2><p class="text-sm text-slate-500 -mt-2 mb-3">Names one letter away from ${esc(r.name)} — alternate spellings parents actually use.</p><div class="grid grid-cols-2 sm:grid-cols-3 gap-3">${variants.map(nameCard).join('')}</div></section>` : ''}
 ${famous.length ? `<section class="mt-10"><h2 class="font-bold text-lg mb-3">Famous people named ${esc(r.name)}</h2><div class="grid sm:grid-cols-2 gap-3">${famous.map(p => `<div class="rounded-xl bg-white border border-slate-200 p-4"><p class="font-semibold">${esc(p.n)}</p>${p.d ? `<p class="text-sm text-slate-500 mt-1">${esc(cap(p.d))}</p>` : ''}</div>`).join('')}</div><p class="mt-2 text-xs text-slate-400">Notability data from <a class="underline hover:text-indigo-600" href="https://www.wikidata.org/" rel="noopener">Wikidata</a> (CC0).</p></section>` : ''}
 ${similar.length ? `<section class="mt-10"><h2 class="font-bold text-lg mb-3">Names with a similar vibe</h2><p class="text-sm text-slate-500 -mt-2 mb-3">Same primary gender, peaked around the same years, and roughly as common as ${esc(r.name)}.</p><div class="grid grid-cols-2 sm:grid-cols-4 gap-3">${similar.map(nameCard).join('')}</div></section>` : ''}
+<section class="mt-10"><h2 class="font-bold text-lg mb-3">FAQ</h2><div class="space-y-3">
+  <div class="rounded-xl bg-white border border-slate-200 p-4"><p class="font-semibold">How popular is the name ${esc(r.name)}?</p><p class="text-sm text-slate-600 mt-1">${esc(r.name)} has been given to ${fmt(r.total)} babies in the U.S. since ${r.first_year}.${rankBits.length ? ` In ${END_YEAR} it ranked ${rankBits.join(' and ')}.` : ` It ranked below the top 1000 in ${END_YEAR}.`}</p></div>
+  <div class="rounded-xl bg-white border border-slate-200 p-4"><p class="font-semibold">When did the name ${esc(r.name)} peak?</p><p class="text-sm text-slate-600 mt-1">${esc(r.name)} peaked in ${r.peak_year}, when ${fmt(r.peak_count)} babies were given the name.</p></div>
+  <div class="rounded-xl bg-white border border-slate-200 p-4"><p class="font-semibold">Is ${esc(r.name)} a girl or boy name?</p><p class="text-sm text-slate-600 mt-1">${unisex ? `${esc(r.name)} is a unisex name, used for both girls and boys.` : `${esc(r.name)} is primarily a ${primary} name (${primary === 'girl' ? girlPct : 100 - girlPct}% of babies named ${esc(r.name)} are ${primary}s).`}</p></div>
+</div></section>
 ${emailForm()}`;
   return html(c, layout({
     title: `${r.name} — Name Popularity, Rank & Chart (1880–${END_YEAR}) | ${SITE}`,
@@ -200,7 +205,19 @@ ${emailForm()}`;
     path: `/name/${slug}`,
     ogImage: `${ORIGIN}/og/name/${slug}.png`,
     body,
-    jsonld: { '@context': 'https://schema.org', '@type': 'Dataset', name: `${r.name} name popularity 1880–${END_YEAR}`, description: `Births per year for the name ${r.name} in the United States.`, license: 'https://www.usa.gov/government-works', creator: { '@type': 'Organization', name: 'U.S. Social Security Administration' } },
+    jsonld: [
+      { '@context': 'https://schema.org', '@type': 'Dataset', name: `${r.name} name popularity 1880–${END_YEAR}`, description: `Births per year for the name ${r.name} in the United States.`, license: 'https://www.usa.gov/government-works', creator: { '@type': 'Organization', name: 'U.S. Social Security Administration' } },
+      { '@context': 'https://schema.org', '@type': 'BreadcrumbList', itemListElement: [
+        { '@type': 'ListItem', position: 1, name: 'Home', item: ORIGIN + '/' },
+        { '@type': 'ListItem', position: 2, name: `Names starting with ${slug[0].toUpperCase()}`, item: `${ORIGIN}/letter/${slug[0]}` },
+        { '@type': 'ListItem', position: 3, name: r.name, item: `${ORIGIN}/name/${slug}` },
+      ] },
+      { '@context': 'https://schema.org', '@type': 'FAQPage', mainEntity: [
+        { '@type': 'Question', name: `How popular is the name ${r.name}?`, acceptedAnswer: { '@type': 'Answer', text: `${r.name} has been given to ${fmt(r.total)} babies in the U.S. since ${r.first_year}.${rankBits.length ? ` In ${END_YEAR} it ranked ${rankBits.join(' and ')}.` : ` It ranked below the top 1000 in ${END_YEAR}.`}` } },
+        { '@type': 'Question', name: `When did the name ${r.name} peak?`, acceptedAnswer: { '@type': 'Answer', text: `${r.name} peaked in ${r.peak_year}, when ${fmt(r.peak_count)} babies were given the name.` } },
+        { '@type': 'Question', name: `Is ${r.name} a girl or boy name?`, acceptedAnswer: { '@type': 'Answer', text: unisex ? `${r.name} is a unisex name, used for both girls and boys.` : `${r.name} is primarily a ${primary} name (${primary === 'girl' ? girlPct : 100 - girlPct}% of babies named ${r.name} are ${primary}s).` } },
+      ] },
+    ],
   }));
 });
 
