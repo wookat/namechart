@@ -55,6 +55,10 @@ const stripWiki = s => s
   .replace(/<ref[^>]*>[\s\S]*?<\/ref>/g, '')
   .replace(/<[^>]+>/g, '')
   .replace(/&nbsp;/g, ' ')
+  .replace(/&[lr]rm;|[\u200e\u200f]/g, '')
+  .replace(/([)\]])API/g, '$1')
+  .replace(/\[Term\?\]/g, '')
+  .replace(/Lua error[\s\S]*$/, '')
   .replace(/\s+/g, ' ')
   .trim();
 

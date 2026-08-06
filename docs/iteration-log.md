@@ -149,3 +149,15 @@
 
 **回归证据**
 - /styles.css?v=2 响应 cache-control: public, max-age=31536000, immutable；页面 HTML 引用 styles.css?v=2 / app.js?v=2。
+
+## Round 14（2026-08-06，版本 052bf6a4 + CACHE_VER 20）
+**发现**
+- ③视觉走查（截图）：/meaning 卡片名字与词源文字挤在一起——gap-x-4/gap-y-1 类未编入已构建 CSS（新页面上线时未重建 Tailwind，P1）。
+- ⑤数据质量：词源文本含 Wiktionary 模板残渣——&lrm; 267 行、")API" 等 147 行、[Term?] 6 行、"Lua error…" 6 行（P1 内容质量）。
+
+**修复（全部上线）**
+- 重建 Tailwind CSS 并把资产版本升到 v=3；建立规则=新增页面类名必须重建 CSS。
+- D1 全量清洗四类残渣（joseph/patricia 等实测恢复干净文本）；fetch-meanings.mjs 同步加清洗规则防复发。
+
+**回归证据**
+- 复查截图 /meaning/moon 卡片间距正常、无 &lrm;/API 残渣；D1 残渣计数全部归零；computed columnGap=16px。
