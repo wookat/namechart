@@ -394,3 +394,13 @@
 
 **回归证据**
 - /compare/olivia-vs-emma 返回 301 → /compare/emma-vs-olivia；规范序请求 200。
+
+## Round 38（2026-08-06）
+**发现**
+- ②UX：对比/收藏/清单核心流程线上走查（含轮 37 规范化后的表单跳转）。
+
+**修复**
+- 无缺陷：compare 表单 Luna+Ivy 自动落到规范序 /compare/ivy-vs-luna；名字页收藏按钮点击即变「On your shortlist」；/favorites 正确显示已收藏名字。
+
+**回归证据**
+- Playwright 真实浏览器走查输出见本轮记录。
