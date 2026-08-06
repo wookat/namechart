@@ -44,7 +44,7 @@ const slugify = s => (s || '').toLowerCase().replace(/[^a-z'-]/g, '').slice(0, 4
 // Prefix search via index-friendly range scan (LIKE on a BINARY PK can't use the index
 // and D1 rejects patterns >= 50 chars).
 const NAME_COUNT = 105954; // rows in `names`; update when reimporting data
-const CACHE_VER = 27; // bump to invalidate the edge HTML cache on deploys that change rendering/data
+const CACHE_VER = 28; // bump to invalidate the edge HTML cache on deploys that change rendering/data
 // '~' (0x7E) sorts after every character allowed in slugs (a-z, apostrophe, hyphen).
 const prefixWhere = "slug >= ?1 AND slug < (?1 || '~')";
 
@@ -151,12 +151,13 @@ app.get('/name/:slug', async c => {
   const rankBits = [];
   if (r.latest_rank_f && r.latest_rank_f <= 1000) rankBits.push(`#${fmt(r.latest_rank_f)} for girls`);
   if (r.latest_rank_m && r.latest_rank_m <= 1000) rankBits.push(`#${fmt(r.latest_rank_m)} for boys`);
-  const [similar, meaning, famousRow, rankHist, yearTot] = await Promise.all([
+  const [similar, meaning, famousRow, rankHist, yearTot, stateRows] = await Promise.all([
     similarNames(db, r),
     db.prepare('SELECT * FROM meanings WHERE slug = ?').bind(slug).first().catch(() => null),
     db.prepare('SELECT people FROM famous WHERE slug = ?').bind(slug).first().catch(() => null),
     db.prepare('SELECT year, sex, rank FROM year_ranks WHERE name = ? AND (year % 25 = 0 OR year = ' + END_YEAR + ') ORDER BY year').bind(r.name).all().catch(() => ({ results: [] })),
     db.prepare('SELECT f, m FROM year_totals WHERE year = ?').bind(END_YEAR).first().catch(() => null),
+    db.prepare('SELECT state, sex, rank FROM state_ranks WHERE name = ? ORDER BY rank LIMIT 10').bind(r.name).all().catch(() => ({ results: [] })),
   ]);
   let famous = [];
   try { famous = famousRow ? JSON.parse(famousRow.people) : []; } catch { famous = []; }
@@ -209,6 +210,7 @@ ${meaning && (meaning.etymology || meaning.ipa) ? `
   <button id="nc-fav" data-slug="${slug}" data-name="${esc(r.name)}" class="rounded-full border border-rose-200 text-rose-700 px-4 py-2 text-sm font-medium hover:bg-rose-50">♡ Save to shortlist</button>
 </div>
 ${rankHist.results.length ? `<section class="mt-10"><h2 class="font-bold text-lg mb-3">Rank through the decades</h2><p class="text-sm text-slate-500 -mt-2 mb-3">${esc(r.name)}'s rank among U.S. ${primary} names at 25-year milestones.</p><div class="rounded-2xl bg-white border border-slate-200 p-4 overflow-x-auto"><table class="text-sm w-full"><thead><tr class="text-left text-xs uppercase tracking-wide text-slate-500"><th class="py-1 pr-4">Year</th>${rankHist.results.some(x => x.sex === 'F') ? '<th class="py-1 pr-4">Girls rank</th>' : ''}${rankHist.results.some(x => x.sex === 'M') ? '<th class="py-1">Boys rank</th>' : ''}</tr></thead><tbody>${[...new Set(rankHist.results.map(x => x.year))].map(y => { const f = rankHist.results.find(x => x.year === y && x.sex === 'F'); const m = rankHist.results.find(x => x.year === y && x.sex === 'M'); return `<tr class="border-t border-slate-100"><td class="py-1.5 pr-4 font-medium">${y}</td>${rankHist.results.some(x => x.sex === 'F') ? `<td class="py-1.5 pr-4">${f ? '#' + fmt(f.rank) : '—'}</td>` : ''}${rankHist.results.some(x => x.sex === 'M') ? `<td class="py-1.5">${m ? '#' + fmt(m.rank) : '—'}</td>` : ''}</tr>`; }).join('')}</tbody></table></div><p class="mt-2 text-xs text-slate-500">— means outside the top 1000 that year.</p></section>` : ''}
+${stateRows.results.length ? `<section class="mt-10"><h2 class="font-bold text-lg mb-3">Where ${esc(r.name)} ranks highest (${END_YEAR})</h2><p class="text-sm text-slate-500 -mt-2 mb-3">States where ${esc(r.name)} places best in the state top 100.</p><div class="flex flex-wrap gap-2 text-sm">${stateRows.results.map(s => `<a href="/state/${s.state.toLowerCase()}" class="px-3 py-1.5 rounded-full bg-white border border-slate-200 hover:border-indigo-400">${STATES[s.state] || s.state} <span class="text-slate-500">#${s.rank} ${s.sex === 'F' ? 'girls' : 'boys'}</span></a>`).join('')}</div></section>` : ''}
 ${variants.length ? `<section class="mt-10"><h2 class="font-bold text-lg mb-3">Spellings &amp; variants</h2><p class="text-sm text-slate-500 -mt-2 mb-3">Names one letter away from ${esc(r.name)} — alternate spellings parents actually use.</p><div class="grid grid-cols-2 sm:grid-cols-3 gap-3">${variants.map(nameCard).join('')}</div></section>` : ''}
 ${famous.length ? `<section class="mt-10"><h2 class="font-bold text-lg mb-3">Famous people named ${esc(r.name)}</h2><div class="grid sm:grid-cols-2 gap-3">${famous.map(p => `<div class="rounded-xl bg-white border border-slate-200 p-4"><p class="font-semibold">${esc(p.n)}</p>${p.d ? `<p class="text-sm text-slate-500 mt-1">${esc(cap(p.d))}</p>` : ''}</div>`).join('')}</div><p class="mt-2 text-xs text-slate-500">Notability data from <a class="underline hover:text-indigo-600" href="https://www.wikidata.org/" rel="noopener">Wikidata</a> (CC0).</p></section>` : ''}
 ${similar.length ? `<section class="mt-10"><h2 class="font-bold text-lg mb-3">Names with a similar vibe</h2><p class="text-sm text-slate-500 -mt-2 mb-3">Same primary gender, peaked around the same years, and roughly as common as ${esc(r.name)}.</p><div class="grid grid-cols-2 sm:grid-cols-4 gap-3">${similar.map(nameCard).join('')}</div></section>` : ''}

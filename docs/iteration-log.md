@@ -273,3 +273,13 @@
 
 **回归证据**
 - IndexNow API batch 0: 200 / submitted 3216 urls。
+
+## Round 26（2026-08-06，版本 7b98ddac）
+**发现**
+- ②内容纵深：名字页无州维度信息，state_ranks 数据（51 州×Top100）未被名字页利用（P1）。
+
+**修复（全部上线）**
+- 名字页新增「Where X ranks highest (2025)」区块：按州排名列前 10 州胶囊（链接到 /state/*），仅进入州 Top100 的名字显示。
+
+**回归证据**
+- /name/liam 出现该区块（California #… 等），非 Top100 名字不显示；查询走 10,200 行小表，无性能风险。
