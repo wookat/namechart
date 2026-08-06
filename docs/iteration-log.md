@@ -624,3 +624,13 @@
 
 **回归证据**
 - hits/subscribers 查询输出见本轮记录。
+
+## Round 61（2026-08-06，版本 003812f2）
+**发现**
+- ④竞品差距（轮 59 backlog）：缺兄弟姐妹名推荐。
+
+**修复（全部上线）**
+- 名字页新增「Sibling name ideas」区块：同年代（peak±8）+ 同热度带名字，男女分列（Sisters/Brothers 各 4），按经典建议剔除同首字母与押韵（尾 2 字母相同）候选，纯数据驱动。
+
+**回归证据**
+- /name/luna 与 /name/liam 均渲染 Sisters/Brothers 胶囊（如 Luna → Quinn 等）。

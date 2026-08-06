@@ -44,7 +44,7 @@ const slugify = s => (s || '').toLowerCase().replace(/[^a-z'-]/g, '').slice(0, 4
 // Prefix search via index-friendly range scan (LIKE on a BINARY PK can't use the index
 // and D1 rejects patterns >= 50 chars).
 const NAME_COUNT = 105954; // rows in `names`; update when reimporting data
-const CACHE_VER = 45; // bump to invalidate the edge HTML cache on deploys that change rendering/data
+const CACHE_VER = 46; // bump to invalidate the edge HTML cache on deploys that change rendering/data
 // '~' (0x7E) sorts after every character allowed in slugs (a-z, apostrophe, hyphen).
 const prefixWhere = "slug >= ?1 AND slug < (?1 || '~')";
 
@@ -78,6 +78,20 @@ async function similarNames(db, r) {
       ORDER BY ABS(total - ?) LIMIT 8`)
     .bind(r.slug, r.peak_year - 6, r.peak_year + 6, Math.round(r.total * 0.45), Math.round(r.total * 2.2), r.total).all();
   return rows.results;
+}
+
+// Sibling-name ideas: same era and popularity band, both genders, skipping names that
+// share an initial or rhyme with the base name (classic sibling-set advice).
+async function siblingNames(db, r) {
+  const rows = await db.prepare(`SELECT slug,name,total,f_total,m_total,first_year FROM names
+      WHERE slug != ? AND peak_year BETWEEN ? AND ? AND total BETWEEN ? AND ?
+      ORDER BY ABS(total - ?) LIMIT 30`)
+    .bind(r.slug, r.peak_year - 8, r.peak_year + 8, Math.round(r.total * 0.35), Math.round(r.total * 2.8), r.total).all();
+  const tail = r.slug.slice(-2);
+  const picks = rows.results.filter(s => s.slug[0] !== r.slug[0] && s.slug.slice(-2) !== tail);
+  const girls = picks.filter(s => s.f_total > s.m_total).slice(0, 4);
+  const boys = picks.filter(s => s.m_total > s.f_total).slice(0, 4);
+  return { girls, boys };
 }
 
 // ---------- home ----------
@@ -162,8 +176,9 @@ app.get('/name/:slug', async c => {
   const rankBits = [];
   if (r.latest_rank_f && r.latest_rank_f <= 1000) rankBits.push(`#${fmt(r.latest_rank_f)} for girls`);
   if (r.latest_rank_m && r.latest_rank_m <= 1000) rankBits.push(`#${fmt(r.latest_rank_m)} for boys`);
-  const [similar, meaning, famousRow, rankHist, yearTot, stateRows] = await Promise.all([
+  const [similar, sibs, meaning, famousRow, rankHist, yearTot, stateRows] = await Promise.all([
     similarNames(db, r),
+    siblingNames(db, r),
     db.prepare('SELECT * FROM meanings WHERE slug = ?').bind(slug).first().catch(() => null),
     db.prepare('SELECT people FROM famous WHERE slug = ?').bind(slug).first().catch(() => null),
     db.prepare('SELECT year, sex, rank FROM year_ranks WHERE name = ? AND (year % 25 = 0 OR year = ' + END_YEAR + ') ORDER BY year').bind(r.name).all().catch(() => ({ results: [] })),
@@ -226,6 +241,7 @@ ${variants.length ? `<section class="mt-10"><h2 class="font-bold text-lg mb-3">S
 ${famous.length ? `<section class="mt-10"><h2 class="font-bold text-lg mb-3">Famous people named ${esc(r.name)}</h2><div class="grid sm:grid-cols-2 gap-3">${famous.map(p => `<div class="rounded-xl bg-white border border-slate-200 p-4"><p class="font-semibold">${esc(p.n)}</p>${p.d ? `<p class="text-sm text-slate-500 mt-1">${esc(cap(p.d))}</p>` : ''}</div>`).join('')}</div><p class="mt-2 text-xs text-slate-500">Notability data from <a class="underline hover:text-indigo-600" href="https://www.wikidata.org/" rel="noopener">Wikidata</a> (CC0).</p></section>` : ''}
 ${similar.length ? `<section class="mt-10"><h2 class="font-bold text-lg mb-3">Names with a similar vibe</h2><p class="text-sm text-slate-500 -mt-2 mb-3">Same primary gender, peaked around the same years, and roughly as common as ${esc(r.name)}.</p><div class="grid grid-cols-2 sm:grid-cols-4 gap-3">${similar.map(nameCard).join('')}</div>
 <div class="mt-4 flex flex-wrap gap-2 text-sm">${similar.slice(0, 4).map(s => { const pair = [slug, s.slug].sort(); return `<a href="/compare/${pair[0]}-vs-${pair[1]}" class="px-3 py-1 rounded-full bg-amber-50 text-amber-800 hover:bg-amber-100">${esc(r.name)} vs ${esc(s.name)} ⚖</a>`; }).join('')}</div></section>` : ''}
+${sibs.girls.length || sibs.boys.length ? `<section class="mt-10"><h2 class="font-bold text-lg mb-3">Sibling name ideas for ${esc(r.name)}</h2><p class="text-sm text-slate-500 -mt-2 mb-3">Same era and popularity as ${esc(r.name)}, avoiding matching initials or rhymes.</p><div class="grid sm:grid-cols-2 gap-3">${sibs.girls.length ? `<div class="rounded-xl bg-white border border-slate-200 p-4"><p class="font-semibold text-sm text-pink-700 mb-2">Sisters</p><div class="flex flex-wrap gap-2 text-sm">${sibs.girls.map(s => `<a href="/name/${s.slug}" class="px-3 py-1.5 rounded-full bg-slate-50 border border-slate-200 hover:border-indigo-400">${esc(s.name)}</a>`).join('')}</div></div>` : ''}${sibs.boys.length ? `<div class="rounded-xl bg-white border border-slate-200 p-4"><p class="font-semibold text-sm text-blue-700 mb-2">Brothers</p><div class="flex flex-wrap gap-2 text-sm">${sibs.boys.map(s => `<a href="/name/${s.slug}" class="px-3 py-1.5 rounded-full bg-slate-50 border border-slate-200 hover:border-indigo-400">${esc(s.name)}</a>`).join('')}</div></div>` : ''}</div></section>` : ''}
 <section class="mt-10"><h2 class="font-bold text-lg mb-3">FAQ</h2><div class="space-y-3">
   <div class="rounded-xl bg-white border border-slate-200 p-4"><p class="font-semibold">How popular is the name ${esc(r.name)}?</p><p class="text-sm text-slate-600 mt-1">${esc(r.name)} has been given to ${fmt(r.total)} babies in the U.S. since ${r.first_year}.${rankBits.length ? ` In ${END_YEAR} it ranked ${rankBits.join(' and ')}.` : ` It ranked below the top 1000 in ${END_YEAR}.`}</p></div>
   <div class="rounded-xl bg-white border border-slate-200 p-4"><p class="font-semibold">When did the name ${esc(r.name)} peak?</p><p class="text-sm text-slate-600 mt-1">${esc(r.name)} peaked in ${r.peak_year}, when ${fmt(r.peak_count)} babies were given the name.</p></div>
