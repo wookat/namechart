@@ -484,3 +484,13 @@
 
 **回归证据**
 - /year/2000 显示 Trinity/Zoe/Jada 等新晋名；/year/1880 无上一年数据时正确不显示。
+
+## Round 47（2026-08-06，版本 feca761f）
+**发现**
+- ②内容纵深：26 个字母页开头只有一句「Top 200 by all-time popularity」，页面信息薄（P2）。
+
+**修复（全部上线）**
+- 字母页新增数据驱动导语：该字母名字总数、女/男分布、历史最受欢迎的女名/男名（带内链），全部实时来自 D1 统计（索引友好 range scan）。
+
+**回归证据**
+- /letter/q：「561 recorded U.S. names begin with Q — 268 girls / 293 boys」；/letter/m 导语链接 Mary 与 Michael。

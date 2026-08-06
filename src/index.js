@@ -44,7 +44,7 @@ const slugify = s => (s || '').toLowerCase().replace(/[^a-z'-]/g, '').slice(0, 4
 // Prefix search via index-friendly range scan (LIKE on a BINARY PK can't use the index
 // and D1 rejects patterns >= 50 chars).
 const NAME_COUNT = 105954; // rows in `names`; update when reimporting data
-const CACHE_VER = 39; // bump to invalidate the edge HTML cache on deploys that change rendering/data
+const CACHE_VER = 40; // bump to invalidate the edge HTML cache on deploys that change rendering/data
 // '~' (0x7E) sorts after every character allowed in slugs (a-z, apostrophe, hyphen).
 const prefixWhere = "slug >= ?1 AND slug < (?1 || '~')";
 
@@ -451,10 +451,14 @@ app.get('/letter/:l', async c => {
   const db = c.env.DB;
   const l = c.req.param('l').toLowerCase();
   if (!/^[a-z]$/.test(l)) return c.notFound();
-  const rows = await db.prepare('SELECT slug,name,total,f_total,m_total,first_year FROM names WHERE slug LIKE ? ORDER BY total DESC LIMIT 200').bind(l + '%').all();
+  const [rows, stats] = await Promise.all([
+    db.prepare('SELECT slug,name,total,f_total,m_total,first_year FROM names WHERE slug LIKE ? ORDER BY total DESC LIMIT 200').bind(l + '%').all(),
+    db.prepare(`SELECT COUNT(*) n, SUM(CASE WHEN f_total > m_total THEN 1 ELSE 0 END) girls FROM names WHERE ${prefixWhere}`).bind(l).first(),
+  ]);
+  const topG = rows.results.find(r => r.f_total > r.m_total), topB = rows.results.find(r => r.m_total > r.f_total);
   const body = `
 <h1 class="text-3xl font-extrabold">Names starting with ${l.toUpperCase()}</h1>
-<p class="mt-2 text-slate-600">Top 200 by all-time popularity.</p>
+<p class="mt-2 text-slate-600">${fmt(stats.n)} recorded U.S. names begin with ${l.toUpperCase()} — ${fmt(stats.girls)} mostly given to girls, ${fmt(stats.n - stats.girls)} to boys.${topG ? ` The all-time favorites: <a class="text-indigo-600 hover:underline" href="/name/${topG.slug}">${esc(topG.name)}</a>${topB ? ` and <a class="text-indigo-600 hover:underline" href="/name/${topB.slug}">${esc(topB.name)}</a>` : ''}.` : ''} Showing the top 200 by all-time popularity.</p>
 <div class="mt-4 flex flex-wrap gap-1.5 text-sm">${'abcdefghijklmnopqrstuvwxyz'.split('').map(ch => `<a href="/letter/${ch}" class="w-8 h-8 grid place-items-center rounded-lg ${ch === l ? 'bg-indigo-600 text-white' : 'bg-white border border-slate-200 hover:border-indigo-400'}">${ch.toUpperCase()}</a>`).join('')}</div>
 <div class="mt-6 grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 gap-3">${rows.results.map(nameCard).join('')}</div>
 ${emailForm()}`;
