@@ -98,3 +98,13 @@
 
 **回归证据**
 - 首页渲染 "Curated lists" 与 6 个 /list/ 链接；新响应头 cache-control: public, max-age=3600, s-maxage=3600；UX 流程 5 项全过。
+
+## Round 9（2026-08-06，版本 e166af72）
+**发现**
+- ①QA 边界扫描：/name/JOSE、/name/María、/name/mary%20jane 等非规范 URL 返回 200 正文（canonical 虽正确，但存在重复内容 URL 面，SEO P1）；其余 17 项边界（撇号/连字符名、无效年份/州/年代、空搜索、XSS 查询）行为全部正确。
+
+**修复（全部上线）**
+- /name/:slug 对非规范 slug 301 重定向到规范 URL（/name/JOSE → /name/jose）。
+
+**回归证据**
+- workers.dev 实测 /name/María → 301 /name/mara、/name/JOSE → 301 /name/jose；规范 URL 仍 200；自定义域旧 200 为存量边缘缓存（≤24h 自然过期，新 s-maxage=3600 后窗口收敛）。

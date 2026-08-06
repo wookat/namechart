@@ -44,7 +44,7 @@ const slugify = s => (s || '').toLowerCase().replace(/[^a-z'-]/g, '').slice(0, 4
 // Prefix search via index-friendly range scan (LIKE on a BINARY PK can't use the index
 // and D1 rejects patterns >= 50 chars).
 const NAME_COUNT = 105954; // rows in `names`; update when reimporting data
-const CACHE_VER = 14; // bump to invalidate the edge HTML cache on deploys that change rendering/data
+const CACHE_VER = 15; // bump to invalidate the edge HTML cache on deploys that change rendering/data
 // '~' (0x7E) sorts after every character allowed in slugs (a-z, apostrophe, hyphen).
 const prefixWhere = "slug >= ?1 AND slug < (?1 || '~')";
 
@@ -134,7 +134,9 @@ ${emailForm()}`;
 // ---------- name page ----------
 app.get('/name/:slug', async c => {
   const db = c.env.DB;
-  const slug = slugify(c.req.param('slug'));
+  const raw = c.req.param('slug');
+  const slug = slugify(raw);
+  if (slug && raw !== slug) return c.redirect(`/name/${slug}`, 301);
   const r = await getName(db, slug);
   if (!r) return html(c, layout({ title: 'Name not found — ' + SITE, desc: 'Name not found', path: '/name/', noindex: true, body: `<div class="text-center py-20"><h1 class="text-2xl font-bold">We don't have data for “${esc(cap(slug))}” yet</h1><p class="mt-2 text-slate-500">It may have fewer than 5 births in any year — the data source only includes names with 5+ births.</p><a href="/" class="inline-block mt-6 text-indigo-600 hover:underline">← Back to search</a></div>` }), 404);
   const series = JSON.parse(r.series);
