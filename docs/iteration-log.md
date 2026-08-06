@@ -824,3 +824,13 @@
 
 **回归证据**
 - hits/subscribers 查询输出见本轮记录。
+
+## Round 81（2026-08-06，版本 7e0b2c52）
+**发现**
+- ④SEO：年份/年代/州页（212 页）缺 ItemList 结构化数据（榜单/含义页已有）。
+
+**修复（全部上线）**
+- 三类页面加 ItemList JSON-LD（男女 Top10 各含名字+URL）。
+
+**回归证据**
+- /year/1995、/decade/1990s、/state/tx 均输出 "@type":"ItemList"。
