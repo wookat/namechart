@@ -161,3 +161,14 @@
 
 **回归证据**
 - 复查截图 /meaning/moon 卡片间距正常、无 &lrm;/API 残渣；D1 残渣计数全部归零；computed columnGap=16px。
+
+## Round 15（2026-08-06，版本 d058e856）
+**发现**
+- ①QA 全量回归（10 次部署后的巩固轮）：21 条路由全部 200；安全头（HSTS/CSP/XCTO/XFO/Referrer/Permissions）齐全；XSS 路径 404、搜索反射 0；http→301；beacon 同源 204；8 页移动端 375px 溢出 0。
+- 唯一控制台报错=zone 级 Cloudflare Insights 注入被我们 CSP 拦截（预期行为，关闭权归老板待办）。
+
+**修复**
+- 无新缺陷，本轮为回归巩固轮。
+
+**回归证据**
+- 见上（21 路由/安全头/XSS/重定向/移动端全绿）。
