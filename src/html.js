@@ -59,6 +59,7 @@ ${jsonld ? `<script type="application/ld+json">${JSON.stringify(jsonld)}</script
       <a class="hover:text-indigo-700" href="/top/girls">Girls</a>
       <a class="hover:text-indigo-700" href="/top/boys">Boys</a>
       <a class="hover:text-indigo-700" href="/trending">Trending</a>
+      <a class="hover:text-indigo-700 hidden sm:inline" href="/generator">Generator</a>
       <a class="hover:text-indigo-700" href="/browse">Browse</a>
     </nav>
   </div>
