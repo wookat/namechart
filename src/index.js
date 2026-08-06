@@ -44,7 +44,7 @@ const slugify = s => (s || '').toLowerCase().replace(/[^a-z'-]/g, '').slice(0, 4
 // Prefix search via index-friendly range scan (LIKE on a BINARY PK can't use the index
 // and D1 rejects patterns >= 50 chars).
 const NAME_COUNT = 105954; // rows in `names`; update when reimporting data
-const CACHE_VER = 43; // bump to invalidate the edge HTML cache on deploys that change rendering/data
+const CACHE_VER = 45; // bump to invalidate the edge HTML cache on deploys that change rendering/data
 // '~' (0x7E) sorts after every character allowed in slugs (a-z, apostrophe, hyphen).
 const prefixWhere = "slug >= ?1 AND slug < (?1 || '~')";
 
@@ -660,20 +660,35 @@ app.get('/generator', async c => {
   const sexQ = c.req.query('sex') === 'boy' ? 'M' : c.req.query('sex') === 'girl' ? 'F' : null;
   const letter = /^[a-z]$/.test(c.req.query('letter') || '') ? c.req.query('letter') : null;
   const style = ['popular', 'vintage', 'uncommon'].includes(c.req.query('style')) ? c.req.query('style') : 'popular';
-  const hasQuery = sexQ || letter || c.req.query('style');
+  const mean = MEANING_WORDS.includes(c.req.query('mean')) ? c.req.query('mean') : null;
+  const hasQuery = sexQ || letter || c.req.query('style') || mean;
   let results = [];
   if (hasQuery) {
-    const rankCap = style === 'popular' ? 200 : style === 'vintage' ? 500 : 1000;
-    const yr = style === 'vintage' ? END_YEAR - 100 : END_YEAR;
-    const sexes = sexQ ? [sexQ] : ['F', 'M'];
-    const cands = [];
-    for (const s of sexes) {
-      const rows = await db.prepare('SELECT name, rank FROM year_ranks WHERE year=? AND sex=? AND rank<=? ORDER BY rank').bind(yr, s, rankCap).all();
-      cands.push(...rows.results.map(r => r.name));
+    let slugs;
+    if (mean) {
+      // Meaning names are often outside the current top ranks, so draw from the whole
+      // meanings table instead of the rank-capped pool.
+      const cand = await db.prepare(`SELECT m.slug, m.etymology, n.f_total, n.m_total FROM meanings m
+          JOIN names n ON n.slug = m.slug WHERE m.etymology LIKE ? ORDER BY n.total DESC LIMIT 400`).bind(`%${mean}%`).all();
+      const re = new RegExp(`\\b${mean}\\b`, 'i');
+      slugs = cand.results
+        .filter(r => re.test(r.etymology))
+        .filter(r => !sexQ || (sexQ === 'F' ? r.f_total > r.m_total : r.m_total > r.f_total))
+        .map(r => r.slug);
+      if (letter) slugs = slugs.filter(s => s.startsWith(letter));
+    } else {
+      const rankCap = style === 'popular' ? 200 : style === 'vintage' ? 500 : 1000;
+      const yr = style === 'vintage' ? END_YEAR - 100 : END_YEAR;
+      const sexes = sexQ ? [sexQ] : ['F', 'M'];
+      const cands = [];
+      for (const s of sexes) {
+        const rows = await db.prepare('SELECT name, rank FROM year_ranks WHERE year=? AND sex=? AND rank<=? ORDER BY rank').bind(yr, s, rankCap).all();
+        cands.push(...rows.results.map(r => r.name));
+      }
+      slugs = [...new Set(cands.map(n => n.toLowerCase()))];
+      if (letter) slugs = slugs.filter(s => s.startsWith(letter));
+      if (style === 'uncommon') slugs = slugs.slice(Math.floor(slugs.length / 2));
     }
-    let slugs = [...new Set(cands.map(n => n.toLowerCase()))];
-    if (letter) slugs = slugs.filter(s => s.startsWith(letter));
-    if (style === 'uncommon') slugs = slugs.slice(Math.floor(slugs.length / 2));
     // Fisher-Yates shuffle for a fresh set on every visit
     for (let i = slugs.length - 1; i > 0; i--) { const j = Math.floor(Math.random() * (i + 1)); [slugs[i], slugs[j]] = [slugs[j], slugs[i]]; }
     results = await namesBySlugs(db, slugs.slice(0, 12));
@@ -700,6 +715,11 @@ app.get('/generator', async c => {
     <select id="gen-letter" name="letter" class="rounded-lg border border-slate-300 px-3 py-1.5 text-sm bg-white">
       <option value="">Any letter</option>
       ${'abcdefghijklmnopqrstuvwxyz'.split('').map(ch => `<option value="${ch}"${ch === letter ? ' selected' : ''}>${ch.toUpperCase()}</option>`).join('')}
+    </select>
+    <label class="text-sm font-semibold" for="gen-mean">Meaning</label>
+    <select id="gen-mean" name="mean" class="rounded-lg border border-slate-300 px-3 py-1.5 text-sm bg-white">
+      <option value="">Any meaning</option>
+      ${[...MEANING_WORDS].sort().map(w => `<option value="${w}"${w === mean ? ' selected' : ''}>${cap(w)}</option>`).join('')}
     </select>
     <button class="rounded-full bg-indigo-600 text-white px-6 py-2 text-sm font-semibold hover:bg-indigo-700">Generate names</button>
   </div>
