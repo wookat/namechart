@@ -184,9 +184,9 @@ export function nameCard(r) {
 export function rankTable(rows, { showCount = true } = {}) {
   return `<ol class="divide-y divide-slate-100">
     ${rows.map(r => `<li><a href="/name/${r.name.toLowerCase()}" class="flex items-center gap-4 px-2 py-2.5 hover:bg-indigo-50 rounded-lg">
-      <span class="w-8 text-right text-sm text-slate-500 tabular-nums">${r.rank}</span>
+      <span class="w-8 text-right text-sm text-slate-600 tabular-nums">${r.rank}</span>
       <span class="font-medium flex-1">${esc(r.name)}</span>
-      ${showCount ? `<span class="text-sm text-slate-500 tabular-nums">${fmt(r.count)}</span>` : ''}
+      ${showCount ? `<span class="text-sm text-slate-600 tabular-nums">${fmt(r.count)}</span>` : ''}
     </a></li>`).join('')}
   </ol>`;
 }

@@ -844,3 +844,13 @@
 
 **回归证据**
 - 解析输出见本轮记录。
+
+## Round 83（2026-08-06，版本 858fb46b）
+**发现**
+- ③无障碍：axe 扫 6 页面族，/top/girls 报 1 处 color-contrast（排名表计数 slate-500，处于 4.5:1 临界）。
+
+**修复（全部上线）**
+- rankTable 排名与计数文字 slate-500 → slate-600（全站排名表统一受益）。
+
+**回归证据**
+- /top/girls、/top/boys、/year/1995 axe 复测全 clean。
