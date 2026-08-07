@@ -1221,3 +1221,16 @@
 - 性能无劣化：TTFB 76–78ms，首页 HTML 24.9KB。
 
 **小结**：视觉/品牌/特效专项 R117–121 交付——调研（5 站）→ 暖色设计体系 → 0KB CSS 动效（reduced-motion 降级）→ 品牌素材（logo/favicon/OG/空状态）→ 全量回归。
+
+## Round 122（2026-08-08）
+**发现**（数据/五驱动复盘）
+- 第一方数据：8-06 145PV/43 路径、8-07 34PV（仍以内部为主）；搜索词仅 XSS 探针（均 0 结果、已安全处理）；订阅 5。
+- /meaning 页族仅 34 词，词源库 3,723 条中还有 20 个词有 ≥5 个词边界命中（sky/pearl/black/red/prince/beloved/gracious/glory/dark/song/dawn/forest/valley/meadow/bird/spring/crown/pure/deer/mountain），可数据自证扩容。
+
+## Round 123（2026-08-08）
+**修复/上线**
+- MEANING_WORDS 34→54 词（全部 ≥5 词边界命中，如 gracious 29 名、queen 16 名），自动进 sitemap/浏览页/名字页内链/OG 卡。
+- IndexNow 第 12 批 3,258 URL（200，含 20 个新 meaning 页 + 下一段名字页）。
+- CACHE_VER 66，版本 56a66758。20 个新页 page/og 全 200。
+
+**证据**：/meaning/gracious 29 个名字条目；docs/iteration-log.md 本节。

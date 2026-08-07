@@ -44,7 +44,7 @@ const slugify = s => (s || '').toLowerCase().replace(/[^a-z'-]/g, '').slice(0, 4
 // Prefix search via index-friendly range scan (LIKE on a BINARY PK can't use the index
 // and D1 rejects patterns >= 50 chars).
 const NAME_COUNT = 105954; // rows in `names`; update when reimporting data
-const CACHE_VER = 65; // bump to invalidate the edge HTML cache on deploys that change rendering/data
+const CACHE_VER = 66; // bump to invalidate the edge HTML cache on deploys that change rendering/data
 // '~' (0x7E) sorts after every character allowed in slugs (a-z, apostrophe, hyphen).
 const prefixWhere = "slug >= ?1 AND slug < (?1 || '~')";
 
@@ -830,7 +830,8 @@ ${emailForm()}`;
 
 // ---------- names by meaning ----------
 const MEANING_WORDS = ['moon', 'light', 'star', 'love', 'strong', 'fire', 'peace', 'king', 'flower', 'sea', 'beautiful', 'brave', 'joy', 'grace', 'warrior', 'night',
-  'bright', 'water', 'ruler', 'victory', 'noble', 'life', 'earth', 'heaven', 'rose', 'white', 'wolf', 'lion', 'queen', 'holy', 'river', 'stone', 'bear', 'honor'];
+  'bright', 'water', 'ruler', 'victory', 'noble', 'life', 'earth', 'heaven', 'rose', 'white', 'wolf', 'lion', 'queen', 'holy', 'river', 'stone', 'bear', 'honor',
+  'sky', 'pearl', 'black', 'red', 'prince', 'beloved', 'gracious', 'glory', 'dark', 'song', 'dawn', 'forest', 'valley', 'meadow', 'bird', 'spring', 'crown', 'pure', 'deer', 'mountain'];
 
 app.get('/meaning/:word', async c => {
   const word = c.req.param('word').toLowerCase();
