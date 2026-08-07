@@ -1178,3 +1178,26 @@
 
 **产出**
 - docs/visual-research.md：调研矩阵 + 准父母定制方向（暖底色+柔和渐变+衬线斜体强调+统计计数行+CSS/SVG 克制动效）+ 技术栈结论（不迁移框架，CSS 动效 0KB 方案）。
+
+## Round 118（2026-08-08）
+**发现**
+- 复刻方向落地（复刻→优化原则）：Nameberry 渐变 hero+斜体强调+统计计数行、The Bump 暖底色，均自研重制非拷贝。
+- 换暖底色后 slate-500 正文对比度降至临界（axe serious）。
+
+**修复/上线**
+- 首页 hero：柔和 rose→indigo→amber 渐变洗底、衬线斜体强调句、4 项统计计数行（105,954 names / 146 yrs / 51 states / $0 beta）。
+- 全站底色 slate-50 → 暖白 #faf8f5（准父母亲切基调）；名字卡 card-lift 悬浮微升。
+- 对比度修复：全站 text-slate-500 → text-slate-600（45 处）。
+- 版本 ae5ad7b9 → ce432985，ASSET_VER 9 / CACHE_VER 64。
+
+**证据**：线上 axe（/、/name/luna、/top/girls、/generator、/pricing）全 clean；375px 无横向溢出。
+
+## Round 119（2026-08-08）
+**发现**
+- 竞品图表均为静态（Nameberry/The Bump 无入场动效）；业界最佳（Linear）用入场动效但克制。可反超点：趋势线绘入动画。
+
+**修复/上线**
+- 趋势图 SVG stroke-dasharray 绘入动画（1.4s，纯 CSS 0KB，无 JS 库、CSP 不变）；hero 标题 fade-up。
+- prefers-reduced-motion: reduce 全量降级（实测 emulateMedia 下 dashoffset=0、无动画）。
+
+**证据**：/name/luna 实测 stroke-dasharray 3000px 动画生效；reduced-motion 下 0px 直出。

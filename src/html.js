@@ -3,7 +3,7 @@
 export const SITE = 'NameChart';
 export const ORIGIN = 'https://namechart.zalize.com';
 export const START_YEAR = 1880;
-export const ASSET_VER = 8; // bump when styles.css or app.js change, to bust the long asset cache
+export const ASSET_VER = 9; // bump when styles.css or app.js change, to bust the long asset cache
 export const END_YEAR = 2025;
 
 export const SISTER_SITES = [
@@ -44,7 +44,7 @@ ${noindex ? '<meta name="robots" content="noindex">' : ''}
 <link rel="stylesheet" href="/styles.css?v=${ASSET_VER}">
 ${jsonld ? `<script type="application/ld+json">${JSON.stringify(jsonld)}</script>` : ''}
 </head>
-<body class="min-h-screen bg-slate-50 text-slate-800 antialiased flex flex-col">
+<body class="min-h-screen bg-[#faf8f5] text-slate-800 antialiased flex flex-col">
 <header class="bg-white border-b border-slate-200 sticky top-0 z-20">
   <div class="max-w-5xl mx-auto px-4 h-14 flex items-center justify-between gap-3">
     <a href="/" class="flex items-center gap-2 font-bold text-lg text-indigo-700 shrink-0">
@@ -74,11 +74,11 @@ ${jsonld ? `<script type="application/ld+json">${JSON.stringify(jsonld)}</script
   <div class="max-w-5xl mx-auto px-4 py-8 grid gap-8 sm:grid-cols-3 text-sm">
     <div>
       <p class="font-bold text-indigo-700 mb-2">NameChart</p>
-      <p class="text-slate-500">146 years of baby name popularity. Currently in Beta — all features open as a free trial. Data: U.S. Social Security Administration (public domain), 1880–2025.</p>
+      <p class="text-slate-600">146 years of baby name popularity. Currently in Beta — all features open as a free trial. Data: U.S. Social Security Administration (public domain), 1880–2025.</p>
     </div>
     <div>
       <p class="font-semibold mb-2">Explore</p>
-      <ul class="space-y-1 text-slate-500">
+      <ul class="space-y-1 text-slate-600">
         <li><a class="hover:text-indigo-700" href="/top/girls">Top girl names</a></li>
         <li><a class="hover:text-indigo-700" href="/top/boys">Top boy names</a></li>
         <li><a class="hover:text-indigo-700" href="/unisex">Unisex names</a></li>
@@ -93,12 +93,12 @@ ${jsonld ? `<script type="application/ld+json">${JSON.stringify(jsonld)}</script
     </div>
     <div>
       <p class="font-semibold mb-2">More from Zalize</p>
-      <ul class="space-y-1 text-slate-500">
-        ${SISTER_SITES.map(([n, u, d]) => `<li><a class="hover:text-indigo-700" href="${u}" title="${esc(d)}">${n}</a> <span class="text-slate-500">— ${esc(d)}</span></li>`).join('')}
+      <ul class="space-y-1 text-slate-600">
+        ${SISTER_SITES.map(([n, u, d]) => `<li><a class="hover:text-indigo-700" href="${u}" title="${esc(d)}">${n}</a> <span class="text-slate-600">— ${esc(d)}</span></li>`).join('')}
       </ul>
     </div>
   </div>
-  <div class="border-t border-slate-100 py-4 px-4 text-center text-xs text-slate-500 space-y-1">
+  <div class="border-t border-slate-100 py-4 px-4 text-center text-xs text-slate-600 space-y-1">
     <p>© ${new Date().getFullYear()} NameChart · A Zalize project · hello@zalize.com</p>
     <p>NameChart is not affiliated with, endorsed by, or sponsored by the U.S. Social Security Administration or any government agency.</p>
   </div>
@@ -132,7 +132,7 @@ export function chartSVG(series, { width = 800, height = 280 } = {}) {
   const yTicks = [0, 0.25, 0.5, 0.75, 1].map(t => Math.round(max * t));
   const xTicks = [];
   for (let yr = Math.ceil(START_YEAR / 20) * 20; yr <= END_YEAR; yr += 20) xTicks.push(yr);
-  return `<svg viewBox="0 0 ${width} ${height}" class="w-full h-auto" role="img" aria-label="Births per year chart">
+  return `<svg viewBox="0 0 ${width} ${height}" class="w-full h-auto chart-draw" role="img" aria-label="Births per year chart">
   ${yTicks.map(v => `<g><line x1="${padL}" x2="${width - padR}" y1="${y(v)}" y2="${y(v)}" stroke="#e2e8f0" stroke-width="1"/><text x="${padL - 6}" y="${y(v) + 4}" text-anchor="end" font-size="10" fill="#94a3b8">${v >= 1000 ? (v / 1000) + 'k' : v}</text></g>`).join('')}
   ${xTicks.map(yr => `<text x="${x(yr - START_YEAR)}" y="${height - 8}" text-anchor="middle" font-size="10" fill="#94a3b8">${yr}</text>`).join('')}
   ${hasF ? `<path d="${line(f)}" fill="none" stroke="#db2777" stroke-width="2"/>` : ''}
@@ -148,7 +148,7 @@ export function chartSVG(series, { width = 800, height = 280 } = {}) {
 export function chartReadout(series) {
   const { f, m } = expandSeries(series);
   const data = JSON.stringify({ s: series.s, f, m });
-  return `<div id="nc-readout" class="mt-2 text-sm text-slate-500 tabular-nums" data-series='${esc(data)}'>Hover or tap the chart to read any year.</div>`;
+  return `<div id="nc-readout" class="mt-2 text-sm text-slate-600 tabular-nums" data-series='${esc(data)}'>Hover or tap the chart to read any year.</div>`;
 }
 
 export function emailForm() {
@@ -178,9 +178,9 @@ export function nameCard(r) {
     : g === 'girl'
       ? '<span class="text-xs rounded-full bg-pink-100 text-pink-700 px-2 py-0.5">girl</span>'
       : '<span class="text-xs rounded-full bg-blue-100 text-blue-700 px-2 py-0.5">boy</span>';
-  return `<a href="/name/${r.slug}" class="block rounded-xl bg-white border border-slate-200 p-4 hover:border-indigo-400 hover:shadow-sm transition">
+  return `<a href="/name/${r.slug}" class="card-lift block rounded-xl bg-white border border-slate-200 p-4 hover:border-indigo-300">
     <div class="flex items-center justify-between gap-2"><span class="font-semibold">${esc(r.name)}</span>${sexBadge}</div>
-    <p class="text-xs text-slate-500 mt-1">${fmt(r.total)} babies since ${r.first_year}</p>
+    <p class="text-xs text-slate-600 mt-1">${fmt(r.total)} babies since ${r.first_year}</p>
   </a>`;
 }
 

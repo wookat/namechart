@@ -1,5 +1,7 @@
 # Visual/Brand Research (Round 117, 2026-08-08)
 
+> Principle (boss directive): replicate competitor experience/structure fully first, then optimize on top. Boundaries: no anti-bot bypass, no copyrighted asset/code lifting — closed-source sites are studied for structure and rebuilt from scratch; open-source is used per license. Sources and evidence recorded here.
+
 Real-browser screenshots + computed-style/source inspection. Evidence in session shots (vis-*.png).
 
 ## Competitors
