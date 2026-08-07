@@ -30,11 +30,12 @@ Already have: charts, ranks, milestones table, 1-in-N, similar names, spelling v
 
 ## Gap list (prioritized)
 
-- P1-a: **Year-over-year rank change** on name page hero (The Bump) — computable from year_ranks; quick win.
-- P1-b: **"Names with the same meaning"** section on name pages (The Bump/MomJunction) — reuse meanings table + /meaning pages.
-- P1-c: **Design/typography uplift** (Nameberry) — display-serif H1s, larger body rhythm on content pages; system font stack (CSP-safe, no external fonts).
-- P2-a: Nicknames & diminutives — needs defensible source (Wiktionary diminutive fields); do only with real data.
-- P2-b: Pronunciation (respell/IPA) — Wiktionary IPA where available.
+- P1-a: **Year-over-year rank change** on name page hero (The Bump) — DONE Round 103.
+- P1-b: **"Names with the same meaning"** section on name pages (The Bump/MomJunction) — DONE Round 103.
+- P1-c: **Design/typography uplift** (Nameberry) — DONE Round 104 (display-serif H1s, system stack, CSP-safe).
+- P1-d: **Related-lists chips** on name pages (Nameberry "name on lists") — DONE Round 111.
+- P2-a: Nicknames & diminutives — evaluated Round 110: only ~104 defensible Wiktionary relations; too thin, deferred pending a better public source.
+- P2-b: Pronunciation (respell/IPA) — expanded Round 106: IPA coverage now 2,023 names (top-20k sweep).
 - P2-c: Rhyming names — computable by ending; low value, later.
 - P2-d: International rankings (forebears/Nameberry world) — needs non-US official sources; unchanged backlog.
 - Skip: name days (no defensible source), zodiac/acrostic/QR (gimmick), community ratings (no-account positioning).
