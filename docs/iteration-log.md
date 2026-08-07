@@ -1044,3 +1044,15 @@
 
 **回归证据**
 - 调研文档入库。
+
+## Round 103（2026-08-06，版本 5d8a55d9）
+**发现**
+- ④差距清单 P1-a/P1-b（取 The Bump/MomJunction 之长）：名字页缺「同比排名变化」与「同含义名字」区块。
+
+**修复（全部上线）**
+- Rank 卡新增 vs 上一年变化（▲/▼/=，双性别独立计算，超 1000 名不显示）。
+- 新增「Names with the same meaning」区块，链到对应 /meaning/* 页族（词边界匹配，仅有词源证据时显示）。
+- 技术栈评估结论（差距清单同文档）：竞品 Next.js/Astro/WP HTML 180–400KB，我方 Workers+Hono+D1 3–78KB、TTFB 78–220ms，为该内容形态下 Cloudflare 约束内最优，不迁移框架。
+
+**回归证据**
+- /name/luna 显示同含义区块与 vs 2024 变化；/name/liam 显示 (= vs 2024)。

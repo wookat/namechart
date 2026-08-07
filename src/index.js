@@ -44,7 +44,7 @@ const slugify = s => (s || '').toLowerCase().replace(/[^a-z'-]/g, '').slice(0, 4
 // Prefix search via index-friendly range scan (LIKE on a BINARY PK can't use the index
 // and D1 rejects patterns >= 50 chars).
 const NAME_COUNT = 105954; // rows in `names`; update when reimporting data
-const CACHE_VER = 56; // bump to invalidate the edge HTML cache on deploys that change rendering/data
+const CACHE_VER = 57; // bump to invalidate the edge HTML cache on deploys that change rendering/data
 // '~' (0x7E) sorts after every character allowed in slugs (a-z, apostrophe, hyphen).
 const prefixWhere = "slug >= ?1 AND slug < (?1 || '~')";
 
@@ -179,7 +179,7 @@ app.get('/name/:slug', async c => {
   const rankBits = [];
   if (r.latest_rank_f && r.latest_rank_f <= 1000) rankBits.push(`#${fmt(r.latest_rank_f)} for girls`);
   if (r.latest_rank_m && r.latest_rank_m <= 1000) rankBits.push(`#${fmt(r.latest_rank_m)} for boys`);
-  const [similar, sibs, meaning, famousRow, rankHist, yearTot, stateRows] = await Promise.all([
+  const [similar, sibs, meaning, famousRow, rankHist, yearTot, stateRows, prevRanks] = await Promise.all([
     similarNames(db, r),
     siblingNames(db, r),
     db.prepare('SELECT * FROM meanings WHERE slug = ?').bind(slug).first().catch(() => null),
@@ -187,14 +187,26 @@ app.get('/name/:slug', async c => {
     db.prepare('SELECT year, sex, rank FROM year_ranks WHERE name = ? AND (year % 25 = 0 OR year = ' + END_YEAR + ') ORDER BY year').bind(r.name).all().catch(() => ({ results: [] })),
     db.prepare('SELECT f, m FROM year_totals WHERE year = ?').bind(END_YEAR).first().catch(() => null),
     db.prepare('SELECT state, sex, rank FROM state_ranks WHERE name = ? ORDER BY rank LIMIT 10').bind(r.name).all().catch(() => ({ results: [] })),
+    db.prepare('SELECT sex, rank FROM year_ranks WHERE name = ? AND year = ?').bind(r.name, END_YEAR - 1).all().catch(() => ({ results: [] })),
   ]);
+  const yoy = sex => {
+    const cur = sex === 'F' ? r.latest_rank_f : r.latest_rank_m;
+    const prev = prevRanks.results.find(x => x.sex === sex)?.rank;
+    if (!cur || cur > 1000 || !prev || prev > 1000) return '';
+    const d = prev - cur;
+    if (d === 0) return ` <span class="text-slate-500">(= vs ${END_YEAR - 1})</span>`;
+    return d > 0 ? ` <span class="text-emerald-700">(▲ ${d} vs ${END_YEAR - 1})</span>` : ` <span class="text-rose-700">(▼ ${-d} vs ${END_YEAR - 1})</span>`;
+  };
   let famous = [];
   try { famous = famousRow ? JSON.parse(famousRow.people) : []; } catch { famous = []; }
   const variants = (await fuzzyMatches(db, slug, 1)).filter(v => v.slug !== slug).slice(0, 6);
   const stats = [
     ['Total babies', fmt(r.total)],
     ['Peak year', `${r.peak_year} (${fmt(r.peak_count)} babies)`],
-    [`Rank in ${END_YEAR}`, rankBits.length ? rankBits.join(' · ') : 'Below top 1000'],
+    [`Rank in ${END_YEAR}`, rankBits.length ? [
+      r.latest_rank_f && r.latest_rank_f <= 1000 ? `#${fmt(r.latest_rank_f)} for girls${yoy('F')}` : null,
+      r.latest_rank_m && r.latest_rank_m <= 1000 ? `#${fmt(r.latest_rank_m)} for boys${yoy('M')}` : null,
+    ].filter(Boolean).join(' · ') : 'Below top 1000'],
     ['First recorded', String(r.first_year)],
     ['10-year trend', trendPct === null ? 'New / returning' : `${trendPct > 0 ? '▲ +' : trendPct < 0 ? '▼ ' : ''}${trendPct}%`],
     ['Gender split', r.f_total && r.m_total ? `${girlPct}% girls / ${100 - girlPct}% boys` : (r.f_total ? 'All girls' : 'All boys')],
@@ -245,6 +257,12 @@ ${famous.length ? `<section class="mt-10"><h2 class="font-bold text-lg mb-3">Fam
 ${similar.length ? `<section class="mt-10"><h2 class="font-bold text-lg mb-3">Names with a similar vibe</h2><p class="text-sm text-slate-500 -mt-2 mb-3">Same primary gender, peaked around the same years, and roughly as common as ${esc(r.name)}.</p><div class="grid grid-cols-2 sm:grid-cols-4 gap-3">${similar.map(nameCard).join('')}</div>
 <div class="mt-4 flex flex-wrap gap-2 text-sm">${similar.slice(0, 4).map(s => { const pair = [slug, s.slug].sort(); return `<a href="/compare/${pair[0]}-vs-${pair[1]}" class="px-3 py-1 rounded-full bg-amber-50 text-amber-800 hover:bg-amber-100">${esc(r.name)} vs ${esc(s.name)} ⚖</a>`; }).join('')}</div></section>` : ''}
 ${sibs.girls.length || sibs.boys.length ? `<section class="mt-10"><h2 class="font-bold text-lg mb-3">Sibling name ideas for ${esc(r.name)}</h2><p class="text-sm text-slate-500 -mt-2 mb-3">Same era and popularity as ${esc(r.name)}, avoiding matching initials or rhymes.</p><div class="grid sm:grid-cols-2 gap-3">${sibs.girls.length ? `<div class="rounded-xl bg-white border border-slate-200 p-4"><p class="font-semibold text-sm text-pink-700 mb-2">Sisters</p><div class="flex flex-wrap gap-2 text-sm">${sibs.girls.map(s => `<a href="/name/${s.slug}" class="px-3 py-1.5 rounded-full bg-slate-50 border border-slate-200 hover:border-indigo-400">${esc(s.name)}</a>`).join('')}</div></div>` : ''}${sibs.boys.length ? `<div class="rounded-xl bg-white border border-slate-200 p-4"><p class="font-semibold text-sm text-blue-700 mb-2">Brothers</p><div class="flex flex-wrap gap-2 text-sm">${sibs.boys.map(s => `<a href="/name/${s.slug}" class="px-3 py-1.5 rounded-full bg-slate-50 border border-slate-200 hover:border-indigo-400">${esc(s.name)}</a>`).join('')}</div></div>` : ''}</div></section>` : ''}
+${(() => {
+  if (!meaning || !meaning.etymology) return '';
+  const ws = MEANING_WORDS.filter(w => new RegExp(`\\b${w}\\b`, 'i').test(meaning.etymology));
+  if (!ws.length) return '';
+  return `<section class="mt-10"><h2 class="font-bold text-lg mb-3">Names with the same meaning</h2><p class="text-sm text-slate-500 -mt-2 mb-3">${esc(r.name)} relates to ${ws.map(w => `“${w}”`).join(', ')} — explore other names with documented ties to the same meaning.</p><div class="flex flex-wrap gap-2 text-sm">${ws.map(w => `<a href="/meaning/${w}" class="px-3 py-1.5 rounded-full bg-white border border-slate-200 hover:border-indigo-400">Names that mean ${w} →</a>`).join('')}</div></section>`;
+})()}
 <section class="mt-10"><h2 class="font-bold text-lg mb-3">FAQ</h2><div class="space-y-3">
   <div class="rounded-xl bg-white border border-slate-200 p-4"><p class="font-semibold">How popular is the name ${esc(r.name)}?</p><p class="text-sm text-slate-600 mt-1">${esc(r.name)} has been given to ${fmt(r.total)} babies in the U.S. since ${r.first_year}.${rankBits.length ? ` In ${END_YEAR} it ranked ${rankBits.join(' and ')}.` : ` It ranked below the top 1000 in ${END_YEAR}.`}</p></div>
   <div class="rounded-xl bg-white border border-slate-200 p-4"><p class="font-semibold">When did the name ${esc(r.name)} peak?</p><p class="text-sm text-slate-600 mt-1">${esc(r.name)} peaked in ${r.peak_year}, when ${fmt(r.peak_count)} babies were given the name.</p></div>
