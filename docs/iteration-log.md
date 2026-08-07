@@ -1022,3 +1022,15 @@
 
 **下一步**
 - 转入低强度运营（docs/ops-weekly.md：周报/IndexNow 补量/数据周更/冒烟），被唤醒即执行；数据大更新窗口 2027-05（SSA 2026 数据）。
+
+## Round 101（2026-08-06，版本 eeb52fb8）——新专项启动：多竞品调研+优点整合复刻
+**发现**
+- 老板新指令：产品不再标注「免费」，改「Beta 免费试用」口径并展示付费方案（不实际收费）。
+
+**修复（全部上线）**
+- 新增 /pricing 页：Basic $0 / Plus $4/mo / Pro $9/mo 三档，全部标注「Included in the Beta trial」，明示 Beta 期不收款、收费前会明确公告。
+- 全站文案改口径：首页 hero/描述、页脚（去 free forever）、About、Terms（Beta 试用条款）；导航 logo 加 Beta 徽章；页脚加 Pricing 链接。
+- /pricing 入 sitemap static 与 beacon 白名单；Tailwind CSS 重建（ASSET_VER 7）。
+
+**回归证据**
+- /pricing 200、三档卡渲染、axe clean、375px 零溢出；sitemap 含 /pricing。

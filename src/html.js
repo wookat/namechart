@@ -3,7 +3,7 @@
 export const SITE = 'NameChart';
 export const ORIGIN = 'https://namechart.zalize.com';
 export const START_YEAR = 1880;
-export const ASSET_VER = 6; // bump when styles.css or app.js change, to bust the long asset cache
+export const ASSET_VER = 7; // bump when styles.css or app.js change, to bust the long asset cache
 export const END_YEAR = 2025;
 
 export const SISTER_SITES = [
@@ -49,7 +49,7 @@ ${jsonld ? `<script type="application/ld+json">${JSON.stringify(jsonld)}</script
   <div class="max-w-5xl mx-auto px-4 h-14 flex items-center justify-between gap-3">
     <a href="/" class="flex items-center gap-2 font-bold text-lg text-indigo-700 shrink-0">
       <svg width="22" height="22" viewBox="0 0 24 24" fill="none" aria-hidden="true"><path d="M3 20 9 9l4 6 5-11 3 16" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"/></svg>
-      NameChart
+      NameChart <span class="align-middle ml-1 rounded-full bg-indigo-100 text-indigo-700 text-[10px] font-bold px-2 py-0.5 uppercase tracking-wide">Beta</span>
     </a>
     <form action="/search" method="get" class="flex-1 max-w-xs hidden sm:block" role="search">
       <input name="q" placeholder="Search any name…" autocomplete="off"
@@ -73,7 +73,7 @@ ${jsonld ? `<script type="application/ld+json">${JSON.stringify(jsonld)}</script
   <div class="max-w-5xl mx-auto px-4 py-8 grid gap-8 sm:grid-cols-3 text-sm">
     <div>
       <p class="font-bold text-indigo-700 mb-2">NameChart</p>
-      <p class="text-slate-500">146 years of baby name popularity, free forever. Data: U.S. Social Security Administration (public domain), 1880–2025.</p>
+      <p class="text-slate-500">146 years of baby name popularity. Currently in Beta — all features open as a free trial. Data: U.S. Social Security Administration (public domain), 1880–2025.</p>
     </div>
     <div>
       <p class="font-semibold mb-2">Explore</p>
@@ -84,6 +84,7 @@ ${jsonld ? `<script type="application/ld+json">${JSON.stringify(jsonld)}</script
         <li><a class="hover:text-indigo-700" href="/trending">Rising &amp; falling</a></li>
         <li><a class="hover:text-indigo-700" href="/browse">Browse A–Z, years, decades, states</a></li>
         <li><a class="hover:text-indigo-700" href="/favorites">My shortlist</a></li>
+        <li><a class="hover:text-indigo-700" href="/pricing">Pricing</a></li>
         <li><a class="hover:text-indigo-700" href="/about">About &amp; data sources</a></li>
         <li><a class="hover:text-indigo-700" href="/privacy">Privacy</a></li>
         <li><a class="hover:text-indigo-700" href="/terms">Terms</a></li>

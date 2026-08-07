@@ -44,7 +44,7 @@ const slugify = s => (s || '').toLowerCase().replace(/[^a-z'-]/g, '').slice(0, 4
 // Prefix search via index-friendly range scan (LIKE on a BINARY PK can't use the index
 // and D1 rejects patterns >= 50 chars).
 const NAME_COUNT = 105954; // rows in `names`; update when reimporting data
-const CACHE_VER = 55; // bump to invalidate the edge HTML cache on deploys that change rendering/data
+const CACHE_VER = 56; // bump to invalidate the edge HTML cache on deploys that change rendering/data
 // '~' (0x7E) sorts after every character allowed in slugs (a-z, apostrophe, hyphen).
 const prefixWhere = "slug >= ?1 AND slug < (?1 || '~')";
 
@@ -110,7 +110,7 @@ app.get('/', async c => {
   const body = `
 <section class="text-center py-10">
   <h1 class="text-3xl sm:text-5xl font-extrabold tracking-tight">Every name tells a story.<br class="hidden sm:block"> <span class="text-indigo-600">See it in one chart.</span></h1>
-  <p class="mt-4 text-slate-500 max-w-xl mx-auto">Free popularity charts, rankings and insights for ${fmt(NAME_COUNT)} names — from 146 years of official U.S. birth records. No ads, no paywall.</p>
+  <p class="mt-4 text-slate-500 max-w-xl mx-auto">Popularity charts, rankings and insights for ${fmt(NAME_COUNT)} names — from 146 years of official U.S. birth records. Every feature is open during our free Beta.</p>
   <form action="/search" method="get" class="mt-6 max-w-md mx-auto flex gap-2">
     <input name="q" placeholder="Try “Olivia”, “Theodore”, “Luna”…" autocomplete="off"
       class="flex-1 min-w-0 rounded-full border border-slate-300 bg-white px-4 sm:px-5 py-3 shadow-sm focus:outline-none focus:ring-2 focus:ring-indigo-400">
@@ -149,7 +149,7 @@ ${notd ? `<section class="mb-8 rounded-2xl bg-indigo-700 text-white p-5 sm:p-6 f
 ${emailForm()}`;
   return html(c, layout({
     title: `${SITE} — Baby Name Popularity Charts, 1880–${END_YEAR}`,
-    desc: `Free interactive popularity charts and rankings for ${fmt(NAME_COUNT)} baby names from 146 years of official U.S. birth data. No ads, no paywall.`,
+    desc: `Interactive popularity charts and rankings for ${fmt(NAME_COUNT)} baby names from 146 years of official U.S. birth data. All features open during the free Beta.`,
     path: '/',
     body,
     jsonld: { '@context': 'https://schema.org', '@type': 'WebSite', name: SITE, url: ORIGIN, potentialAction: { '@type': 'SearchAction', target: `${ORIGIN}/search?q={search_term_string}`, 'query-input': 'required name=search_term_string' } },
@@ -865,14 +865,42 @@ ${emailForm()}`;
   return html(c, layout({ title: `Browse Baby Names: A–Z, Years, Decades, States | ${SITE}`, desc: 'Browse 105,000+ baby names by first letter, every year since 1880, every decade, and all 50 U.S. states.', path: '/browse', body }));
 });
 
+// ---------- pricing ----------
+app.get('/pricing', c => {
+  const tier = (name, price, per, tagline, feats, highlight) => `
+  <div class="rounded-2xl border ${highlight ? 'border-indigo-400 ring-2 ring-indigo-100 bg-white' : 'border-slate-200 bg-white'} p-6 flex flex-col">
+    <p class="font-bold text-lg">${name}</p>
+    <p class="mt-1 text-sm text-slate-500">${tagline}</p>
+    <p class="mt-4"><span class="text-3xl font-extrabold">${price}</span><span class="text-slate-500 text-sm"> ${per}</span></p>
+    <ul class="mt-4 space-y-2 text-sm text-slate-700 flex-1">${feats.map(f => `<li class="flex gap-2"><span aria-hidden="true" class="text-indigo-600">✓</span>${f}</li>`).join('')}</ul>
+    <span class="mt-6 inline-block text-center rounded-full ${highlight ? 'bg-indigo-600 text-white' : 'bg-slate-100 text-slate-700'} font-semibold px-5 py-2.5 text-sm">Included in the Beta trial</span>
+  </div>`;
+  return html(c, layout({
+    title: `Pricing | ${SITE}`,
+    desc: `NameChart pricing: planned Plus and Pro plans, all currently open as a free Beta trial. No payment is collected during the Beta.`,
+    path: '/pricing',
+    body: `<div class="max-w-3xl mx-auto text-center">
+<h1 class="text-3xl font-extrabold">Pricing</h1>
+<p class="mt-3 text-slate-600">NameChart is in <strong>Beta</strong>. Everything below — including every planned paid feature — is open to everyone as a <strong>free trial</strong>. We don't collect payment yet, and we'll announce clearly before billing ever begins.</p>
+</div>
+<div class="mt-8 grid sm:grid-cols-3 gap-4 max-w-4xl mx-auto">
+${tier('Basic', '$0', 'forever', 'The essentials, always free', ['Name search &amp; full 146-year charts', 'Top 1000 rankings by year', 'Meanings, origins &amp; famous namesakes', 'Private in-browser shortlist'])}
+${tier('Plus', '$4', '/ month', 'For active name hunters', ['Everything in Basic', 'Name generator with style &amp; meaning filters', 'Head-to-head name comparisons', 'State-by-state popularity maps', 'Sibling name suggestions'], true)}
+${tier('Pro', '$9', '/ month', 'For pros &amp; data lovers', ['Everything in Plus', 'Decade &amp; trend deep-dives', 'Curated &amp; themed name lists', 'Early access to new tools', 'Priority email support'])}
+</div>
+<p class="mt-8 text-center text-sm text-slate-500 max-w-2xl mx-auto">During the Beta free trial there is no account, no credit card, and no feature gate. Prices shown are our planned plans and may change before launch.</p>
+${emailForm()}`,
+  }));
+});
+
 // ---------- about & privacy ----------
 app.get('/about', c => html(c, layout({
   title: `About ${SITE} — Data Sources & Methodology`,
-  desc: 'NameChart charts 146 years of official U.S. baby name data — free, no ads, no paywall. Data sources and methodology.',
+  desc: 'NameChart charts 146 years of official U.S. baby name data — no ads, all features open during the free Beta. Data sources and methodology.',
   path: '/about',
   body: `<article class="prose-custom max-w-2xl">
 <h1 class="text-3xl font-extrabold">About NameChart</h1>
-<p class="mt-4">NameChart gives every name a free, complete popularity chart — no ads, no paywall, no signup. Other sites lock trend data behind subscriptions; we believe public-domain data should stay public.</p>
+<p class="mt-4">NameChart gives every name a complete popularity chart — no ads, no signup. We're currently in Beta: every feature, including everything in our planned paid plans, is open as a free trial. See <a class="text-indigo-600 underline" href="/pricing">pricing</a> for what's planned.</p>
 <h2 class="text-xl font-bold mt-8">Data sources</h2>
 <p class="mt-2">All national data comes from the <a class="text-indigo-600 underline" href="https://www.ssa.gov/oact/babynames/">U.S. Social Security Administration</a> baby names dataset (1880–${END_YEAR}), which is in the public domain. State rankings come from the SSA state-level dataset. Names given to fewer than 5 babies of a gender in a year are excluded at the source to protect privacy.</p>
 <p class="mt-2">Note on wording: our &ldquo;Peak year&rdquo; is the year with the <em>most babies</em> given a name. SSA&rsquo;s &ldquo;most popular year&rdquo; refers to the year a name achieved its <em>highest rank</em>, so the two can differ. Data snapshot: SSA release covering births through ${END_YEAR}.</p>
@@ -901,13 +929,13 @@ app.get('/favorites', c => html(c, layout({
 
 app.get('/terms', c => html(c, layout({
   title: `Terms of Use | ${SITE}`,
-  desc: 'NameChart terms of use: free informational service, data accuracy disclaimer, acceptable use, and no government affiliation.',
+  desc: 'NameChart terms of use: informational service, Beta trial terms, data accuracy disclaimer, acceptable use, and no government affiliation.',
   path: '/terms',
   body: `<article class="max-w-2xl">
 <h1 class="text-3xl font-extrabold">Terms of Use</h1>
 <p class="mt-4 text-slate-600">Effective: August 2026 · Operator: Zalize (hello@zalize.com)</p>
 <h2 class="text-xl font-bold mt-8">The service</h2>
-<p class="mt-2 text-slate-700">NameChart is a free, informational website presenting statistics derived from public-domain U.S. Social Security Administration data. There is no paid plan, no account, and no purchase.</p>
+<p class="mt-2 text-slate-700">NameChart is an informational website presenting statistics derived from public-domain U.S. Social Security Administration data. The service is currently in Beta: all features are available as a free trial, no account is required, and no payment is collected. Paid plans are published on the <a class="text-indigo-600 underline" href="/pricing">pricing page</a> but are not yet for sale; we will announce clearly before any billing begins.</p>
 <h2 class="text-xl font-bold mt-8">No affiliation with the government</h2>
 <p class="mt-2 text-slate-700">NameChart is not affiliated with, endorsed by, or sponsored by the U.S. Social Security Administration or any other government agency. “Social Security Administration” is used only to identify the source of the underlying data.</p>
 <h2 class="text-xl font-bold mt-8">Accuracy</h2>
@@ -980,7 +1008,7 @@ app.post('/api/beacon', async c => {
   try {
     const { p } = await c.req.json();
     // Only count paths that match a real route family, so forged beacons can't pollute analytics.
-    const VALID_PATH = /^\/$|^\/(name|letter|year|state|compare|list|meaning|og\/name|og\/list|og\/meaning|og\/compare)\/[a-z0-9'.-]{1,60}$|^\/decade\/\d{4}s$|^\/(top\/girls|top\/boys|trending|unisex|browse|about|privacy|terms|favorites|search|generator)$/;
+    const VALID_PATH = /^\/$|^\/(name|letter|year|state|compare|list|meaning|og\/name|og\/list|og\/meaning|og\/compare)\/[a-z0-9'.-]{1,60}$|^\/decade\/\d{4}s$|^\/(top\/girls|top\/boys|trending|unisex|browse|about|privacy|terms|favorites|search|generator|pricing)$/;
     if (typeof p === 'string' && p.length <= 100 && VALID_PATH.test(p) && !(await overQuota(c, 'beacon', 300))) {
       const day = new Date().toISOString().slice(0, 10);
       await c.env.DB.prepare('INSERT INTO hits (day, path, count) VALUES (?, ?, 1) ON CONFLICT(day, path) DO UPDATE SET count = count + 1')
@@ -1014,7 +1042,7 @@ app.get('/sitemaps/:shard{.+\\.xml}', async c => {
   const shard = c.req.param('shard').replace(/\.xml$/, '');
   const urls = [];
   if (shard === 'static') {
-    urls.push('/', '/top/girls', '/top/boys', '/unisex', '/trending', '/browse', '/generator', '/about', '/privacy', '/terms');
+    urls.push('/', '/top/girls', '/top/boys', '/unisex', '/trending', '/browse', '/generator', '/pricing', '/about', '/privacy', '/terms');
     for (const s of Object.keys(LISTS)) urls.push(`/list/${s}`);
     for (const w of MEANING_WORDS) urls.push(`/meaning/${w}`);
     for (const ch of 'abcdefghijklmnopqrstuvwxyz') urls.push(`/letter/${ch}`);
