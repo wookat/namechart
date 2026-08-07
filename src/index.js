@@ -44,7 +44,7 @@ const slugify = s => (s || '').toLowerCase().replace(/[^a-z'-]/g, '').slice(0, 4
 // Prefix search via index-friendly range scan (LIKE on a BINARY PK can't use the index
 // and D1 rejects patterns >= 50 chars).
 const NAME_COUNT = 105954; // rows in `names`; update when reimporting data
-const CACHE_VER = 60; // bump to invalidate the edge HTML cache on deploys that change rendering/data
+const CACHE_VER = 61; // bump to invalidate the edge HTML cache on deploys that change rendering/data
 // '~' (0x7E) sorts after every character allowed in slugs (a-z, apostrophe, hyphen).
 const prefixWhere = "slug >= ?1 AND slug < (?1 || '~')";
 
@@ -110,7 +110,7 @@ app.get('/', async c => {
   const body = `
 <section class="text-center py-10">
   <h1 class="font-display text-4xl sm:text-6xl font-bold tracking-tight">Every name tells a story.<br class="hidden sm:block"> <span class="text-indigo-600">See it in one chart.</span></h1>
-  <p class="mt-4 text-slate-500 max-w-xl mx-auto">Popularity charts, rankings and insights for ${fmt(NAME_COUNT)} names — from 146 years of official U.S. birth records. Every feature is open during our free Beta.</p>
+  <p class="mt-4 text-slate-500 max-w-xl mx-auto">Popularity charts, rankings and insights for ${fmt(NAME_COUNT)} names — from 146 years of official U.S. birth records. Every feature is open during our free Beta — <a class="text-indigo-600 underline" href="/pricing">see plans</a>.</p>
   <form action="/search" method="get" class="mt-6 max-w-md mx-auto flex gap-2">
     <input name="q" placeholder="Try “Olivia”, “Theodore”, “Luna”…" autocomplete="off"
       class="flex-1 min-w-0 rounded-full border border-slate-300 bg-white px-4 sm:px-5 py-3 shadow-sm focus:outline-none focus:ring-2 focus:ring-indigo-400">

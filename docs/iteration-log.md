@@ -1133,3 +1133,13 @@
 
 **回归证据**
 - /name/mia→Short girl names、/name/alexandria→Long girl names、/name/mildred 正确无匹配（当前排名不在 500 内）。
+
+## Round 112（2026-08-07，版本 c4d4730b）
+**发现**
+- ①CTA 改造补强：pricing 仅页脚可达，主导航与首页 hero 无入口。
+
+**修复（全部上线）**
+- 主导航（sm+）加 Pricing；首页 hero 加「see plans」内链。
+
+**回归证据**
+- 首页 3 处 /pricing 链接（导航/hero/页脚）线上确认。
