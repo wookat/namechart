@@ -1056,3 +1056,14 @@
 
 **回归证据**
 - /name/luna 显示同含义区块与 vs 2024 变化；/name/liam 显示 (= vs 2024)。
+
+## Round 104（2026-08-06，版本 a3c7643d）
+**发现**
+- ③设计对标 P1-c（取 Nameberry 之长）：竞品用大号衬线展示标题（DM Serif Display 100px）建立品牌感，我方全站无衬线略平。
+
+**修复（全部上线）**
+- 新增 font-display 主题字体（Iowan Old Style/Palatino/Georgia 系统衬线栈，CSP 内零外部字体请求）。
+- 全站 21 处 H1 升级为衬线展示字体并放大（首页 60px、名字页 48px、内容页 36px+）。
+
+**回归证据**
+- 三页 computed font 确认衬线生效；axe 全 clean；375px 零溢出；截图存档。

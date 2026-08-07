@@ -1,2 +1,6 @@
 @import "tailwindcss";
 @source "./**/*.js";
+
+@theme {
+  --font-display: "Iowan Old Style", "Palatino Linotype", Palatino, Georgia, "Times New Roman", serif;
+}

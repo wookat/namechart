@@ -44,7 +44,7 @@ const slugify = s => (s || '').toLowerCase().replace(/[^a-z'-]/g, '').slice(0, 4
 // Prefix search via index-friendly range scan (LIKE on a BINARY PK can't use the index
 // and D1 rejects patterns >= 50 chars).
 const NAME_COUNT = 105954; // rows in `names`; update when reimporting data
-const CACHE_VER = 57; // bump to invalidate the edge HTML cache on deploys that change rendering/data
+const CACHE_VER = 58; // bump to invalidate the edge HTML cache on deploys that change rendering/data
 // '~' (0x7E) sorts after every character allowed in slugs (a-z, apostrophe, hyphen).
 const prefixWhere = "slug >= ?1 AND slug < (?1 || '~')";
 
@@ -109,7 +109,7 @@ app.get('/', async c => {
   ]);
   const body = `
 <section class="text-center py-10">
-  <h1 class="text-3xl sm:text-5xl font-extrabold tracking-tight">Every name tells a story.<br class="hidden sm:block"> <span class="text-indigo-600">See it in one chart.</span></h1>
+  <h1 class="font-display text-4xl sm:text-6xl font-bold tracking-tight">Every name tells a story.<br class="hidden sm:block"> <span class="text-indigo-600">See it in one chart.</span></h1>
   <p class="mt-4 text-slate-500 max-w-xl mx-auto">Popularity charts, rankings and insights for ${fmt(NAME_COUNT)} names — from 146 years of official U.S. birth records. Every feature is open during our free Beta.</p>
   <form action="/search" method="get" class="mt-6 max-w-md mx-auto flex gap-2">
     <input name="q" placeholder="Try “Olivia”, “Theodore”, “Luna”…" autocomplete="off"
@@ -214,7 +214,7 @@ app.get('/name/:slug', async c => {
   const body = `
 <nav aria-label="Breadcrumb" class="text-sm text-slate-500 mb-4"><a href="/" class="hover:text-indigo-600">Home</a> › <a href="/letter/${slug[0]}" class="hover:text-indigo-600">Names starting with ${slug[0].toUpperCase()}</a> › <span>${esc(r.name)}</span></nav>
 <div class="flex flex-wrap items-baseline gap-3">
-  <h1 class="text-4xl font-extrabold tracking-tight">${esc(r.name)}</h1>
+  <h1 class="font-display text-4xl sm:text-5xl font-bold tracking-tight">${esc(r.name)}</h1>
   ${unisex ? '<span class="text-sm rounded-full bg-purple-100 text-purple-700 px-3 py-1">Unisex</span>' : `<span class="text-sm rounded-full ${primary === 'girl' ? 'bg-pink-100 text-pink-700' : 'bg-blue-100 text-blue-700'} px-3 py-1">${cap(primary)} name</span>`}
 </div>
 <p class="mt-2 text-slate-600 max-w-2xl">${esc(r.name)} has been given to <strong>${fmt(r.total)}</strong> babies in the U.S. since ${r.first_year}. It peaked in <strong>${r.peak_year}</strong>${rankBits.length ? ` and currently ranks <strong>${rankBits.join(' and ')}</strong> (${END_YEAR})` : ''}.${(() => {
@@ -329,7 +329,7 @@ app.get('/compare/:pair', async c => {
   </svg>`;
   const winner = a.total >= b.total ? a : b;
   const body = `
-<h1 class="text-3xl font-extrabold tracking-tight">${esc(a.name)} <span class="text-slate-500">vs</span> ${esc(b.name)}</h1>
+<h1 class="font-display text-3xl sm:text-4xl font-bold tracking-tight">${esc(a.name)} <span class="text-slate-500">vs</span> ${esc(b.name)}</h1>
 <p class="mt-2 text-slate-600">All-time, <strong>${esc(winner.name)}</strong> leads: ${fmt(winner.total)} babies vs ${fmt(winner === a ? b.total : a.total)}.</p>
 <div class="mt-6 rounded-2xl bg-white border border-slate-200 p-4 sm:p-6">${svg}</div>
 <div class="mt-6 grid grid-cols-2 gap-3">
@@ -426,7 +426,7 @@ async function topPage(c, sex, label) {
   const db = c.env.DB;
   const rows = await db.prepare('SELECT * FROM year_ranks WHERE year=? AND sex=? ORDER BY rank LIMIT 1000').bind(END_YEAR, sex).all();
   const body = `
-<h1 class="text-3xl font-extrabold">Top 1000 ${label} names (${END_YEAR})</h1>
+<h1 class="font-display text-3xl sm:text-4xl font-bold">Top 1000 ${label} names (${END_YEAR})</h1>
 <p class="mt-2 text-slate-600">Official ${END_YEAR} U.S. birth data. Click any name for its full 146-year chart.</p>
 <div class="mt-6 rounded-2xl bg-white border border-slate-200 p-4">${rankTable(rows.results)}</div>
 ${emailForm()}`;
@@ -446,7 +446,7 @@ app.get('/unisex', async c => {
     WHERE f_total > 0 AND m_total > 0 AND MIN(f_total, m_total) * 1.0 / total > 0.25
     ORDER BY total DESC LIMIT 100`).all();
   const body = `
-<h1 class="text-3xl font-extrabold">100 truly unisex names</h1>
+<h1 class="font-display text-3xl sm:text-4xl font-bold">100 truly unisex names</h1>
 <p class="mt-2 text-slate-600">Names where at least 25% of babies are each gender, ranked by all-time popularity.</p>
 <div class="mt-6 grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 gap-3">${rows.results.map(nameCard).join('')}</div>
 ${emailForm()}`;
@@ -473,7 +473,7 @@ app.get('/trending', async c => {
     <span class="text-xs text-slate-500">${r.sex === 'F' ? 'girl' : 'boy'} · now #${r.rank}</span>
   </a></li>`).join('')}</ol>`;
   const body = `
-<h1 class="text-3xl font-extrabold">Rising &amp; falling names</h1>
+<h1 class="font-display text-3xl sm:text-4xl font-bold">Rising &amp; falling names</h1>
 <p class="mt-2 text-slate-600">Biggest rank moves in the top 1000 between ${END_YEAR - 5} and ${END_YEAR}.</p>
 <div class="mt-6 grid md:grid-cols-2 gap-6">
   <div class="rounded-2xl bg-white border border-slate-200 p-4"><h2 class="font-bold mb-2 text-emerald-700">📈 Fastest rising</h2>${list(rising)}</div>
@@ -494,7 +494,7 @@ app.get('/letter/:l', async c => {
   ]);
   const topG = rows.results.find(r => r.f_total > r.m_total), topB = rows.results.find(r => r.m_total > r.f_total);
   const body = `
-<h1 class="text-3xl font-extrabold">Names starting with ${l.toUpperCase()}</h1>
+<h1 class="font-display text-3xl sm:text-4xl font-bold">Names starting with ${l.toUpperCase()}</h1>
 <p class="mt-2 text-slate-600">${fmt(stats.n)} recorded U.S. names begin with ${l.toUpperCase()} — ${fmt(stats.girls)} mostly given to girls, ${fmt(stats.n - stats.girls)} to boys.${topG ? ` The all-time favorites: <a class="text-indigo-600 underline" href="/name/${topG.slug}">${esc(topG.name)}</a>${topB ? ` and <a class="text-indigo-600 underline" href="/name/${topB.slug}">${esc(topB.name)}</a>` : ''}.` : ''} Showing the top 200 by all-time popularity.</p>
 <div class="mt-4 flex flex-wrap gap-1.5 text-sm">${'abcdefghijklmnopqrstuvwxyz'.split('').map(ch => `<a href="/letter/${ch}" class="w-8 h-8 grid place-items-center rounded-lg ${ch === l ? 'bg-indigo-600 text-white' : 'bg-white border border-slate-200 hover:border-indigo-400'}">${ch.toUpperCase()}</a>`).join('')}</div>
 <div class="mt-6 grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 gap-3">${rows.results.map(nameCard).join('')}</div>
@@ -526,7 +526,7 @@ app.get('/year/:y', async c => {
   const entrants = [...g.results, ...b.results].filter(r => prev.results.length && !prevSet.has(r.sex + '|' + r.name));
   const nav = `<div class="flex gap-2 text-sm mt-2">${y > START_YEAR ? `<a class="text-indigo-600 hover:underline" href="/year/${y - 1}">← ${y - 1}</a>` : ''}${y < END_YEAR ? `<a class="text-indigo-600 hover:underline" href="/year/${y + 1}">${y + 1} →</a>` : ''}</div>`;
   const body = `
-<h1 class="text-3xl font-extrabold">Most popular names of ${y}</h1>${nav}
+<h1 class="font-display text-3xl sm:text-4xl font-bold">Most popular names of ${y}</h1>${nav}
 <div class="mt-6 grid md:grid-cols-2 gap-6">
   <div class="rounded-2xl bg-white border border-slate-200 p-4"><h2 class="font-bold mb-2">Girls</h2>${rankTable(g.results)}</div>
   <div class="rounded-2xl bg-white border border-slate-200 p-4"><h2 class="font-bold mb-2">Boys</h2>${rankTable(b.results)}</div>
@@ -552,7 +552,7 @@ app.get('/decade/:d', async c => {
     db.prepare('SELECT slug,name,peak_year,peak_count FROM names WHERE peak_year BETWEEN ? AND ? ORDER BY peak_count DESC LIMIT 12').bind(d, d + 9).all(),
   ]);
   const body = `
-<h1 class="text-3xl font-extrabold">Most popular names of the ${d}s</h1>
+<h1 class="font-display text-3xl sm:text-4xl font-bold">Most popular names of the ${d}s</h1>
 <div class="mt-4 flex flex-wrap gap-1.5 text-sm">${Array.from({ length: 15 }, (_, i) => 1880 + i * 10).map(dd => `<a href="/decade/${dd}s" class="px-3 py-1.5 rounded-lg ${dd === d ? 'bg-indigo-600 text-white' : 'bg-white border border-slate-200 hover:border-indigo-400'}">${dd}s</a>`).join('')}</div>
 <div class="mt-6 grid md:grid-cols-2 gap-6">
   <div class="rounded-2xl bg-white border border-slate-200 p-4"><h2 class="font-bold mb-2">Girls</h2>${rankTable(g.results)}</div>
@@ -581,7 +581,7 @@ app.get('/state/:st', async c => {
   const intro = g.results[0] && b.results[0]
     ? `<p class="mt-2 text-slate-600">${STATES[st]}'s favorites in ${END_YEAR}: <a class="text-indigo-600 underline" href="/name/${g.results[0].name.toLowerCase()}">${esc(g.results[0].name)}</a> for girls and <a class="text-indigo-600 underline" href="/name/${b.results[0].name.toLowerCase()}">${esc(b.results[0].name)}</a> for boys.</p>` : '';
   const body = `
-<h1 class="text-3xl font-extrabold">Most popular names in ${STATES[st]} (${END_YEAR})</h1>${intro}
+<h1 class="font-display text-3xl sm:text-4xl font-bold">Most popular names in ${STATES[st]} (${END_YEAR})</h1>${intro}
 <div class="mt-4 flex flex-wrap gap-1.5 text-xs">${Object.keys(STATES).map(s => `<a href="/state/${s.toLowerCase()}" class="px-2 py-1 rounded ${s === st ? 'bg-indigo-600 text-white' : 'bg-white border border-slate-200 hover:border-indigo-400'}">${s}</a>`).join('')}</div>
 <div class="mt-6 grid md:grid-cols-2 gap-6">
   <div class="rounded-2xl bg-white border border-slate-200 p-4"><h2 class="font-bold mb-2">Girls</h2>${rankTable(g.results)}</div>
@@ -709,7 +709,7 @@ app.get('/list/:slug', async c => {
   if (!def) return c.notFound();
   const results = await def.rows(c.env.DB);
   const body = `
-<h1 class="text-3xl font-extrabold">${def.title}</h1>
+<h1 class="font-display text-3xl sm:text-4xl font-bold">${def.title}</h1>
 <p class="mt-2 text-slate-600 max-w-2xl">${def.intro}</p>
 <div class="mt-6 grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 gap-3">${results.map(nameCard).join('')}</div>
 <section class="mt-10"><h2 class="font-bold mb-2">More lists</h2><div class="flex flex-wrap gap-2 text-sm">${Object.entries(LISTS).filter(([s]) => s !== c.req.param('slug')).map(([s, d]) => `<a href="/list/${s}" class="px-3 py-1.5 rounded-full bg-white border border-slate-200 hover:border-indigo-400">${d.title}</a>`).join('')}</div></section>
@@ -776,7 +776,7 @@ app.get('/generator', async c => {
   }
   const sel = (v, cur) => v === cur ? ' checked' : '';
   const body = `
-<h1 class="text-3xl font-extrabold">Baby Name Generator</h1>
+<h1 class="font-display text-3xl sm:text-4xl font-bold">Baby Name Generator</h1>
 <p class="mt-2 text-slate-600 max-w-2xl">Pick a style and get 12 real names drawn from 146 years of U.S. birth data — hit generate again for a fresh batch.</p>
 <form method="get" action="/generator" class="mt-6 rounded-2xl bg-white border border-slate-200 p-4 sm:p-6 space-y-4">
   <fieldset><legend class="font-semibold text-sm mb-1.5">Gender</legend>
@@ -824,7 +824,7 @@ app.get('/meaning/:word', async c => {
   const rows = cand.results.filter(r => re.test(r.etymology)).slice(0, 48);
   const capWord = cap(word);
   const body = `
-<h1 class="text-3xl font-extrabold">Names That Mean ${capWord}</h1>
+<h1 class="font-display text-3xl sm:text-4xl font-bold">Names That Mean ${capWord}</h1>
 <p class="mt-2 text-slate-600 max-w-2xl">${rows.length} names whose etymology relates to “${word}” — drawn from documented origins, sorted by all-time U.S. popularity.</p>
 <div class="mt-6 space-y-3">${rows.map(r => `<div class="rounded-xl bg-white border border-slate-200 p-4 flex flex-wrap items-baseline gap-x-4 gap-y-1"><a href="/name/${r.slug}" class="font-semibold text-indigo-700 hover:underline">${esc(r.name)}</a><span class="text-sm text-slate-600">${esc(r.etymology.length > 180 ? r.etymology.slice(0, 177) + '…' : r.etymology)}</span></div>`).join('')}</div>
 <section class="mt-10"><h2 class="font-bold mb-2">More meanings</h2><div class="flex flex-wrap gap-2 text-sm">${MEANING_WORDS.filter(w => w !== word).map(w => `<a href="/meaning/${w}" class="px-3 py-1.5 rounded-full bg-white border border-slate-200 hover:border-indigo-400">${cap(w)}</a>`).join('')}</div></section>
@@ -863,7 +863,7 @@ app.get('/og/meaning/:file', async c => {
 app.get('/browse', async c => {
   const decades = Array.from({ length: 15 }, (_, i) => 1880 + i * 10);
   const body = `
-<h1 class="text-3xl font-extrabold">Browse all names</h1>
+<h1 class="font-display text-3xl sm:text-4xl font-bold">Browse all names</h1>
 <section class="mt-6"><h2 class="font-bold mb-2">Quick picks</h2>
 <div class="flex flex-wrap gap-1.5 text-sm">${[['/top/girls', `Top girl names ${END_YEAR}`], ['/top/boys', `Top boy names ${END_YEAR}`], ['/trending', 'Trending names'], ['/unisex', 'Unisex names']].map(([h, t]) => `<a href="${h}" class="px-3 py-1.5 rounded-lg bg-indigo-50 text-indigo-700 border border-indigo-100 hover:border-indigo-400">${t}</a>`).join('')}</div></section>
 <section class="mt-6"><h2 class="font-bold mb-2">Curated lists</h2>
@@ -898,7 +898,7 @@ app.get('/pricing', c => {
     desc: `NameChart pricing: planned Plus and Pro plans, all currently open as a free Beta trial. No payment is collected during the Beta.`,
     path: '/pricing',
     body: `<div class="max-w-3xl mx-auto text-center">
-<h1 class="text-3xl font-extrabold">Pricing</h1>
+<h1 class="font-display text-3xl sm:text-4xl font-bold">Pricing</h1>
 <p class="mt-3 text-slate-600">NameChart is in <strong>Beta</strong>. Everything below — including every planned paid feature — is open to everyone as a <strong>free trial</strong>. We don't collect payment yet, and we'll announce clearly before billing ever begins.</p>
 </div>
 <div class="mt-8 grid sm:grid-cols-3 gap-4 max-w-4xl mx-auto">
@@ -917,7 +917,7 @@ app.get('/about', c => html(c, layout({
   desc: 'NameChart charts 146 years of official U.S. baby name data — no ads, all features open during the free Beta. Data sources and methodology.',
   path: '/about',
   body: `<article class="prose-custom max-w-2xl">
-<h1 class="text-3xl font-extrabold">About NameChart</h1>
+<h1 class="font-display text-3xl sm:text-4xl font-bold">About NameChart</h1>
 <p class="mt-4">NameChart gives every name a complete popularity chart — no ads, no signup. We're currently in Beta: every feature, including everything in our planned paid plans, is open as a free trial. See <a class="text-indigo-600 underline" href="/pricing">pricing</a> for what's planned.</p>
 <h2 class="text-xl font-bold mt-8">Data sources</h2>
 <p class="mt-2">All national data comes from the <a class="text-indigo-600 underline" href="https://www.ssa.gov/oact/babynames/">U.S. Social Security Administration</a> baby names dataset (1880–${END_YEAR}), which is in the public domain. State rankings come from the SSA state-level dataset. Names given to fewer than 5 babies of a gender in a year are excluded at the source to protect privacy.</p>
@@ -939,7 +939,7 @@ app.get('/favorites', c => html(c, layout({
   desc: 'Your saved baby name shortlist — stored privately in your browser, no account needed.',
   path: '/favorites',
   noindex: true,
-  body: `<h1 class="text-3xl font-extrabold">My shortlist</h1>
+  body: `<h1 class="font-display text-3xl sm:text-4xl font-bold">My shortlist</h1>
 <p class="mt-2 text-slate-600">Names you save are stored only in this browser — no account, nothing sent to us.</p>
 <div id="nc-fav-list" class="mt-6 grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 gap-3"><p class="text-slate-500 col-span-full">Loading…</p></div>
 <p class="mt-6 text-sm text-slate-500">Tip: open any <a href="/top/girls" class="text-indigo-600 underline">name page</a> and tap “♡ Save to shortlist”.</p>`,
@@ -950,7 +950,7 @@ app.get('/terms', c => html(c, layout({
   desc: 'NameChart terms of use: informational service, Beta trial terms, data accuracy disclaimer, acceptable use, and no government affiliation.',
   path: '/terms',
   body: `<article class="max-w-2xl">
-<h1 class="text-3xl font-extrabold">Terms of Use</h1>
+<h1 class="font-display text-3xl sm:text-4xl font-bold">Terms of Use</h1>
 <p class="mt-4 text-slate-600">Effective: August 2026 · Operator: Zalize (hello@zalize.com)</p>
 <h2 class="text-xl font-bold mt-8">The service</h2>
 <p class="mt-2 text-slate-700">NameChart is an informational website presenting statistics derived from public-domain U.S. Social Security Administration data. The service is currently in Beta: all features are available as a free trial, no account is required, and no payment is collected. Paid plans are published on the <a class="text-indigo-600 underline" href="/pricing">pricing page</a> but are not yet for sale; we will announce clearly before any billing begins.</p>
@@ -972,7 +972,7 @@ app.get('/privacy', c => html(c, layout({
   desc: 'NameChart privacy policy: no cookies, no third-party trackers, first-party anonymous analytics only.',
   path: '/privacy',
   body: `<article class="max-w-2xl">
-<h1 class="text-3xl font-extrabold">Privacy</h1>
+<h1 class="font-display text-3xl sm:text-4xl font-bold">Privacy</h1>
 <p class="mt-4 text-slate-600">Effective: August 2026</p>
 <ul class="mt-4 list-disc pl-5 space-y-2 text-slate-700">
 <li><strong>No cookies.</strong> We set no cookies and use no third-party trackers or ad networks.</li>
@@ -1086,6 +1086,6 @@ app.get('/:key{[a-f0-9]{32}\\.txt}', c => {
   return c.env.INDEXNOW_KEY === key ? c.text(key) : c.notFound();
 });
 
-app.notFound(c => htmlPrivate(c, layout({ title: 'Page not found | ' + SITE, desc: 'Not found', path: '/404', noindex: true, body: `<div class="text-center py-20"><h1 class="text-3xl font-extrabold">404</h1><p class="mt-2 text-slate-500">That page doesn't exist.</p><a href="/" class="inline-block mt-6 text-indigo-600 hover:underline">← Back to NameChart</a></div>` }), 404));
+app.notFound(c => htmlPrivate(c, layout({ title: 'Page not found | ' + SITE, desc: 'Not found', path: '/404', noindex: true, body: `<div class="text-center py-20"><h1 class="font-display text-3xl sm:text-4xl font-bold">404</h1><p class="mt-2 text-slate-500">That page doesn't exist.</p><a href="/" class="inline-block mt-6 text-indigo-600 hover:underline">← Back to NameChart</a></div>` }), 404));
 
 export default app;
