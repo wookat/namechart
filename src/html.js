@@ -49,7 +49,7 @@ ${jsonld ? `<script type="application/ld+json">${JSON.stringify(jsonld)}</script
   <div class="max-w-5xl mx-auto px-4 h-14 flex items-center justify-between gap-3">
     <a href="/" class="flex items-center gap-2 font-bold text-lg text-indigo-700 shrink-0">
       <svg width="22" height="22" viewBox="0 0 24 24" fill="none" aria-hidden="true"><path d="M3 20 9 9l4 6 5-11 3 16" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"/></svg>
-      NameChart <span class="align-middle ml-1 rounded-full bg-indigo-100 text-indigo-700 text-[10px] font-bold px-2 py-0.5 uppercase tracking-wide">Beta</span>
+      NameChart <span class="hidden sm:inline align-middle ml-1 rounded-full bg-indigo-100 text-indigo-700 text-[10px] font-bold px-2 py-0.5 uppercase tracking-wide">Beta</span>
     </a>
     <form action="/search" method="get" class="flex-1 max-w-xs hidden sm:block" role="search">
       <input name="q" placeholder="Search any name…" autocomplete="off"
