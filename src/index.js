@@ -44,7 +44,7 @@ const slugify = s => (s || '').toLowerCase().replace(/[^a-z'-]/g, '').slice(0, 4
 // Prefix search via index-friendly range scan (LIKE on a BINARY PK can't use the index
 // and D1 rejects patterns >= 50 chars).
 const NAME_COUNT = 105954; // rows in `names`; update when reimporting data
-const CACHE_VER = 59; // bump to invalidate the edge HTML cache on deploys that change rendering/data
+const CACHE_VER = 60; // bump to invalidate the edge HTML cache on deploys that change rendering/data
 // '~' (0x7E) sorts after every character allowed in slugs (a-z, apostrophe, hyphen).
 const prefixWhere = "slug >= ?1 AND slug < (?1 || '~')";
 
@@ -257,6 +257,17 @@ ${famous.length ? `<section class="mt-10"><h2 class="font-bold text-lg mb-3">Fam
 ${similar.length ? `<section class="mt-10"><h2 class="font-bold text-lg mb-3">Names with a similar vibe</h2><p class="text-sm text-slate-500 -mt-2 mb-3">Same primary gender, peaked around the same years, and roughly as common as ${esc(r.name)}.</p><div class="grid grid-cols-2 sm:grid-cols-4 gap-3">${similar.map(nameCard).join('')}</div>
 <div class="mt-4 flex flex-wrap gap-2 text-sm">${similar.slice(0, 4).map(s => { const pair = [slug, s.slug].sort(); return `<a href="/compare/${pair[0]}-vs-${pair[1]}" class="px-3 py-1 rounded-full bg-amber-50 text-amber-800 hover:bg-amber-100">${esc(r.name)} vs ${esc(s.name)} ⚖</a>`; }).join('')}</div></section>` : ''}
 ${sibs.girls.length || sibs.boys.length ? `<section class="mt-10"><h2 class="font-bold text-lg mb-3">Sibling name ideas for ${esc(r.name)}</h2><p class="text-sm text-slate-500 -mt-2 mb-3">Same era and popularity as ${esc(r.name)}, avoiding matching initials or rhymes.</p><div class="grid sm:grid-cols-2 gap-3">${sibs.girls.length ? `<div class="rounded-xl bg-white border border-slate-200 p-4"><p class="font-semibold text-sm text-pink-700 mb-2">Sisters</p><div class="flex flex-wrap gap-2 text-sm">${sibs.girls.map(s => `<a href="/name/${s.slug}" class="px-3 py-1.5 rounded-full bg-slate-50 border border-slate-200 hover:border-indigo-400">${esc(s.name)}</a>`).join('')}</div></div>` : ''}${sibs.boys.length ? `<div class="rounded-xl bg-white border border-slate-200 p-4"><p class="font-semibold text-sm text-blue-700 mb-2">Brothers</p><div class="flex flex-wrap gap-2 text-sm">${sibs.boys.map(s => `<a href="/name/${s.slug}" class="px-3 py-1.5 rounded-full bg-slate-50 border border-slate-200 hover:border-indigo-400">${esc(s.name)}</a>`).join('')}</div></div>` : ''}</div></section>` : ''}
+${(() => {
+  const g = primary === 'girl' ? 'girl' : 'boy';
+  const rank = primary === 'girl' ? r.latest_rank_f : r.latest_rank_m;
+  const rels = [];
+  if (r.name.length <= 4) rels.push([`short-${g}-names`, `Short ${g} names`]);
+  if (r.name.length >= 9) rels.push([`long-${g}-names`, `Long ${g} names`]);
+  if (r.first_year >= 1990) rels.push([`new-${g}-names`, `Modern ${g} names`]);
+  if (r.peak_year < 1940 && rank && rank <= 500) rels.push([`vintage-${g}-names`, `Vintage ${g} names making a comeback`]);
+  if (!rels.length) return '';
+  return `<section class="mt-10"><h2 class="font-bold text-lg mb-3">Explore related lists</h2><div class="flex flex-wrap gap-2 text-sm">${rels.map(([s, t]) => `<a href="/list/${s}" class="px-3 py-1.5 rounded-full bg-white border border-slate-200 hover:border-indigo-400">${t} →</a>`).join('')}</div></section>`;
+})()}
 ${(() => {
   if (!meaning || !meaning.etymology) return '';
   const ws = MEANING_WORDS.filter(w => new RegExp(`\\b${w}\\b`, 'i').test(meaning.etymology));

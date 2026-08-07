@@ -1123,3 +1123,13 @@
 **结论**
 - meanings 3,723 / famous 2,574 / 订阅 5；自然搜索仍在收录爬坡。
 - 昵称复刻决定：Wiktionary 结构化 diminutive 关系仅约 104 条（12 条模板参数 + 92 条词源正文），数据面过薄，不足以支撑全站「Nicknames」区块；词源正文已自然呈现该信息。维持 P2，待更好数据源。
+
+## Round 111（2026-08-07，版本 c9dfbd0b）
+**发现**
+- ④复刻 Nameberry「Luna on lists」：名字页缺到榜单页族的反向内链。
+
+**修复（全部上线）**
+- 名字页新增「Explore related lists」区块：按名字自身属性匹配 short/long/modern/vintage 榜单（谓词与榜单定义一致，vintage 需当前 rank≤500，无匹配不显示）。
+
+**回归证据**
+- /name/mia→Short girl names、/name/alexandria→Long girl names、/name/mildred 正确无匹配（当前排名不在 500 内）。
