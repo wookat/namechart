@@ -1034,3 +1034,13 @@
 
 **回归证据**
 - /pricing 200、三档卡渲染、axe clean、375px 零溢出；sitemap 含 /pricing。
+
+## Round 102（2026-08-06）
+**发现**
+- ④多竞品普查：10 家竞品真实浏览器深访+技术反推（Nameberry/The Bump/Behind the Name/MomJunction 可达；names.org、thinkbabynames、forebears、babynames.com、namerology 反爬墙或不可达，遵守不绕开；nymbler 已死）。
+
+**产出**
+- docs/competitor-survey.md：接入矩阵、技术栈反推（Next.js/Astro/WordPress，HTML 180–400KB vs 我方 3–78KB）、功能全集清单、差距清单（P1×3 / P2×4 / 明确不做×4）。
+
+**回归证据**
+- 调研文档入库。
