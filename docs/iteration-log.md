@@ -1171,3 +1171,10 @@
 
 **结论**
 - 24 关键路由全通过（/search 精确命中 302 属设计行为）；JSON-LD 抽查解析有效；competitor-survey.md 差距清单状态更新（P1 全部完成，P2 结论落库）。
+
+## Round 117（2026-08-08）
+**发现**
+- 新专项「视觉/品牌/特效升级」启动：视觉调研 5 站（Nameberry/The Bump/MomJunction + Linear/Stripe 业界最佳），computed-style+资源清单反推（Nameberry 无动效库纯 CSS、Linear 用 framer-motion、Stripe 首页零动画库）。
+
+**产出**
+- docs/visual-research.md：调研矩阵 + 准父母定制方向（暖底色+柔和渐变+衬线斜体强调+统计计数行+CSS/SVG 克制动效）+ 技术栈结论（不迁移框架，CSS 动效 0KB 方案）。
