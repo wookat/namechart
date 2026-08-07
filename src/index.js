@@ -44,7 +44,7 @@ const slugify = s => (s || '').toLowerCase().replace(/[^a-z'-]/g, '').slice(0, 4
 // Prefix search via index-friendly range scan (LIKE on a BINARY PK can't use the index
 // and D1 rejects patterns >= 50 chars).
 const NAME_COUNT = 105954; // rows in `names`; update when reimporting data
-const CACHE_VER = 58; // bump to invalidate the edge HTML cache on deploys that change rendering/data
+const CACHE_VER = 59; // bump to invalidate the edge HTML cache on deploys that change rendering/data
 // '~' (0x7E) sorts after every character allowed in slugs (a-z, apostrophe, hyphen).
 const prefixWhere = "slug >= ?1 AND slug < (?1 || '~')";
 
@@ -271,7 +271,7 @@ ${(() => {
 ${emailForm()}`;
   return html(c, layout({
     title: `${r.name} — Name Popularity, Rank & Chart (1880–${END_YEAR}) | ${SITE}`,
-    desc: `${r.name}: given to ${fmt(r.total)} U.S. babies since ${r.first_year}, peaked in ${r.peak_year}.${rankBits.length ? ` Ranked ${rankBits.join(', ')} in ${END_YEAR}.` : ''} Full 146-year popularity chart, free.`,
+    desc: `${r.name}: given to ${fmt(r.total)} U.S. babies since ${r.first_year}, peaked in ${r.peak_year}.${rankBits.length ? ` Ranked ${rankBits.join(', ')} in ${END_YEAR}.` : ''} Full 146-year popularity chart.`,
     path: `/name/${slug}`,
     ogImage: `${ORIGIN}/og/name/${slug}.png`,
     body,
@@ -432,7 +432,7 @@ async function topPage(c, sex, label) {
 ${emailForm()}`;
   return html(c, layout({
     title: `Top 1000 ${cap(label)} Names ${END_YEAR} — Official Rankings | ${SITE}`,
-    desc: `The 1000 most popular ${label} names of ${END_YEAR} from official U.S. birth records, with free popularity charts for each.`,
+    desc: `The 1000 most popular ${label} names of ${END_YEAR} from official U.S. birth records, with full popularity charts for each.`,
     path: `/top/${label}s`, body,
   }));
 }
@@ -807,7 +807,7 @@ app.get('/generator', async c => {
 </form>
 ${results.length ? `<div class="mt-6 grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 gap-3">${results.map(nameCard).join('')}</div>` : hasQuery ? '<p class="mt-6 text-slate-500">No matches — try a different letter or style.</p>' : ''}
 ${emailForm()}`;
-  return htmlPrivate(c, layout({ title: `Baby Name Generator — Real Names from Real Data | ${SITE}`, desc: 'Generate baby name ideas by gender, style and first letter, drawn from 146 years of U.S. SSA data. Free, no ads.', path: '/generator', body }));
+  return htmlPrivate(c, layout({ title: `Baby Name Generator — Real Names from Real Data | ${SITE}`, desc: 'Generate baby name ideas by gender, style and first letter, drawn from 146 years of U.S. SSA data. No ads, open in Beta.', path: '/generator', body }));
 });
 
 // ---------- names by meaning ----------

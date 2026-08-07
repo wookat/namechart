@@ -33,7 +33,7 @@ export async function ogImage(c, r) {
     <div style="display:flex;align-items:flex-end;height:200px;width:100%;margin-top:50px;">
       ${bars.map(v => `<div style="display:flex;width:10px;margin-right:4px;height:${Math.max(4, Math.round((v / max) * 200))}px;background:${accent};"></div>`).join('')}
     </div>
-    <div style="display:flex;font-size:26px;color:#c7d2fe;margin-top:36px;">1880–${END_YEAR} · 146 years of U.S. baby name data — free, no ads</div>
+    <div style="display:flex;font-size:26px;color:#c7d2fe;margin-top:36px;">1880–${END_YEAR} · 146 years of U.S. baby name data — namechart.zalize.com</div>
   </div>`;
 
   return new ImageResponse(html, {
@@ -76,7 +76,7 @@ export async function ogCompare(c, a, b) {
       <div style="display:flex;height:12px;"></div>
       ${row(bb, '#fbbf24')}
     </div>
-    <div style="display:flex;font-size:24px;color:#c7d2fe;margin-top:auto;">1880–${END_YEAR} · 146 years of U.S. baby name data — free, no ads</div>
+    <div style="display:flex;font-size:24px;color:#c7d2fe;margin-top:auto;">1880–${END_YEAR} · 146 years of U.S. baby name data — namechart.zalize.com</div>
   </div>`;
 
   return new ImageResponse(html, {
@@ -100,7 +100,7 @@ export async function ogList(c, title, names) {
       <div style="display:flex;font-size:30px;color:#c7d2fe;">namechart.zalize.com</div>
     </div>
     <div style="display:flex;flex-wrap:wrap;margin-top:44px;">${chips}</div>
-    <div style="display:flex;font-size:26px;color:#c7d2fe;margin-top:auto;">146 years of U.S. baby name data — free, no ads</div>
+    <div style="display:flex;font-size:26px;color:#c7d2fe;margin-top:auto;">146 years of U.S. baby name data — namechart.zalize.com</div>
   </div>`;
 
   return new ImageResponse(html, {
