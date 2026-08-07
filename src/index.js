@@ -44,7 +44,7 @@ const slugify = s => (s || '').toLowerCase().replace(/[^a-z'-]/g, '').slice(0, 4
 // Prefix search via index-friendly range scan (LIKE on a BINARY PK can't use the index
 // and D1 rejects patterns >= 50 chars).
 const NAME_COUNT = 105954; // rows in `names`; update when reimporting data
-const CACHE_VER = 66; // bump to invalidate the edge HTML cache on deploys that change rendering/data
+const CACHE_VER = 67; // bump to invalidate the edge HTML cache on deploys that change rendering/data
 // '~' (0x7E) sorts after every character allowed in slugs (a-z, apostrophe, hyphen).
 const prefixWhere = "slug >= ?1 AND slug < (?1 || '~')";
 
@@ -186,7 +186,7 @@ app.get('/name/:slug', async c => {
   const rankBits = [];
   if (r.latest_rank_f && r.latest_rank_f <= 1000) rankBits.push(`#${fmt(r.latest_rank_f)} for girls`);
   if (r.latest_rank_m && r.latest_rank_m <= 1000) rankBits.push(`#${fmt(r.latest_rank_m)} for boys`);
-  const [similar, sibs, meaning, famousRow, rankHist, yearTot, stateRows, prevRanks] = await Promise.all([
+  const [similar, sibs, meaning, famousRow, rankHist, yearTot, stateRows, prevRanks, rhymes] = await Promise.all([
     similarNames(db, r),
     siblingNames(db, r),
     db.prepare('SELECT * FROM meanings WHERE slug = ?').bind(slug).first().catch(() => null),
@@ -195,6 +195,9 @@ app.get('/name/:slug', async c => {
     db.prepare('SELECT f, m FROM year_totals WHERE year = ?').bind(END_YEAR).first().catch(() => null),
     db.prepare('SELECT state, sex, rank FROM state_ranks WHERE name = ? ORDER BY rank LIMIT 10').bind(r.name).all().catch(() => ({ results: [] })),
     db.prepare('SELECT sex, rank FROM year_ranks WHERE name = ? AND year = ?').bind(r.name, END_YEAR - 1).all().catch(() => ({ results: [] })),
+    slug.length >= 4
+      ? db.prepare('SELECT slug,name,total,f_total,m_total,first_year FROM names WHERE substr(slug,-3) = substr(?1,-3) AND slug != ?1 ORDER BY total DESC LIMIT 8').bind(slug).all().catch(() => ({ results: [] }))
+      : Promise.resolve({ results: [] }),
   ]);
   const yoy = sex => {
     const cur = sex === 'F' ? r.latest_rank_f : r.latest_rank_m;
@@ -264,6 +267,7 @@ ${famous.length ? `<section class="mt-10"><h2 class="font-bold text-lg mb-3">Fam
 ${similar.length ? `<section class="mt-10"><h2 class="font-bold text-lg mb-3">Names with a similar vibe</h2><p class="text-sm text-slate-600 -mt-2 mb-3">Same primary gender, peaked around the same years, and roughly as common as ${esc(r.name)}.</p><div class="grid grid-cols-2 sm:grid-cols-4 gap-3">${similar.map(nameCard).join('')}</div>
 <div class="mt-4 flex flex-wrap gap-2 text-sm">${similar.slice(0, 4).map(s => { const pair = [slug, s.slug].sort(); return `<a href="/compare/${pair[0]}-vs-${pair[1]}" class="px-3 py-1 rounded-full bg-amber-50 text-amber-800 hover:bg-amber-100">${esc(r.name)} vs ${esc(s.name)} ⚖</a>`; }).join('')}</div></section>` : ''}
 ${sibs.girls.length || sibs.boys.length ? `<section class="mt-10"><h2 class="font-bold text-lg mb-3">Sibling name ideas for ${esc(r.name)}</h2><p class="text-sm text-slate-600 -mt-2 mb-3">Same era and popularity as ${esc(r.name)}, avoiding matching initials or rhymes.</p><div class="grid sm:grid-cols-2 gap-3">${sibs.girls.length ? `<div class="rounded-xl bg-white border border-slate-200 p-4"><p class="font-semibold text-sm text-pink-700 mb-2">Sisters</p><div class="flex flex-wrap gap-2 text-sm">${sibs.girls.map(s => `<a href="/name/${s.slug}" class="px-3 py-1.5 rounded-full bg-slate-50 border border-slate-200 hover:border-indigo-400">${esc(s.name)}</a>`).join('')}</div></div>` : ''}${sibs.boys.length ? `<div class="rounded-xl bg-white border border-slate-200 p-4"><p class="font-semibold text-sm text-blue-700 mb-2">Brothers</p><div class="flex flex-wrap gap-2 text-sm">${sibs.boys.map(s => `<a href="/name/${s.slug}" class="px-3 py-1.5 rounded-full bg-slate-50 border border-slate-200 hover:border-indigo-400">${esc(s.name)}</a>`).join('')}</div></div>` : ''}</div></section>` : ''}
+${rhymes.results.length ? `<section class="mt-10"><h2 class="font-bold text-lg mb-3">Names that rhyme with ${esc(r.name)}</h2><p class="text-sm text-slate-600 -mt-2 mb-3">Names sharing the same ending sound as ${esc(r.name)}, by all-time U.S. popularity.</p><div class="flex flex-wrap gap-2 text-sm">${rhymes.results.map(s => `<a href="/name/${s.slug}" class="px-3 py-1.5 rounded-full bg-white border border-slate-200 hover:border-indigo-400">${esc(s.name)}</a>`).join('')}</div></section>` : ''}
 ${(() => {
   const g = primary === 'girl' ? 'girl' : 'boy';
   const rank = primary === 'girl' ? r.latest_rank_f : r.latest_rank_m;
