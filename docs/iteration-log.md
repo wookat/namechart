@@ -1234,3 +1234,22 @@
 - CACHE_VER 66，版本 56a66758。20 个新页 page/og 全 200。
 
 **证据**：/meaning/gracious 29 个名字条目；docs/iteration-log.md 本节。
+
+## Round 124（2026-08-08）
+**发现**
+- P2 复评：韵脚名（backlog P2-c）以词尾 3 字符可数据自证，且给 10 万名字页新增一类内链面。
+
+**修复/上线**
+- 名字页新增「Names that rhyme with X」区块（Top8 按热度）；D1 加表达式索引 idx_names_end3（substr(slug,-3)）避免全表扫（0003_rhyme_index.sql）。
+- CACHE_VER 67，版本 b314d043。
+
+**证据**：/name/luna 显示 Shauna/Una/Yuna…；axe（luna/dawn/gracious）clean；375px 无溢出；21 路由 200、XSS 探针 301→404、JSON-LD 有效。
+
+## Round 125（2026-08-08）
+**UX 走查**（真实浏览器全流程）
+- 搜索 aurora→规范重定向 /name/aurora；收藏→「♥ On your shortlist」；韵脚区块渲染；对比页 aurora-vs-iris 正常；生成器 girl+vintage+mean=dawn 出 5 结果；/favorites 列表含 Aurora。全流程无缺陷。
+
+## Round 126（2026-08-08）
+**性能/回归**
+- TTFB：边缘缓存 75ms、未缓存首击 310ms（新增韵脚查询后仍达标，后续命中走缓存 73ms）；名字页 HTML 32.5KB 在预算内。
+- 发现暂无新 P0/P1；meaning 扩容+韵脚上线后进入观察。
