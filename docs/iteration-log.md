@@ -1201,3 +1201,23 @@
 - prefers-reduced-motion: reduce 全量降级（实测 emulateMedia 下 dashoffset=0、无动画）。
 
 **证据**：/name/luna 实测 stroke-dasharray 3000px 动画生效；reduced-motion 下 0px 直出。
+
+## Round 120（2026-08-08）
+**发现**
+- 品牌素材未跟上新暖色体系：favicon/logo 纯色、OG 卡渐变旧、收藏空状态仅一行文字。
+
+**修复/上线**
+- Logo/favicon 升级：圆角渐变徽标（indigo→violet→rose，呼应新配色），header 与 favicon 统一。
+- OG 卡渐变刷新（+紫红收尾），全 8 类卡生效（自研 SVG/CSS，无第三方素材）。
+- 收藏空状态：自绘心形+趋势线插画 + 引导 CTA（Browse top names）。
+- ASSET_VER 10 / CACHE_VER 65，版本 3155da16。
+
+**证据**：/og/name/luna.png 200 image/png；空状态截图 r120-empty.png；favicon 200。
+
+## Round 121（2026-08-08）
+**回归**
+- 21 路由全 200；XSS 探针 404；6 安全头齐全（CSP 未放宽，动效纯 CSS）。
+- axe（/、/name/luna、/top/girls、/generator、/pricing）全 clean；375px 无横向溢出。
+- 性能无劣化：TTFB 76–78ms，首页 HTML 24.9KB。
+
+**小结**：视觉/品牌/特效专项 R117–121 交付——调研（5 站）→ 暖色设计体系 → 0KB CSS 动效（reduced-motion 降级）→ 品牌素材（logo/favicon/OG/空状态）→ 全量回归。

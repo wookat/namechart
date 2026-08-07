@@ -24,7 +24,7 @@ export async function ogImage(c, r) {
   const rank = primaryRank || '';
 
   const html = `
-  <div style="display:flex;flex-direction:column;width:1200px;height:630px;background:linear-gradient(135deg,#312e81,#4f46e5 55%,#7c3aed);color:#fff;font-family:Inter;padding:60px 80px;">
+  <div style="display:flex;flex-direction:column;width:1200px;height:630px;background:linear-gradient(135deg,#312e81,#4f46e5 45%,#7c3aed 78%,#a21caf);color:#fff;font-family:Inter;padding:60px 80px;">
     <div style="display:flex;align-items:baseline;justify-content:space-between;">
       <div style="display:flex;font-size:96px;font-weight:700;">${r.name}</div>
       <div style="display:flex;font-size:30px;color:#c7d2fe;">namechart.zalize.com</div>
@@ -65,7 +65,7 @@ export async function ogCompare(c, a, b) {
   const row = (bars, color) => `<div style="display:flex;align-items:flex-end;height:170px;width:100%;">${bars.map(v => `<div style="display:flex;width:10px;margin-right:4px;height:${h(v)}px;background:${color};"></div>`).join('')}</div>`;
 
   const html = `
-  <div style="display:flex;flex-direction:column;width:1200px;height:630px;background:linear-gradient(135deg,#312e81,#4f46e5 55%,#7c3aed);color:#fff;font-family:Inter;padding:56px 80px;">
+  <div style="display:flex;flex-direction:column;width:1200px;height:630px;background:linear-gradient(135deg,#312e81,#4f46e5 45%,#7c3aed 78%,#a21caf);color:#fff;font-family:Inter;padding:56px 80px;">
     <div style="display:flex;align-items:baseline;justify-content:space-between;">
       <div style="display:flex;font-size:64px;font-weight:700;">${a.name} <span style="color:#a5b4fc;margin:0 18px;">vs</span> ${b.name}</div>
       <div style="display:flex;font-size:30px;color:#c7d2fe;">namechart.zalize.com</div>
@@ -94,7 +94,7 @@ export async function ogList(c, title, names) {
   const chips = names.slice(0, 12).map(n =>
     `<div style="display:flex;font-size:34px;background:rgba(255,255,255,0.14);border-radius:9999px;padding:10px 28px;margin:0 14px 18px 0;">${n}</div>`).join('');
   const html = `
-  <div style="display:flex;flex-direction:column;width:1200px;height:630px;background:linear-gradient(135deg,#312e81,#4f46e5 55%,#7c3aed);color:#fff;font-family:Inter;padding:60px 80px;">
+  <div style="display:flex;flex-direction:column;width:1200px;height:630px;background:linear-gradient(135deg,#312e81,#4f46e5 45%,#7c3aed 78%,#a21caf);color:#fff;font-family:Inter;padding:60px 80px;">
     <div style="display:flex;align-items:baseline;justify-content:space-between;">
       <div style="display:flex;font-size:64px;font-weight:700;">${title}</div>
       <div style="display:flex;font-size:30px;color:#c7d2fe;">namechart.zalize.com</div>

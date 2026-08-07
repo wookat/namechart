@@ -55,7 +55,7 @@
           var s = String(f.slug).replace(/[^a-z'-]/g, ''), n = String(f.name).replace(/[<>&"]/g, '');
           return '<div class="relative rounded-xl bg-white border border-slate-200 p-4 hover:border-indigo-400"><a href="/name/' + s + '" class="font-semibold">' + n + '</a><button data-rm="' + s + '" aria-label="Remove" class="absolute top-2 right-2 text-slate-300 hover:text-rose-500 px-1">\u00d7</button></div>';
         }).join('')
-      : '<p class="text-slate-500 col-span-full">Nothing saved yet.</p>';
+      : '<div class="col-span-full text-center py-10"><svg width="88" height="88" viewBox="0 0 88 88" fill="none" aria-hidden="true" style="margin:0 auto"><circle cx="44" cy="44" r="40" fill="#fdf2f8"/><path d="M44 62c-9-6.5-18-13-18-22a10 10 0 0 1 18-6 10 10 0 0 1 18 6c0 9-9 15.5-18 22Z" fill="#fbcfe8" stroke="#db2777" stroke-width="2" stroke-linejoin="round"/><path d="M32 44l6-8 5 5 6-10 7 13" stroke="#4f46e5" stroke-width="2.5" fill="none" stroke-linecap="round" stroke-linejoin="round"/></svg><p class="mt-4 font-semibold text-slate-700">Your shortlist is empty</p><p class="mt-1 text-sm text-slate-600">Tap \u2661 on any name page to keep it here.</p><a href="/top/girls" class="inline-block mt-4 rounded-full bg-indigo-600 text-white font-semibold px-5 py-2.5 text-sm">Browse top names \u2192</a></div>';
     list.addEventListener('click', function (e) {
       var rm = e.target.getAttribute && e.target.getAttribute('data-rm');
       if (!rm) return;

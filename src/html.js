@@ -3,7 +3,7 @@
 export const SITE = 'NameChart';
 export const ORIGIN = 'https://namechart.zalize.com';
 export const START_YEAR = 1880;
-export const ASSET_VER = 9; // bump when styles.css or app.js change, to bust the long asset cache
+export const ASSET_VER = 10; // bump when styles.css or app.js change, to bust the long asset cache
 export const END_YEAR = 2025;
 
 export const SISTER_SITES = [
@@ -48,7 +48,7 @@ ${jsonld ? `<script type="application/ld+json">${JSON.stringify(jsonld)}</script
 <header class="bg-white border-b border-slate-200 sticky top-0 z-20">
   <div class="max-w-5xl mx-auto px-4 h-14 flex items-center justify-between gap-3">
     <a href="/" class="flex items-center gap-2 font-bold text-lg text-indigo-700 shrink-0">
-      <svg width="22" height="22" viewBox="0 0 24 24" fill="none" aria-hidden="true"><path d="M3 20 9 9l4 6 5-11 3 16" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"/></svg>
+      <svg width="24" height="24" viewBox="0 0 24 24" aria-hidden="true"><defs><linearGradient id="lg" x1="0" y1="0" x2="24" y2="24" gradientUnits="userSpaceOnUse"><stop offset="0" stop-color="#4f46e5"/><stop offset="0.7" stop-color="#7c3aed"/><stop offset="1" stop-color="#db2777"/></linearGradient></defs><rect width="24" height="24" rx="6" fill="url(#lg)"/><path d="M4 18 9 8l4 5 4-9 3 14" stroke="#fff" stroke-width="2.2" fill="none" stroke-linecap="round" stroke-linejoin="round"/></svg>
       NameChart <span class="hidden sm:inline align-middle ml-1 rounded-full bg-indigo-100 text-indigo-700 text-[10px] font-bold px-2 py-0.5 uppercase tracking-wide">Beta</span>
     </a>
     <form action="/search" method="get" class="flex-1 max-w-xs hidden sm:block" role="search">
