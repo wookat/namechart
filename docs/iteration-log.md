@@ -1253,3 +1253,13 @@
 **性能/回归**
 - TTFB：边缘缓存 75ms、未缓存首击 310ms（新增韵脚查询后仍达标，后续命中走缓存 73ms）；名字页 HTML 32.5KB 在预算内。
 - 发现暂无新 P0/P1；meaning 扩容+韵脚上线后进入观察。
+
+## Round 127（2026-08-08）
+**竞品再挖掘**（Nameberry 名字页逐节对照，r127-nb-luna.png）
+- 其区块：About/Popularity/World rankings/Similar/On lists/Famous/Pop culture/Variations & nicknames/Blog。
+- 我方已覆盖数据类等价物（含义/趋势/相似/榜单内链/名人/韵脚）；剩余缺口均为已知 backlog：World rankings（缺非美官方源）、Nicknames（Wiktionary 仅约 104 条可证）、Pop culture/Blog（编辑内容，非数据自证）。**本轮无新增有价值改进项。**
+
+## Round 128（2026-08-08）
+**收口回归**
+- axe 6 页面族（year/state/letter/list/compare/decade）全 clean；浏览器 console 零报错。
+- 无新 P0/P1/P2 可落地项——连续两轮无有价值改进，按老板规则转低强度运营。
