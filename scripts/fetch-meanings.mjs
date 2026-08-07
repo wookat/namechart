@@ -138,7 +138,10 @@ writeFileSync(CACHE, JSON.stringify(cache));
 const esc = s => `'${String(s).replace(/'/g, "''")}'`;
 // Final cleanup of expansion artifacts (tracking sup text, entities, stray file caption remnants).
 const clean = s => String(s || '')
-  .replace(/(?<=[A-Za-z\u00C0-\u024F])(?:API)+\b/g, '')
+  .replace(/Lua error[\s\S]*$/, '')
+  .replace(/&[lr]rm;|[\u200e\u200f]/g, '')
+  .replace(/\[Term\?\]/g, '')
+  .replace(/(?<=[A-Za-z\u00C0-\u024F)\]])(?:API)+\b/g, '')
   .replace(/&#(\d+);/g, (_, d) => String.fromCharCode(Number(d)))
   .replace(/\[\[[^\]]*\]\]/g, '')
   .replace(/^.{0,80}?\]\]\s*/, '')
