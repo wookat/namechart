@@ -1307,3 +1307,17 @@
 **最终扫描**
 - backlog 复核：昵称（数据面仍仅约 104 条可证）、国际排名（仍缺官方公开源）、pop culture（编辑内容非数据自证）——维持搁置；含义组榜单已覆盖 nature/celestial/royal/virtue 四大主题，剩余词组命中不足 5 名不再扩容。
 - 连续两轮无有价值改进项——按老板规则转低强度运营。
+
+## Round 137–138（2026-08-08）「全面进化」专项：两个大功能
+**R137 Sibling & Middle Name Matcher（/matcher）**
+- 输入 1–3 个已有/意向名字 → 输出：同年代（peak±10 年）+ 同热度档（median total 就近）、剔除同首字母/同结尾的兄弟姐妹名（Sisters/Brothers 各 8）；中间名按「长短互补 + 1900 年前已在用的经典名」规则生成 12 个组合（如 Luna Grace 式胶囊，链到中间名页）。
+- 空态给出三条匹配原理说明卡；未收录名字给出拼写提示；XSS 探针无反射。
+- 入口：主导航（md+）、/browse、sitemap。
+
+**R138 收藏分享短链（/s/:id）**
+- /favorites 新增「Share this list」→ POST /api/share（同源校验+日配额 20+slug 白名单校验+存在性校验）生成 8 位短链，OG 卡（/og/share/:id.png）复用 ogList。
+- 可撤销：创建时返回 token 存 localStorage，「Delete link」调 /api/share/revoke 置 revoked=1，页面即刻 404（no-store 渲染）。
+- 隐私：shares 表只存 slug 列表+创建日期，无任何标识符；隐私政策新增 Shared shortlists 条目。
+- D1 迁移 0004_shares.sql（REST 应用远端）。CACHE_VER 71 / ASSET_VER 11，版本 d60dc217。
+
+**线上验证**：/matcher 三态（空/单名/双名）200；Luna+Leo → Amelia/Oliver 等 16 个兄弟姐妹名 + Elizabeth/Robert 等 12 中间名组合；share 创建→200→跨源 403→错 token 拒绝→撤销→404 全链路通过；OG PNG 200。
