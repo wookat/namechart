@@ -1321,3 +1321,7 @@
 - D1 迁移 0004_shares.sql（REST 应用远端）。CACHE_VER 71 / ASSET_VER 11，版本 d60dc217。
 
 **线上验证**：/matcher 三态（空/单名/双名）200；Luna+Leo → Amelia/Oliver 等 16 个兄弟姐妹名 + Elizabeth/Robert 等 12 中间名组合；share 创建→200→跨源 403→错 token 拒绝→撤销→404 全链路通过；OG PNG 200。
+
+## Round 139（2026-08-08）测试代理全量回归 + 修正
+- 录屏回归全部通过：/matcher 三态、分享全流程（收藏→短链→复制→打开 200→删除→404）、375px 三页无溢出、axe 0 violations、主导航/browse 入口、全站冒烟 console 零报错。报告 test-report.md。
+- 回归观察修正：中间名原为男女混列，改为跟随首名性别（Luna 只出女性经典中间名，12 个），版本 da746fed 已上线验证。
