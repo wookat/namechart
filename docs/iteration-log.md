@@ -1350,3 +1350,11 @@
 **R147 /press 媒体资源页上线**：boilerplate、关键事实（数据源/许可/隐私）、logo SVG 下载、分享卡示例、署名规范；footer + about 加入口，入 static sitemap。CACHE_VER 73，版本 223efb7f。回归：/press 等 5 路由 200，axe 0 违规，375px 无溢出（scrollWidth 360）。
 **R148 营销素材包落库 docs/marketing/**：press-kit / directory-submissions（7 目标站，均需真人账号，不注册假账号）/ producthunt-launch-kit（tagline+maker comment+gallery+FAQ）/ social-calendar-14d（14 天逐日 HN/X/Reddit 文案，数据点全部经 D1 核验：Luna 1970=11、Agnes 2025=246≈1/6,500、Mabel 2020→2025 女婴 718→1522、Chester 2025=107）/ email-lifecycle（double opt-in/欢迎/月报模板，未接 Resend 前不发信）。
 **R149 边界**：无可免登录提交的正规目录站（不造假账号）；邮件全链路维持红线冻结。
+
+## Round 150–155（2026-08-08）「设计系统深度升级」专项
+**R150 字体系统**：自托管 Fraunces（latin subset woff2 67KB，font-display:swap + preload + /fonts/* immutable 缓存）作为品牌 display 衬线（h1/统计数字），body 维持系统 sans；统计数字加 tabular-nums（.stat-num）。
+**R151 组件精修**：全局 :focus-visible 靛蓝 2px outline；按钮/胶囊 active scale(.97) 微交互 + 统一过渡；卡片 hover 阴影改双层（更高级层次）；导航链接 .nav-link hover 下划线动画。
+**R152 全设备**：header/main/footer 容器 xl:max-w-6xl（1440px 宽屏利用）；导航触控高度提至 44px（首测 40px，padding 0.625→0.75rem 修复复测 44px）。375/768/1024/1440 四档回归无溢出。
+**R153 特效**：首页 hero 双色氛围光斑 .hero-glow（16s 缓慢漂移，pointer-events:none）+ 副标题交错入场 fade-up-2/3 + 主标题渐变文字 .text-gradient；全部纯 CSS 0KB JS，prefers-reduced-motion 全部禁用（实测通过）。
+**R154 用户心智/人话解释**：名字页六统计卡各配一行大白话（Rank→"Very popular — expect classmates…"/"Familiar yet uncommon"/"Rare — a truly distinctive pick"；10-year trend→"On its way up…"/"Fading — feels more distinctive…"；Gender split→unisex 时 "Genuinely used for both…"），专业数字+零门槛并存。
+**R155 回归**：测试代理录屏走查通过——字体加载（document.fonts.check=true、无 FOIT）、四档无溢出、axe / 与 /name/luna 0 违规、reduced-motion 全降级、console 零错误、1440 宽屏 1152px 容器生效。版本 8120bdb6（CACHE_VER 75 / ASSET_VER 14）。

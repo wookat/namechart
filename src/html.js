@@ -3,7 +3,7 @@
 export const SITE = 'NameChart';
 export const ORIGIN = 'https://namechart.zalize.com';
 export const START_YEAR = 1880;
-export const ASSET_VER = 12; // bump when styles.css or app.js change, to bust the long asset cache
+export const ASSET_VER = 14; // bump when styles.css or app.js change, to bust the long asset cache
 export const END_YEAR = 2025;
 
 export const SISTER_SITES = [
@@ -41,12 +41,13 @@ ${noindex ? '<meta name="robots" content="noindex">' : ''}
 <meta property="og:image" content="${esc(ogImage || ORIGIN + '/img/og-default.png')}">
 <meta name="twitter:card" content="summary_large_image">
 <link rel="icon" href="/img/favicon.svg" type="image/svg+xml">
+<link rel="preload" href="/fonts/fraunces-latin.woff2" as="font" type="font/woff2" crossorigin>
 <link rel="stylesheet" href="/styles.css?v=${ASSET_VER}">
 ${jsonld ? `<script type="application/ld+json">${JSON.stringify(jsonld)}</script>` : ''}
 </head>
 <body class="min-h-screen bg-[#faf8f5] text-slate-800 antialiased flex flex-col">
 <header class="bg-white border-b border-slate-200 sticky top-0 z-20">
-  <div class="max-w-5xl mx-auto px-4 h-14 flex items-center justify-between gap-3">
+  <div class="max-w-5xl xl:max-w-6xl mx-auto px-4 h-14 flex items-center justify-between gap-3">
     <a href="/" class="flex items-center gap-2 font-bold text-lg text-indigo-700 shrink-0">
       <svg width="24" height="24" viewBox="0 0 24 24" aria-hidden="true"><defs><linearGradient id="lg" x1="0" y1="0" x2="24" y2="24" gradientUnits="userSpaceOnUse"><stop offset="0" stop-color="#4f46e5"/><stop offset="0.7" stop-color="#7c3aed"/><stop offset="1" stop-color="#db2777"/></linearGradient></defs><rect width="24" height="24" rx="6" fill="url(#lg)"/><path d="M4 18 9 8l4 5 4-9 3 14" stroke="#fff" stroke-width="2.2" fill="none" stroke-linecap="round" stroke-linejoin="round"/></svg>
       NameChart <span class="hidden sm:inline align-middle ml-1 rounded-full bg-indigo-100 text-indigo-700 text-[10px] font-bold px-2 py-0.5 uppercase tracking-wide">Beta</span>
@@ -56,13 +57,13 @@ ${jsonld ? `<script type="application/ld+json">${JSON.stringify(jsonld)}</script
         class="w-full rounded-full border border-slate-300 bg-slate-50 px-4 py-1.5 text-sm focus:outline-none focus:ring-2 focus:ring-indigo-400">
     </form>
     <nav aria-label="Primary" class="flex items-center gap-2 sm:gap-3 text-xs sm:text-sm font-medium text-slate-600">
-      <a class="hover:text-indigo-700" href="/top/girls">Girls</a>
-      <a class="hover:text-indigo-700" href="/top/boys">Boys</a>
-      <a class="hover:text-indigo-700" href="/trending">Trending</a>
-      <a class="hover:text-indigo-700 hidden sm:inline" href="/generator">Generator</a>
-      <a class="hover:text-indigo-700 hidden md:inline" href="/matcher" id="nc-nav-matcher">Matcher<span id="nc-new-dot" hidden class="ml-1 rounded-full bg-rose-100 text-rose-700 text-[10px] font-bold px-1.5 py-0.5 uppercase tracking-wide">New</span></a>
-      <a class="hover:text-indigo-700" href="/browse">Browse</a>
-      <a class="hover:text-indigo-700 hidden sm:inline" href="/pricing">Pricing</a>
+      <a class="nav-link hover:text-indigo-700" href="/top/girls">Girls</a>
+      <a class="nav-link hover:text-indigo-700" href="/top/boys">Boys</a>
+      <a class="nav-link hover:text-indigo-700" href="/trending">Trending</a>
+      <a class="nav-link hover:text-indigo-700 hidden sm:inline" href="/generator">Generator</a>
+      <a class="nav-link hover:text-indigo-700 hidden md:inline" href="/matcher" id="nc-nav-matcher">Matcher<span id="nc-new-dot" hidden class="ml-1 rounded-full bg-rose-100 text-rose-700 text-[10px] font-bold px-1.5 py-0.5 uppercase tracking-wide">New</span></a>
+      <a class="nav-link hover:text-indigo-700" href="/browse">Browse</a>
+      <a class="nav-link hover:text-indigo-700 hidden sm:inline" href="/pricing">Pricing</a>
     </nav>
   </div>
   <form action="/search" method="get" class="sm:hidden px-4 pb-3" role="search">
@@ -70,9 +71,9 @@ ${jsonld ? `<script type="application/ld+json">${JSON.stringify(jsonld)}</script
       class="w-full rounded-full border border-slate-300 bg-slate-50 px-4 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-indigo-400">
   </form>
 </header>
-<main class="flex-1 w-full max-w-5xl mx-auto px-4 py-6">${body}</main>
+<main class="flex-1 w-full max-w-5xl xl:max-w-6xl mx-auto px-4 py-6">${body}</main>
 <footer class="bg-white border-t border-slate-200 mt-10">
-  <div class="max-w-5xl mx-auto px-4 py-8 grid gap-8 sm:grid-cols-3 text-sm">
+  <div class="max-w-5xl xl:max-w-6xl mx-auto px-4 py-8 grid gap-8 sm:grid-cols-3 text-sm">
     <div>
       <p class="font-bold text-indigo-700 mb-2">NameChart</p>
       <p class="text-slate-600">146 years of baby name popularity. Currently in Beta — all features open as a free trial. Data: U.S. Social Security Administration (public domain), 1880–2025.</p>

@@ -44,7 +44,7 @@ const slugify = s => (s || '').toLowerCase().replace(/[^a-z'-]/g, '').slice(0, 4
 // Prefix search via index-friendly range scan (LIKE on a BINARY PK can't use the index
 // and D1 rejects patterns >= 50 chars).
 const NAME_COUNT = 105954; // rows in `names`; update when reimporting data
-const CACHE_VER = 73; // bump to invalidate the edge HTML cache on deploys that change rendering/data
+const CACHE_VER = 75; // bump to invalidate the edge HTML cache on deploys that change rendering/data
 // '~' (0x7E) sorts after every character allowed in slugs (a-z, apostrophe, hyphen).
 const prefixWhere = "slug >= ?1 AND slug < (?1 || '~')";
 
@@ -110,8 +110,9 @@ app.get('/', async c => {
   const body = `
 <section class="relative text-center py-12 sm:py-16 -mx-4 px-4 overflow-hidden">
   <div aria-hidden="true" class="absolute inset-0 -z-10 bg-gradient-to-br from-rose-50 via-indigo-50/60 to-amber-50"></div>
-  <h1 class="fade-up font-display text-4xl sm:text-6xl font-bold tracking-tight">Every name tells a story.<br class="hidden sm:block"> <em class="text-indigo-600">See it in one chart.</em></h1>
-  <p class="mt-4 text-slate-600 max-w-xl mx-auto">Popularity charts, rankings and insights for ${fmt(NAME_COUNT)} names — from 146 years of official U.S. birth records. Every feature is open during our free Beta — <a class="text-indigo-600 underline" href="/pricing">see plans</a>.</p>
+  <div class="hero-glow" aria-hidden="true"></div>
+  <h1 class="fade-up font-display text-4xl sm:text-6xl font-bold tracking-tight">Every name tells a story.<br class="hidden sm:block"> <em class="text-gradient">See it in one chart.</em></h1>
+  <p class="fade-up-2 mt-4 text-slate-600 max-w-xl mx-auto">Popularity charts, rankings and insights for ${fmt(NAME_COUNT)} names — from 146 years of official U.S. birth records. Every feature is open during our free Beta — <a class="text-indigo-600 underline" href="/pricing">see plans</a>.</p>
   <form action="/search" method="get" class="mt-6 max-w-md mx-auto flex gap-2">
     <input name="q" placeholder="Try “Olivia”, “Theodore”, “Luna”…" autocomplete="off"
       class="flex-1 min-w-0 rounded-full border border-slate-300 bg-white px-4 sm:px-5 py-3 shadow-sm focus:outline-none focus:ring-2 focus:ring-indigo-400">
@@ -220,16 +221,18 @@ app.get('/name/:slug', async c => {
   let famous = [];
   try { famous = famousRow ? JSON.parse(famousRow.people) : []; } catch { famous = []; }
   const variants = (await fuzzyMatches(db, slug, 1)).filter(v => v.slug !== slug).slice(0, 6);
+  const bestRank = Math.min(r.latest_rank_f || 9999, r.latest_rank_m || 9999);
   const stats = [
-    ['Total babies', fmt(r.total)],
-    ['Peak year', `${r.peak_year} (${fmt(r.peak_count)} babies)`],
+    ['Total babies', fmt(r.total), `Every U.S. baby named ${r.name} since ${r.first_year}`],
+    ['Peak year', `${r.peak_year} (${fmt(r.peak_count)} babies)`, `The single biggest year for ${r.name}`],
     [`Rank in ${END_YEAR}`, rankBits.length ? [
       r.latest_rank_f && r.latest_rank_f <= 1000 ? `#${fmt(r.latest_rank_f)} for girls${yoy('F')}` : null,
       r.latest_rank_m && r.latest_rank_m <= 1000 ? `#${fmt(r.latest_rank_m)} for boys${yoy('M')}` : null,
-    ].filter(Boolean).join(' · ') : 'Below top 1000'],
-    ['First recorded', String(r.first_year)],
-    ['10-year trend', trendPct === null ? 'New / returning' : `${trendPct > 0 ? '▲ +' : trendPct < 0 ? '▼ ' : ''}${trendPct}%`],
-    ['Gender split', r.f_total && r.m_total ? `${girlPct}% girls / ${100 - girlPct}% boys` : (r.f_total ? 'All girls' : 'All boys')],
+    ].filter(Boolean).join(' · ') : 'Below top 1000',
+    rankBits.length ? (bestRank <= 25 ? 'Very popular — expect classmates who share it' : bestRank <= 200 ? 'Popular but not everywhere' : 'Familiar yet uncommon') : 'Rare — a truly distinctive pick'],
+    ['First recorded', String(r.first_year), `First year ${r.name} shows up in U.S. records`],
+    ['10-year trend', trendPct === null ? 'New / returning' : `${trendPct > 0 ? '▲ +' : trendPct < 0 ? '▼ ' : ''}${trendPct}%`, trendPct === null ? 'Too new (or newly back) to compare' : trendPct > 15 ? 'On its way up — getting more common' : trendPct < -15 ? 'Fading — feels more distinctive each year' : 'Holding steady vs. 10 years ago'],
+    ['Gender split', r.f_total && r.m_total ? `${girlPct}% girls / ${100 - girlPct}% boys` : (r.f_total ? 'All girls' : 'All boys'), unisex ? 'Genuinely used for both — a true unisex name' : 'Share of all babies ever given this name'],
   ];
   const body = `
 <nav aria-label="Breadcrumb" class="text-sm text-slate-600 mb-4"><a href="/" class="hover:text-indigo-600">Home</a> › <a href="/letter/${slug[0]}" class="hover:text-indigo-600">Names starting with ${slug[0].toUpperCase()}</a> › <span>${esc(r.name)}</span></nav>
@@ -259,7 +262,7 @@ ${meaning && (meaning.etymology || meaning.ipa) ? `
   ${chartReadout(series)}
 </div>
 <div class="mt-6 grid grid-cols-2 sm:grid-cols-3 gap-3">
-  ${stats.map(([k, v]) => `<div class="rounded-xl bg-white border border-slate-200 p-4"><p class="text-xs uppercase tracking-wide text-slate-600">${k}</p><p class="font-semibold mt-1">${v}</p></div>`).join('')}
+  ${stats.map(([k, v, why]) => `<div class="rounded-xl bg-white border border-slate-200 p-4"><p class="text-xs uppercase tracking-wide text-slate-600">${k}</p><p class="font-semibold mt-1 stat-num">${v}</p>${why ? `<p class="text-xs text-slate-600 mt-1">${why}</p>` : ''}</div>`).join('')}
 </div>
 <div class="mt-6 flex flex-wrap gap-3">
   <form action="/compare" method="get" class="flex gap-2 items-center">

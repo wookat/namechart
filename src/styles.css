@@ -1,8 +1,31 @@
 @import "tailwindcss";
 @source "./**/*.js";
 
+@font-face {
+  font-family: "Fraunces";
+  font-style: normal;
+  font-weight: 600 700;
+  font-display: swap;
+  src: url(/fonts/fraunces-latin.woff2) format("woff2");
+  unicode-range: U+0000-00FF, U+0131, U+0152-0153, U+02BB-02BC, U+02C6, U+02DA, U+02DC, U+2000-206F, U+2191, U+2193, U+2212, U+FEFF, U+FFFD;
+}
+
 @theme {
-  --font-display: "Iowan Old Style", "Palatino Linotype", Palatino, Georgia, "Times New Roman", serif;
+  --font-display: "Fraunces", "Iowan Old Style", "Palatino Linotype", Palatino, Georgia, "Times New Roman", serif;
+}
+
+@layer base {
+  :focus-visible {
+    outline: 2px solid var(--color-indigo-500);
+    outline-offset: 2px;
+    border-radius: 6px;
+  }
+  button, a[class*="rounded-full"] {
+    transition: background-color 0.15s ease, border-color 0.15s ease, color 0.15s ease, transform 0.1s ease;
+  }
+  button:active, a[class*="rounded-full"]:active {
+    transform: scale(0.97);
+  }
 }
 
 @layer components {
@@ -11,7 +34,7 @@
   }
   .card-lift:hover {
     transform: translateY(-2px);
-    box-shadow: 0 6px 16px -6px rgb(79 70 229 / 0.18);
+    box-shadow: 0 1px 2px rgb(15 23 42 / 0.04), 0 8px 20px -8px rgb(79 70 229 / 0.22);
   }
   .chart-draw path[stroke] {
     stroke-dasharray: 3000;
@@ -24,13 +47,83 @@
   .fade-up {
     animation: fade-up 0.5s ease-out both;
   }
+  .fade-up-2 { animation: fade-up 0.5s ease-out 0.12s both; }
+  .fade-up-3 { animation: fade-up 0.5s ease-out 0.24s both; }
   @keyframes fade-up {
     from { opacity: 0; transform: translateY(10px); }
     to { opacity: 1; transform: none; }
   }
+  .hero-glow {
+    position: absolute;
+    inset: 0;
+    z-index: -10;
+    overflow: hidden;
+    pointer-events: none;
+  }
+  .hero-glow::before, .hero-glow::after {
+    content: "";
+    position: absolute;
+    width: 32rem;
+    height: 32rem;
+    border-radius: 9999px;
+    filter: blur(70px);
+    opacity: 0.5;
+  }
+  .hero-glow::before {
+    background: radial-gradient(closest-side, rgb(244 114 182 / 0.35), transparent);
+    top: -14rem;
+    left: -8rem;
+    animation: glow-drift 16s ease-in-out infinite alternate;
+  }
+  .hero-glow::after {
+    background: radial-gradient(closest-side, rgb(129 140 248 / 0.35), transparent);
+    bottom: -16rem;
+    right: -8rem;
+    animation: glow-drift 16s ease-in-out infinite alternate-reverse;
+  }
+  @keyframes glow-drift {
+    from { transform: translate3d(0, 0, 0); }
+    to { transform: translate3d(3rem, 2rem, 0) scale(1.08); }
+  }
+  .text-gradient {
+    background: linear-gradient(100deg, #4f46e5 10%, #7c3aed 55%, #db2777 95%);
+    -webkit-background-clip: text;
+    background-clip: text;
+    color: transparent;
+  }
+  .nav-link {
+    position: relative;
+    display: inline-block;
+    padding: 0.75rem 0.125rem;
+  }
+  .nav-link::after {
+    content: "";
+    position: absolute;
+    left: 0.125rem;
+    right: 0.125rem;
+    bottom: 0.375rem;
+    height: 2px;
+    border-radius: 2px;
+    background: currentColor;
+    transform: scaleX(0);
+    transform-origin: left;
+    transition: transform 0.18s ease;
+  }
+  .nav-link:hover::after { transform: scaleX(1); }
+  .stat-num { font-variant-numeric: tabular-nums; }
+  .info-tip {
+    cursor: help;
+    text-decoration: underline dotted;
+    text-underline-offset: 3px;
+    text-decoration-color: rgb(148 163 184);
+  }
   @media (prefers-reduced-motion: reduce) {
     .card-lift, .card-lift:hover { transition: none; transform: none; box-shadow: none; }
     .chart-draw path[stroke] { animation: none; stroke-dasharray: none; stroke-dashoffset: 0; }
-    .fade-up { animation: none; }
+    .fade-up, .fade-up-2, .fade-up-3 { animation: none; }
+    .hero-glow::before, .hero-glow::after { animation: none; }
+    button, a[class*="rounded-full"] { transition: none; }
+    button:active, a[class*="rounded-full"]:active { transform: none; }
+    .nav-link::after { transition: none; }
   }
 }
