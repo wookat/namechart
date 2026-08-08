@@ -1358,3 +1358,13 @@
 **R153 特效**：首页 hero 双色氛围光斑 .hero-glow（16s 缓慢漂移，pointer-events:none）+ 副标题交错入场 fade-up-2/3 + 主标题渐变文字 .text-gradient；全部纯 CSS 0KB JS，prefers-reduced-motion 全部禁用（实测通过）。
 **R154 用户心智/人话解释**：名字页六统计卡各配一行大白话（Rank→"Very popular — expect classmates…"/"Familiar yet uncommon"/"Rare — a truly distinctive pick"；10-year trend→"On its way up…"/"Fading — feels more distinctive…"；Gender split→unisex 时 "Genuinely used for both…"），专业数字+零门槛并存。
 **R155 回归**：测试代理录屏走查通过——字体加载（document.fonts.check=true、无 FOIT）、四档无溢出、axe / 与 /name/luna 0 违规、reduced-motion 全降级、console 零错误、1440 宽屏 1152px 容器生效。版本 8120bdb6（CACHE_VER 75 / ASSET_VER 14）。
+
+## Round 156–160（2026-08-08）「一比一复刻基准打磨」专项（标杆：Nameberry）
+**R156–157 走查+对照表**：真实抓取 Nameberry 首页/名字页/搜索等公开面（订阅墙/账号面不绕），建 docs/replication-benchmark.md：名字页 14 项、首页 3 项、搜索/列表 3 项逐项评分。
+**R158 P1 修复 4 项全部上线**（版本 38aa617e，CACHE_VER 76 / ASSET_VER 15）：
+- P1-a 事实胶囊行（Origin/Meaning "moon" 链 meaning 页/Say it IPA/2025 rank 徽章，Top100 深靛蓝、Top1000 浅底分级）；
+- P1-b "On this page" 锚点目录（8 项条件渲染，scroll-margin 4.5rem 不被 sticky header 遮挡，smooth scroll 带 reduced-motion 降级）；
+- P1-c 数据版署名行（信任信号，链 /about 方法论）；
+- P1-d Recent years 近 12 年逐年表（rank/births/"1 in N" 人话率）。
+**R159 超越项**：对照表末列 9 项（双线 146 年曲线/全免费无广告/州维度/无账号收藏+分享短链/Matcher/频率句+人话解释/性能 3-78KB vs 183-386KB/对比页族/meaning 页族免费）。World rankings、跨语言昵称、pop culture 编辑内容维持 P2（缺公开数据源，不伪造）。
+**R160 回归**：测试代理录屏走查全通过——Luna（#27 Top100 胶囊/8 锚点落位/12 行表 1 in 265）、Agnes/Theodore/Mabel 条件渲染、375px 无溢出、axe 0 违规、reduced-motion scroll 降级、console 零错误。Births 列为男女合计（Luna 6,085=6,076F+9M），设计如此。
