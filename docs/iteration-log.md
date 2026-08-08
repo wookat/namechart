@@ -1339,3 +1339,7 @@
 - 主导航 Matcher 加 "New" 徽标（nc-seen-matcher：点击或访问 /matcher 即永久消失）；
 - 名字页首次访问显示一条可关闭提示（教 ♡ 存清单，nc-tip-fav：点 × 或点收藏即永久消失；SSR 默认 hidden，无 JS 时不出现）。
 - CACHE_VER 72 / ASSET_VER 12，版本 fe0a96a4。线上验证：8 路由 200，步骤条/工具卡/各空态 CTA/tip/New 徽标均在 HTML 中按设计输出。
+
+## Round 144（2026-08-08）测试代理新用户视角回归
+- 全部通过：三步条/工具卡/New 徽标首访可见；徽标点击后持久消失；名字页 tip 首现、♡ 或 × 后持久消失；空态 CTA（搜索/生成器/matcher 示例）落点正确；375px 无溢出；axe 0 违规；reduced-motion 无影响；禁 JS 时引导元素保持 SSR hidden；无弹窗零打扰。报告 test-report.md（顶部新节）。
+- 观察项（非本次引入）：/generator?sex=girl&style=vintage 出现 Bennie/Cleo——数据口径正确（1925 年 F 榜 Top500 真实在榜），维持现状。
