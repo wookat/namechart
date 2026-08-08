@@ -44,7 +44,7 @@ const slugify = s => (s || '').toLowerCase().replace(/[^a-z'-]/g, '').slice(0, 4
 // Prefix search via index-friendly range scan (LIKE on a BINARY PK can't use the index
 // and D1 rejects patterns >= 50 chars).
 const NAME_COUNT = 105954; // rows in `names`; update when reimporting data
-const CACHE_VER = 67; // bump to invalidate the edge HTML cache on deploys that change rendering/data
+const CACHE_VER = 68; // bump to invalidate the edge HTML cache on deploys that change rendering/data
 // '~' (0x7E) sorts after every character allowed in slugs (a-z, apostrophe, hyphen).
 const prefixWhere = "slug >= ?1 AND slug < (?1 || '~')";
 
@@ -724,7 +724,47 @@ const LISTS = {
     rows: db => db.prepare(`SELECT slug,name,total,f_total,m_total,first_year FROM names
           WHERE LENGTH(name) >= 9 AND m_total > f_total ORDER BY total DESC LIMIT 40`).all().then(r => r.results),
   },
+  'nature-girl-names': {
+    title: 'Nature Girl Names with Documented Meanings',
+    desc: 'Girl names whose documented etymology ties to nature — flowers, rivers, forests, mountains and wildlife.',
+    intro: 'Girl names with a documented etymological link to the natural world, ranked by all-time U.S. births.',
+    rows: db => meaningGroupList(db, NATURE_WORDS, 'F'),
+  },
+  'nature-boy-names': {
+    title: 'Nature Boy Names with Documented Meanings',
+    desc: 'Boy names whose documented etymology ties to nature — rivers, forests, mountains and wildlife.',
+    intro: 'Boy names with a documented etymological link to the natural world, ranked by all-time U.S. births.',
+    rows: db => meaningGroupList(db, NATURE_WORDS, 'M'),
+  },
+  'celestial-girl-names': {
+    title: 'Celestial Girl Names — Moon, Star & Sky Meanings',
+    desc: 'Girl names whose documented etymology relates to the moon, stars, sky, light or dawn.',
+    intro: 'Girl names with a documented etymological link to the heavens — moon, stars, sky, light and dawn.',
+    rows: db => meaningGroupList(db, CELESTIAL_WORDS, 'F'),
+  },
+  'celestial-boy-names': {
+    title: 'Celestial Boy Names — Star, Sky & Light Meanings',
+    desc: 'Boy names whose documented etymology relates to the moon, stars, sky, light or dawn.',
+    intro: 'Boy names with a documented etymological link to the heavens — moon, stars, sky, light and dawn.',
+    rows: db => meaningGroupList(db, CELESTIAL_WORDS, 'M'),
+  },
 };
+
+const NATURE_WORDS = ['flower', 'rose', 'river', 'forest', 'meadow', 'valley', 'mountain', 'sea', 'earth', 'bird', 'deer', 'wolf', 'bear', 'lion', 'spring', 'stone', 'water'];
+const CELESTIAL_WORDS = ['moon', 'star', 'sky', 'light', 'dawn', 'heaven'];
+
+// Names whose documented etymology matches any of the group's words (word-boundary checked in JS).
+async function meaningGroupList(db, words, sex) {
+  const cand = await db.prepare(`SELECT m.slug, m.etymology, n.name, n.total, n.f_total, n.m_total, n.first_year
+      FROM meanings m JOIN names n ON n.slug = m.slug
+      WHERE (${words.map(() => 'm.etymology LIKE ?').join(' OR ')}) ORDER BY n.total DESC LIMIT 500`)
+    .bind(...words.map(w => `%${w}%`)).all();
+  const res = words.map(w => new RegExp(`\\b${w}\\b`, 'i'));
+  return cand.results
+    .filter(r => res.some(re => re.test(r.etymology)))
+    .filter(r => (sex === 'F' ? r.f_total > r.m_total : r.m_total > r.f_total))
+    .slice(0, 40);
+}
 
 app.get('/list/:slug', async c => {
   const def = LISTS[c.req.param('slug')];

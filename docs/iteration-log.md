@@ -1263,3 +1263,20 @@
 **收口回归**
 - axe 6 页面族（year/state/letter/list/compare/decade）全 clean；浏览器 console 零报错。
 - 无新 P0/P1/P2 可落地项——连续两轮无有价值改进，按老板规则转低强度运营。
+
+## Round 129（2026-08-09）
+**数据分析/冒烟**
+- 流量：8-07 49PV/21 路径（仍以内部为主）；零结果搜索仅 XSS 探针与拼写测试，均安全处理；订阅 5。7 关键路由冒烟 200。无自然搜索词积累——收录爬坡继续。
+
+## Round 130（2026-08-09）
+**pSEO 扩容**（大搜索词主题：nature/celestial baby names）
+- 新增 4 个含义组榜单页：/list/nature-{girl,boy}-names、/list/celestial-{girl,boy}-names，由词源含义组（NATURE_WORDS 17 词 / CELESTIAL_WORDS 6 词）词边界匹配数据自证生成，自动带 OG 卡/ItemList/sitemap。
+- IndexNow 第 13 批 3,262 URL（200）。CACHE_VER 68，版本 38b506e3。
+- 部署传播期短暂出现新旧版本混服（404/空列表），60s 后稳定全 200（nature-girl 40 项、celestial-boy 19 项）。
+
+**证据**：4 页与 OG 全 200；axe clean；375px 无溢出；ItemList JSON-LD 有效。
+
+## Round 131（2026-08-09）
+**CWV 复测 + 竞品复访**
+- /name/luna 真实浏览器：TTFB 283ms（未缓存首击）、LCP 376ms、CLS≈0——全部 Good 区间。
+- Nameberry 复访：nature 榜单旧 URL 已 404（其榜单体系改版中）；无新增可数据自证的功能缺口。

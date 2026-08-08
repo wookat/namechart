@@ -9,7 +9,7 @@ const key = readFileSync(new URL('../wrangler.toml', import.meta.url), 'utf8').m
 const maxNames = Number(process.argv[2] ?? 2000);
 
 const urls = ['/', '/top/girls', '/top/boys', '/unisex', '/trending', '/browse', '/about'];
-for (const s of ['vintage-girl-names', 'vintage-boy-names', 'timeless-girl-names', 'timeless-boy-names', 'new-girl-names', 'new-boy-names', 'short-girl-names', 'short-boy-names', 'long-girl-names', 'long-boy-names']) urls.push(`/list/${s}`);
+for (const s of ['vintage-girl-names', 'vintage-boy-names', 'timeless-girl-names', 'timeless-boy-names', 'new-girl-names', 'new-boy-names', 'short-girl-names', 'short-boy-names', 'long-girl-names', 'long-boy-names', 'nature-girl-names', 'nature-boy-names', 'celestial-girl-names', 'celestial-boy-names']) urls.push(`/list/${s}`);
 for (const w of ['moon', 'light', 'star', 'love', 'strong', 'fire', 'peace', 'king', 'flower', 'sea', 'beautiful', 'brave', 'joy', 'grace', 'warrior', 'night',
   'bright', 'water', 'ruler', 'victory', 'noble', 'life', 'earth', 'heaven', 'rose', 'white', 'wolf', 'lion', 'queen', 'holy', 'river', 'stone', 'bear', 'honor',
   'sky', 'pearl', 'black', 'red', 'prince', 'beloved', 'gracious', 'glory', 'dark', 'song', 'dawn', 'forest', 'valley', 'meadow', 'bird', 'spring', 'crown', 'pure', 'deer', 'mountain']) urls.push(`/meaning/${w}`);
