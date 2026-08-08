@@ -1290,3 +1290,10 @@
 **移动端/UX 走查**
 - 375px：/browse 已自动列出 4 个新榜单入口、无溢出；/list/celestial-girl-names 渲染正常无溢出（r133-celestial-mobile.png）。无缺陷。
 - 五驱动扫描后暂无新 P0/P1；本批收口。
+
+## Round 134（2026-08-09）
+**pSEO 扩容（续）**
+- 新增 royal/virtue ×男女 4 个含义组榜单页（ROYAL_WORDS 6 词 / VIRTUE_WORDS 10 词，词边界数据自证；royal-girl 35 项、其余 40 项），名字页 related-lists 同步补谓词。
+- 榜单页族 14→18。IndexNow 第 14 批 3,266 URL（200）。CACHE_VER 70，版本 ff13350b。
+
+**证据**：4 页/OG 全 200；axe clean；375px 无溢出；ItemList JSON-LD 有效。

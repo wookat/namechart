@@ -44,7 +44,7 @@ const slugify = s => (s || '').toLowerCase().replace(/[^a-z'-]/g, '').slice(0, 4
 // Prefix search via index-friendly range scan (LIKE on a BINARY PK can't use the index
 // and D1 rejects patterns >= 50 chars).
 const NAME_COUNT = 105954; // rows in `names`; update when reimporting data
-const CACHE_VER = 69; // bump to invalidate the edge HTML cache on deploys that change rendering/data
+const CACHE_VER = 70; // bump to invalidate the edge HTML cache on deploys that change rendering/data
 // '~' (0x7E) sorts after every character allowed in slugs (a-z, apostrophe, hyphen).
 const prefixWhere = "slug >= ?1 AND slug < (?1 || '~')";
 
@@ -279,6 +279,8 @@ ${(() => {
   if (meaning?.etymology) {
     if (NATURE_WORDS.some(w => new RegExp(`\\b${w}\\b`, 'i').test(meaning.etymology))) rels.push([`nature-${g}-names`, `Nature ${g} names`]);
     if (CELESTIAL_WORDS.some(w => new RegExp(`\\b${w}\\b`, 'i').test(meaning.etymology))) rels.push([`celestial-${g}-names`, `Celestial ${g} names`]);
+    if (ROYAL_WORDS.some(w => new RegExp(`\\b${w}\\b`, 'i').test(meaning.etymology))) rels.push([`royal-${g}-names`, `Royal ${g} names`]);
+    if (VIRTUE_WORDS.some(w => new RegExp(`\\b${w}\\b`, 'i').test(meaning.etymology))) rels.push([`virtue-${g}-names`, `Virtue ${g} names`]);
   }
   if (!rels.length) return '';
   return `<section class="mt-10"><h2 class="font-bold text-lg mb-3">Explore related lists</h2><div class="flex flex-wrap gap-2 text-sm">${rels.map(([s, t]) => `<a href="/list/${s}" class="px-3 py-1.5 rounded-full bg-white border border-slate-200 hover:border-indigo-400">${t} →</a>`).join('')}</div></section>`;
@@ -752,10 +754,36 @@ const LISTS = {
     intro: 'Boy names with a documented etymological link to the heavens — moon, stars, sky, light and dawn.',
     rows: db => meaningGroupList(db, CELESTIAL_WORDS, 'M'),
   },
+  'royal-girl-names': {
+    title: 'Royal Girl Names — Queen, Ruler & Noble Meanings',
+    desc: 'Girl names whose documented etymology relates to royalty — queens, rulers, crowns and nobility.',
+    intro: 'Girl names with a documented etymological link to royalty and nobility, ranked by all-time U.S. births.',
+    rows: db => meaningGroupList(db, ROYAL_WORDS, 'F'),
+  },
+  'royal-boy-names': {
+    title: 'Royal Boy Names — King, Ruler & Noble Meanings',
+    desc: 'Boy names whose documented etymology relates to royalty — kings, rulers, crowns and nobility.',
+    intro: 'Boy names with a documented etymological link to royalty and nobility, ranked by all-time U.S. births.',
+    rows: db => meaningGroupList(db, ROYAL_WORDS, 'M'),
+  },
+  'virtue-girl-names': {
+    title: 'Virtue Girl Names — Grace, Joy & Honor Meanings',
+    desc: 'Girl names whose documented etymology relates to virtues — grace, joy, peace, honor and courage.',
+    intro: 'Girl names with a documented etymological link to a virtue, ranked by all-time U.S. births.',
+    rows: db => meaningGroupList(db, VIRTUE_WORDS, 'F'),
+  },
+  'virtue-boy-names': {
+    title: 'Virtue Boy Names — Honor, Courage & Peace Meanings',
+    desc: 'Boy names whose documented etymology relates to virtues — honor, courage, peace, wisdom and strength.',
+    intro: 'Boy names with a documented etymological link to a virtue, ranked by all-time U.S. births.',
+    rows: db => meaningGroupList(db, VIRTUE_WORDS, 'M'),
+  },
 };
 
 const NATURE_WORDS = ['flower', 'rose', 'river', 'forest', 'meadow', 'valley', 'mountain', 'sea', 'earth', 'bird', 'deer', 'wolf', 'bear', 'lion', 'spring', 'stone', 'water'];
 const CELESTIAL_WORDS = ['moon', 'star', 'sky', 'light', 'dawn', 'heaven'];
+const ROYAL_WORDS = ['king', 'queen', 'prince', 'ruler', 'crown', 'noble'];
+const VIRTUE_WORDS = ['grace', 'joy', 'peace', 'honor', 'brave', 'strong', 'pure', 'gracious', 'glory', 'victory'];
 
 // Names whose documented etymology matches any of the group's words (word-boundary checked in JS).
 async function meaningGroupList(db, words, sex) {
