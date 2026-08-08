@@ -1343,3 +1343,10 @@
 ## Round 144（2026-08-08）测试代理新用户视角回归
 - 全部通过：三步条/工具卡/New 徽标首访可见；徽标点击后持久消失；名字页 tip 首现、♡ 或 × 后持久消失；空态 CTA（搜索/生成器/matcher 示例）落点正确；375px 无溢出；axe 0 违规；reduced-motion 无影响；禁 JS 时引导元素保持 SSR hidden；无弹窗零打扰。报告 test-report.md（顶部新节）。
 - 观察项（非本次引入）：/generator?sex=girl&style=vintage 出现 Bennie/Cleo——数据口径正确（1925 年 F 榜 Top500 真实在榜），维持现状。
+
+## Round 145–149（2026-08-08）「品牌化+全活动运营」专项
+**R145 品牌体系落库** docs/brand/brand-guide.md：品牌故事/定位一句话（"Every name tells a story…"）、命名口径（NameChart 写法、功能名、shortlist 用词、Beta 口径）、tone of voice 与禁用词、视觉规范整合（logo/色板/字体/组件/OG，来源 docs/visual-research.md）。
+**R146 全站一致性巡检**：grep 全站无 "Name Chart"/"100% free"/"wishlist" 等违例（R107 口径审计后保持干净），无需修复。
+**R147 /press 媒体资源页上线**：boilerplate、关键事实（数据源/许可/隐私）、logo SVG 下载、分享卡示例、署名规范；footer + about 加入口，入 static sitemap。CACHE_VER 73，版本 223efb7f。回归：/press 等 5 路由 200，axe 0 违规，375px 无溢出（scrollWidth 360）。
+**R148 营销素材包落库 docs/marketing/**：press-kit / directory-submissions（7 目标站，均需真人账号，不注册假账号）/ producthunt-launch-kit（tagline+maker comment+gallery+FAQ）/ social-calendar-14d（14 天逐日 HN/X/Reddit 文案，数据点全部经 D1 核验：Luna 1970=11、Agnes 2025=246≈1/6,500、Mabel 2020→2025 女婴 718→1522、Chester 2025=107）/ email-lifecycle（double opt-in/欢迎/月报模板，未接 Resend 前不发信）。
+**R149 边界**：无可免登录提交的正规目录站（不造假账号）；邮件全链路维持红线冻结。

@@ -44,7 +44,7 @@ const slugify = s => (s || '').toLowerCase().replace(/[^a-z'-]/g, '').slice(0, 4
 // Prefix search via index-friendly range scan (LIKE on a BINARY PK can't use the index
 // and D1 rejects patterns >= 50 chars).
 const NAME_COUNT = 105954; // rows in `names`; update when reimporting data
-const CACHE_VER = 72; // bump to invalidate the edge HTML cache on deploys that change rendering/data
+const CACHE_VER = 73; // bump to invalidate the edge HTML cache on deploys that change rendering/data
 // '~' (0x7E) sorts after every character allowed in slugs (a-z, apostrophe, hyphen).
 const prefixWhere = "slug >= ?1 AND slug < (?1 || '~')";
 
@@ -1122,8 +1122,36 @@ app.get('/about', c => html(c, layout({
 <li>Trend = rank change over the last 5 years (top-1000 names).</li>
 </ul>
 <h2 class="text-xl font-bold mt-8">Contact</h2>
-<p class="mt-2">Feedback or data questions: hello@zalize.com</p>
+<p class="mt-2">Feedback or data questions: hello@zalize.com · Writing about us? See the <a class="text-indigo-600 underline" href="/press">press kit</a>.</p>
 </article>${emailForm()}`,
+})));
+
+app.get('/press', c => html(c, layout({
+  title: `Press & Brand Assets | ${SITE}`,
+  desc: 'NameChart press kit: boilerplate, key facts, logo downloads and screenshots for journalists and directories.',
+  path: '/press',
+  body: `<article class="max-w-2xl">
+<h1 class="font-display text-3xl sm:text-4xl font-bold">Press &amp; brand assets</h1>
+<p class="mt-4 text-slate-600">Everything you need to write about NameChart. Questions or interview requests: hello@zalize.com</p>
+<h2 class="text-xl font-bold mt-8">Boilerplate</h2>
+<p class="mt-2 text-slate-700">NameChart charts 146 years of official U.S. baby name data — full popularity curves, meanings, famous namesakes, state rankings and sibling-name matching for 105,000+ names. No ads, no account required; every feature is open during the free Beta. NameChart is a Zalize project.</p>
+<h2 class="text-xl font-bold mt-8">Key facts</h2>
+<ul class="mt-2 list-disc pl-5 space-y-1 text-slate-700">
+<li>${fmt(NAME_COUNT)} names, each with a full 1880–${END_YEAR} popularity chart</li>
+<li>Data: U.S. Social Security Administration public dataset (national + state)</li>
+<li>Meanings &amp; pronunciations adapted from Wiktionary (CC BY-SA); famous namesakes from Wikidata (CC0)</li>
+<li>Tools: Baby Name Generator, Sibling &amp; Middle Name Matcher, head-to-head comparisons, shareable shortlists</li>
+<li>Privacy: no cookies, no trackers, first-party anonymous analytics only</li>
+<li>Status: free Beta trial; planned plans published on the <a class="text-indigo-600 underline" href="/pricing">pricing page</a></li>
+</ul>
+<h2 class="text-xl font-bold mt-8">Logo</h2>
+<p class="mt-2 text-slate-700">Rounded-square gradient mark with a white chart line. Please don't recolor or stretch it.</p>
+<p class="mt-3 flex items-center gap-4"><img src="/img/favicon.svg" alt="NameChart logo" width="64" height="64"><a class="text-indigo-600 underline" href="/img/favicon.svg" download="namechart-logo.svg">Download SVG</a></p>
+<h2 class="text-xl font-bold mt-8">Screenshots &amp; share cards</h2>
+<p class="mt-2 text-slate-700">Every major page has a generated share card you may reuse in coverage, e.g. <a class="text-indigo-600 underline" href="/og/name/luna.png">a name card</a> or <a class="text-indigo-600 underline" href="/og/list/vintage-girl-names.png">a list card</a>. Screenshots of any page may be used with attribution and a link.</p>
+<h2 class="text-xl font-bold mt-8">Attribution</h2>
+<p class="mt-2 text-slate-700">Please credit "NameChart (namechart.zalize.com)". Underlying SSA data is public domain; our visualizations and text are © Zalize.</p>
+</article>`,
 })));
 
 app.get('/favorites', c => html(c, layout({
@@ -1248,7 +1276,7 @@ app.post('/api/beacon', async c => {
   try {
     const { p } = await c.req.json();
     // Only count paths that match a real route family, so forged beacons can't pollute analytics.
-    const VALID_PATH = /^\/$|^\/(name|letter|year|state|compare|list|meaning|og\/name|og\/list|og\/meaning|og\/compare)\/[a-z0-9'.-]{1,60}$|^\/decade\/\d{4}s$|^\/s\/[a-z0-9]{8}$|^\/og\/share\/[a-z0-9.]{1,20}$|^\/(top\/girls|top\/boys|trending|unisex|browse|about|privacy|terms|favorites|search|generator|pricing|matcher)$/;
+    const VALID_PATH = /^\/$|^\/(name|letter|year|state|compare|list|meaning|og\/name|og\/list|og\/meaning|og\/compare)\/[a-z0-9'.-]{1,60}$|^\/decade\/\d{4}s$|^\/s\/[a-z0-9]{8}$|^\/og\/share\/[a-z0-9.]{1,20}$|^\/(top\/girls|top\/boys|trending|unisex|browse|about|privacy|terms|favorites|search|generator|pricing|matcher|press)$/;
     if (typeof p === 'string' && p.length <= 100 && VALID_PATH.test(p) && !(await overQuota(c, 'beacon', 300))) {
       const day = new Date().toISOString().slice(0, 10);
       await c.env.DB.prepare('INSERT INTO hits (day, path, count) VALUES (?, ?, 1) ON CONFLICT(day, path) DO UPDATE SET count = count + 1')
@@ -1282,7 +1310,7 @@ app.get('/sitemaps/:shard{.+\\.xml}', async c => {
   const shard = c.req.param('shard').replace(/\.xml$/, '');
   const urls = [];
   if (shard === 'static') {
-    urls.push('/', '/top/girls', '/top/boys', '/unisex', '/trending', '/browse', '/generator', '/matcher', '/pricing', '/about', '/privacy', '/terms');
+    urls.push('/', '/top/girls', '/top/boys', '/unisex', '/trending', '/browse', '/generator', '/matcher', '/pricing', '/about', '/press', '/privacy', '/terms');
     for (const s of Object.keys(LISTS)) urls.push(`/list/${s}`);
     for (const w of MEANING_WORDS) urls.push(`/meaning/${w}`);
     for (const ch of 'abcdefghijklmnopqrstuvwxyz') urls.push(`/letter/${ch}`);
