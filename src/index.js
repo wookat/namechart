@@ -930,7 +930,12 @@ app.get('/matcher', async c => {
         WHERE first_year <= 1900 AND length(name) ${wantShort ? 'BETWEEN 3 AND 5' : 'BETWEEN 6 AND 9'} AND slug != ? ORDER BY total DESC LIMIT 120`)
       .bind(first.slug).all();
     const mpicks = midCand.results.filter(s => s.slug[0] !== first.slug[0] && s.slug.slice(-2) !== first.slug.slice(-2));
-    mids = { first, girls: mpicks.filter(s => s.f_total > s.m_total).slice(0, 6), boys: mpicks.filter(s => s.m_total > s.f_total).slice(0, 6) };
+    const firstIsGirl = first.f_total > first.m_total;
+    mids = {
+      first,
+      girls: firstIsGirl ? mpicks.filter(s => s.f_total > s.m_total).slice(0, 12) : [],
+      boys: firstIsGirl ? [] : mpicks.filter(s => s.m_total > s.f_total).slice(0, 12),
+    };
   }
   const val = i => { const s = inputs[i]; if (!s) return ''; const r = rows.find(x => x.slug === s); return esc(r ? r.name : cap(s)); };
   const group = (title, arr) => arr.length ? `<div><h3 class="font-semibold text-sm text-slate-600 mb-2">${title}</h3><div class="grid grid-cols-2 sm:grid-cols-4 gap-3">${arr.map(nameCard).join('')}</div></div>` : '';
