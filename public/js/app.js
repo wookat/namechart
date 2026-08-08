@@ -65,6 +65,39 @@
     });
   }
 
+  var shareBox = document.getElementById('nc-fav-share');
+  if (shareBox) {
+    var stored;
+    try { stored = JSON.parse(localStorage.getItem('nc-share-link') || 'null'); } catch (e) { stored = null; }
+    var renderShare = function () {
+      if (!favs().length && !stored) { shareBox.innerHTML = ''; return; }
+      if (stored) {
+        shareBox.innerHTML = '<div class="rounded-xl bg-indigo-50 border border-indigo-200 p-4 text-sm"><p class="font-semibold text-slate-800">Your share link</p><p class="mt-1"><a class="text-indigo-700 underline break-all" href="' + stored.url + '">' + stored.url + '</a></p><div class="mt-3 flex flex-wrap gap-2"><button id="nc-share-copy" class="rounded-full bg-indigo-600 text-white px-4 py-1.5 font-semibold">Copy link</button><button id="nc-share-revoke" class="rounded-full bg-white border border-slate-300 px-4 py-1.5 text-slate-700">Delete link</button></div><p class="mt-2 text-xs text-slate-600">Anyone with the link can view this snapshot of your list. Deleting the link makes it stop working for everyone.</p></div>';
+        document.getElementById('nc-share-copy').addEventListener('click', function () {
+          navigator.clipboard.writeText(stored.url).then(function () { document.getElementById('nc-share-copy').textContent = '\u2713 Copied'; });
+        });
+        document.getElementById('nc-share-revoke').addEventListener('click', function () {
+          fetch('/api/share/revoke', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ id: stored.id, token: stored.token }) })
+            .then(function () { stored = null; localStorage.removeItem('nc-share-link'); renderShare(); }).catch(function () {});
+        });
+      } else {
+        shareBox.innerHTML = '<button id="nc-share-make" class="rounded-full bg-indigo-600 text-white px-5 py-2.5 text-sm font-semibold">Share this list \u2192</button><p class="mt-2 text-xs text-slate-600">Creates a link with a snapshot of your current list \u2014 you can delete it anytime.</p>';
+        document.getElementById('nc-share-make').addEventListener('click', function () {
+          var btn = document.getElementById('nc-share-make');
+          btn.disabled = true; btn.textContent = 'Creating\u2026';
+          fetch('/api/share', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ slugs: favs().map(function (f) { return f.slug; }) }) })
+            .then(function (r) { return r.json(); })
+            .then(function (d) {
+              if (d.url) { stored = d; localStorage.setItem('nc-share-link', JSON.stringify(d)); renderShare(); }
+              else { btn.disabled = false; btn.textContent = d.error || 'Try again'; }
+            })
+            .catch(function () { btn.disabled = false; btn.textContent = 'Try again'; });
+        });
+      }
+    };
+    renderShare();
+  }
+
   var el = document.getElementById('nc-readout');
   var hit = document.getElementById('nc-hit');
   if (!el || !hit) return;

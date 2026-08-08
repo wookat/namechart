@@ -44,7 +44,7 @@ const slugify = s => (s || '').toLowerCase().replace(/[^a-z'-]/g, '').slice(0, 4
 // Prefix search via index-friendly range scan (LIKE on a BINARY PK can't use the index
 // and D1 rejects patterns >= 50 chars).
 const NAME_COUNT = 105954; // rows in `names`; update when reimporting data
-const CACHE_VER = 70; // bump to invalidate the edge HTML cache on deploys that change rendering/data
+const CACHE_VER = 71; // bump to invalidate the edge HTML cache on deploys that change rendering/data
 // '~' (0x7E) sorts after every character allowed in slugs (a-z, apostrophe, hyphen).
 const prefixWhere = "slug >= ?1 AND slug < (?1 || '~')";
 
@@ -904,6 +904,86 @@ ${emailForm()}`;
   return htmlPrivate(c, layout({ title: `Baby Name Generator — Real Names from Real Data | ${SITE}`, desc: 'Generate baby name ideas by gender, style and first letter, drawn from 146 years of U.S. SSA data. No ads, open in Beta.', path: '/generator', body }));
 });
 
+// ---------- sibling & middle name matcher ----------
+app.get('/matcher', async c => {
+  const db = c.env.DB;
+  const inputsRaw = (c.req.queries('names') || []).join(',').toLowerCase();
+  const inputs = [...new Set(inputsRaw.split(',').map(s => s.trim().replace(/[^a-z'-]/g, '')).filter(s => s.length >= 2 && s.length <= 40))].slice(0, 3);
+  const rows = inputs.length ? await namesBySlugs(db, inputs) : [];
+  const missing = inputs.filter(s => !rows.some(r => r.slug === s));
+  let sibs = null, mids = null;
+  if (rows.length) {
+    const avgPeak = Math.round(rows.reduce((a, r) => a + r.peak_year, 0) / rows.length);
+    const totals = rows.map(r => r.total).sort((a, b) => a - b);
+    const med = totals[Math.floor(totals.length / 2)];
+    const firsts = new Set(rows.map(r => r.slug[0]));
+    const tails = new Set(rows.map(r => r.slug.slice(-2)));
+    const cand = await db.prepare(`SELECT slug,name,total,f_total,m_total,first_year FROM names
+        WHERE peak_year BETWEEN ? AND ? AND total BETWEEN ? AND ? AND slug NOT IN (${rows.map(() => '?').join(',')})
+        ORDER BY ABS(total - ?) LIMIT 200`)
+      .bind(avgPeak - 10, avgPeak + 10, Math.round(totals[0] * 0.3), Math.round(totals[totals.length - 1] * 3), ...rows.map(r => r.slug), med).all();
+    const picks = cand.results.filter(s => !firsts.has(s.slug[0]) && !tails.has(s.slug.slice(-2)));
+    sibs = { girls: picks.filter(s => s.f_total > s.m_total).slice(0, 8), boys: picks.filter(s => s.m_total > s.f_total).slice(0, 8) };
+    const first = rows[0];
+    const wantShort = first.name.length >= 6;
+    const midCand = await db.prepare(`SELECT slug,name,total,f_total,m_total,first_year FROM names
+        WHERE first_year <= 1900 AND length(name) ${wantShort ? 'BETWEEN 3 AND 5' : 'BETWEEN 6 AND 9'} AND slug != ? ORDER BY total DESC LIMIT 120`)
+      .bind(first.slug).all();
+    const mpicks = midCand.results.filter(s => s.slug[0] !== first.slug[0] && s.slug.slice(-2) !== first.slug.slice(-2));
+    mids = { first, girls: mpicks.filter(s => s.f_total > s.m_total).slice(0, 6), boys: mpicks.filter(s => s.m_total > s.f_total).slice(0, 6) };
+  }
+  const val = i => { const s = inputs[i]; if (!s) return ''; const r = rows.find(x => x.slug === s); return esc(r ? r.name : cap(s)); };
+  const group = (title, arr) => arr.length ? `<div><h3 class="font-semibold text-sm text-slate-600 mb-2">${title}</h3><div class="grid grid-cols-2 sm:grid-cols-4 gap-3">${arr.map(nameCard).join('')}</div></div>` : '';
+  const body = `
+<h1 class="font-display text-3xl sm:text-4xl font-bold">Sibling &amp; Middle Name Matcher</h1>
+<p class="mt-2 text-slate-600 max-w-2xl">Enter the names you already love (or already have) and get sibling names from the same era and popularity tier, plus middle names that flow — all drawn from 146 years of U.S. birth data.</p>
+<form method="get" action="/matcher" class="mt-6 rounded-2xl bg-white border border-slate-200 p-4 sm:p-6">
+  <div class="flex flex-wrap gap-3">
+    ${[0, 1, 2].map(i => `<label class="text-sm"><span class="font-semibold block mb-1">${i === 0 ? 'Name 1' : `Name ${i + 1} <span class=\"font-normal text-slate-500\">(optional)</span>`}</span><input name="names" value="${val(i)}" ${i === 0 ? 'required' : ''} maxlength="40" autocomplete="off" placeholder="e.g. ${['Luna', 'Leo', 'Ivy'][i]}" class="rounded-lg border border-slate-300 px-3 py-2 text-sm bg-white w-36"></label>`).join('')}
+    <button class="self-end rounded-full bg-indigo-600 text-white px-6 py-2 text-sm font-semibold hover:bg-indigo-700">Find matches</button>
+  </div>
+</form>
+${missing.length ? `<p class="mt-4 text-sm text-rose-700">Not in the data: ${missing.map(esc).join(', ')} — check the spelling or try another name.</p>` : ''}
+${sibs ? `<section class="mt-8"><h2 class="font-bold text-xl mb-1">Sibling names for ${rows.map(r => esc(r.name)).join(' &amp; ')}</h2><p class="text-sm text-slate-600 mb-4">Same era (peaked within 10 years) and a similar popularity tier, with different first letters and endings so the set doesn't blur together.</p><div class="space-y-6">${group('Sisters', sibs.girls)}${group('Brothers', sibs.boys)}</div>${!sibs.girls.length && !sibs.boys.length ? '<p class="text-slate-600">No close matches — try a more common name.</p>' : ''}</section>` : ''}
+${mids && (mids.girls.length || mids.boys.length) ? `<section class="mt-10"><h2 class="font-bold text-xl mb-1">Middle names for ${esc(mids.first.name)}</h2><p class="text-sm text-slate-600 mb-4">Enduring classics (in use since before 1900) with a ${mids.first.name.length >= 6 ? 'shorter' : 'longer'} shape that balances ${esc(mids.first.name)}.</p><div class="flex flex-wrap gap-2 text-sm">${[...mids.girls, ...mids.boys].map(s => `<a href="/name/${s.slug}" class="px-3 py-1.5 rounded-full bg-white border border-slate-200 hover:border-indigo-400">${esc(mids.first.name)} <strong>${esc(s.name)}</strong></a>`).join('')}</div></section>` : ''}
+${!rows.length ? `<section class="mt-8 grid sm:grid-cols-3 gap-4 text-sm">${[['Same era', 'Siblings\u2019 names usually come from the same generation — we match on when each name peaked.'], ['Same popularity tier', 'A very common name next to a very rare one can feel mismatched — we match on how many babies ever got each name.'], ['Distinct sounds', 'We skip names sharing a first letter or ending with yours, so every child keeps their own sound.']].map(([t, d]) => `<div class="rounded-xl bg-white border border-slate-200 p-4"><p class="font-semibold">${t}</p><p class="mt-1 text-slate-600">${d}</p></div>`).join('')}</section>` : ''}
+${emailForm()}`;
+  return htmlPrivate(c, layout({ title: `Sibling & Middle Name Matcher | ${SITE}`, desc: 'Enter names you love and get matching sibling names from the same era and popularity tier, plus middle names that flow — from 146 years of U.S. data.', path: '/matcher', body }));
+});
+
+// ---------- shared shortlists ----------
+app.get('/s/:id', async c => {
+  const id = c.req.param('id');
+  if (!/^[a-z0-9]{8}$/.test(id)) return c.notFound();
+  const row = await c.env.DB.prepare('SELECT slugs, created FROM shares WHERE id = ? AND revoked = 0').bind(id).first();
+  if (!row) return c.notFound();
+  let slugs = [];
+  try { slugs = JSON.parse(row.slugs); } catch { /* treat as empty */ }
+  const rows = await namesBySlugs(c.env.DB, slugs);
+  if (!rows.length) return c.notFound();
+  const body = `
+<h1 class="font-display text-3xl sm:text-4xl font-bold">A shared baby name shortlist</h1>
+<p class="mt-2 text-slate-600">${rows.length} name${rows.length > 1 ? 's' : ''} someone picked out and shared — tap any name for its full 146-year chart.</p>
+<div class="mt-6 grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 gap-3">${rows.map(nameCard).join('')}</div>
+<p class="mt-8 text-sm text-slate-600">Make your own: save names with ♡ on any name page, then share from <a href="/favorites" class="text-indigo-600 underline">your shortlist</a>.</p>
+${emailForm()}`;
+  return htmlPrivate(c, layout({ title: `A Shared Baby Name Shortlist (${rows.length} names) | ${SITE}`, desc: `A shared shortlist of ${rows.length} baby names, with popularity charts and meanings for each.`, path: `/s/${id}`, noindex: true, ogImage: `${ORIGIN}/og/share/${id}.png`, body }));
+});
+
+app.get('/og/share/:file', async c => {
+  const mth = c.req.param('file').match(/^([a-z0-9]{8})\.png$/);
+  if (!mth) return c.notFound();
+  const row = await c.env.DB.prepare('SELECT slugs FROM shares WHERE id = ? AND revoked = 0').bind(mth[1]).first();
+  if (!row) return c.notFound();
+  let slugs = [];
+  try { slugs = JSON.parse(row.slugs); } catch { /* treat as empty */ }
+  const rows = await namesBySlugs(c.env.DB, slugs.slice(0, 6));
+  if (!rows.length) return c.notFound();
+  const res = await ogList(c, 'A Baby Name Shortlist', rows.map(r => r.name));
+  res.headers.set('Cache-Control', 'public, max-age=3600');
+  return res;
+});
+
 // ---------- names by meaning ----------
 const MEANING_WORDS = ['moon', 'light', 'star', 'love', 'strong', 'fire', 'peace', 'king', 'flower', 'sea', 'beautiful', 'brave', 'joy', 'grace', 'warrior', 'night',
   'bright', 'water', 'ruler', 'victory', 'noble', 'life', 'earth', 'heaven', 'rose', 'white', 'wolf', 'lion', 'queen', 'holy', 'river', 'stone', 'bear', 'honor',
@@ -963,7 +1043,7 @@ app.get('/browse', async c => {
 <div class="flex flex-wrap gap-1.5 text-sm">${[['/top/girls', `Top girl names ${END_YEAR}`], ['/top/boys', `Top boy names ${END_YEAR}`], ['/trending', 'Trending names'], ['/unisex', 'Unisex names']].map(([h, t]) => `<a href="${h}" class="px-3 py-1.5 rounded-lg bg-indigo-50 text-indigo-700 border border-indigo-100 hover:border-indigo-400">${t}</a>`).join('')}</div></section>
 <section class="mt-6"><h2 class="font-bold mb-2">Curated lists</h2>
 <div class="flex flex-wrap gap-1.5 text-sm">${Object.entries(LISTS).map(([s, d]) => `<a href="/list/${s}" class="px-3 py-1.5 rounded-lg bg-white border border-slate-200 hover:border-indigo-400">${d.title}</a>`).join('')}</div></section>
-<p class="mt-4"><a href="/generator" class="inline-block rounded-full bg-indigo-600 text-white px-5 py-2 text-sm font-semibold hover:bg-indigo-700">Try the baby name generator →</a></p>
+<p class="mt-4 flex flex-wrap gap-2"><a href="/generator" class="inline-block rounded-full bg-indigo-600 text-white px-5 py-2 text-sm font-semibold hover:bg-indigo-700">Try the baby name generator →</a><a href="/matcher" class="inline-block rounded-full bg-white border border-indigo-300 text-indigo-700 px-5 py-2 text-sm font-semibold hover:bg-indigo-50">Sibling &amp; middle name matcher →</a></p>
 <section class="mt-6"><h2 class="font-bold mb-2">By meaning</h2>
 <div class="flex flex-wrap gap-1.5 text-sm">${MEANING_WORDS.map(w => `<a href="/meaning/${w}" class="px-3 py-1.5 rounded-lg bg-white border border-slate-200 hover:border-indigo-400">${cap(w)}</a>`).join('')}</div></section>
 <section class="mt-6"><h2 class="font-bold mb-2">By first letter</h2>
@@ -1035,8 +1115,9 @@ app.get('/favorites', c => html(c, layout({
   path: '/favorites',
   noindex: true,
   body: `<h1 class="font-display text-3xl sm:text-4xl font-bold">My shortlist</h1>
-<p class="mt-2 text-slate-600">Names you save are stored only in this browser — no account, nothing sent to us.</p>
+<p class="mt-2 text-slate-600">Names you save are stored only in this browser — no account needed. Nothing leaves your device unless you create a share link below.</p>
 <div id="nc-fav-list" class="mt-6 grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 gap-3"><p class="text-slate-600 col-span-full">Loading…</p></div>
+<div id="nc-fav-share" class="mt-6"></div>
 <p class="mt-6 text-sm text-slate-600">Tip: open any <a href="/top/girls" class="text-indigo-600 underline">name page</a> and tap “♡ Save to shortlist”.</p>`,
 })));
 
@@ -1072,6 +1153,7 @@ app.get('/privacy', c => html(c, layout({
 <ul class="mt-4 list-disc pl-5 space-y-2 text-slate-700">
 <li><strong>No cookies.</strong> We set no cookies and use no third-party trackers or ad networks.</li>
 <li><strong>Anonymous analytics.</strong> We count page views (path + day only) via a first-party beacon, and keep daily aggregate counts of search terms (the normalized query + day only). No IP addresses, fingerprints, or identifiers are stored with either. To limit abuse we hash your IP with the current date into a short-lived counter key; the raw IP is never written to storage.</li>
+<li><strong>Shared shortlists.</strong> If you tap “Share this list” we store only the name list itself and the creation date — no account, email, or identifier is attached. You can delete the link at any time from the same browser, which disables it for everyone.</li>
 <li><strong>Email.</strong> If you subscribe for updates we store your email address, the date, and the page you signed up from, used solely for product updates. Unsubscribe anytime by replying to any email or writing to hello@zalize.com.</li>
 <li><strong>Processors.</strong> The site runs on Cloudflare (Workers, D1, DNS/CDN). Cloudflare processes connection data, including IP addresses, at its edge for delivery, caching, and security, and may transfer it internationally under its own terms; Cloudflare also collects network error reports (NEL) for our domain. Cloudflare&rsquo;s cookieless Web Analytics script is enabled at the zalize.com zone level, but our Content-Security-Policy blocks it from loading on NameChart. We use no ad networks, no cross-site trackers, and no third-party marketing tools.</li>
 <li><strong>Controller &amp; rights.</strong> Controller: Zalize (hello@zalize.com). Legal basis for the email list is your consent; for anonymous counts, legitimate interest. Email addresses are kept until you unsubscribe; anonymous page counts are aggregate and retained indefinitely. You may request access, correction, or deletion — including under GDPR and CCPA — at hello@zalize.com.</li>
@@ -1116,12 +1198,40 @@ app.post('/api/subscribe', async c => {
   return subscribePage(c, 'Subscribed', "🎉 You're on the list", "We'll email you when new data and tools land. Unsubscribe anytime via hello@zalize.com.");
 });
 
+const rand = n => { const b = crypto.getRandomValues(new Uint8Array(n)); return [...b].map(x => 'abcdefghijklmnopqrstuvwxyz0123456789'[x % 36]).join(''); };
+
+app.post('/api/share', async c => {
+  if (!sameOrigin(c)) return c.json({ error: 'forbidden' }, 403);
+  if (await overQuota(c, 'share', 20)) return c.json({ error: 'Too many shared lists today — try again tomorrow.' }, 429);
+  let body;
+  try { body = await c.req.json(); } catch { return c.json({ error: 'bad request' }, 400); }
+  const slugs = Array.isArray(body?.slugs)
+    ? [...new Set(body.slugs.filter(s => typeof s === 'string' && /^[a-z'-]{2,40}$/.test(s)))].slice(0, 60)
+    : [];
+  if (!slugs.length) return c.json({ error: 'empty list' }, 400);
+  const rows = await namesBySlugs(c.env.DB, slugs);
+  if (!rows.length) return c.json({ error: 'no valid names' }, 400);
+  const id = rand(8), token = rand(24);
+  await c.env.DB.prepare('INSERT INTO shares (id, slugs, token, created, revoked) VALUES (?, ?, ?, ?, 0)')
+    .bind(id, JSON.stringify(rows.map(r => r.slug)), token, new Date().toISOString().slice(0, 10)).run();
+  return c.json({ id, token, url: `${ORIGIN}/s/${id}` });
+});
+
+app.post('/api/share/revoke', async c => {
+  if (!sameOrigin(c)) return c.json({ error: 'forbidden' }, 403);
+  let body;
+  try { body = await c.req.json(); } catch { return c.json({ error: 'bad request' }, 400); }
+  if (typeof body?.id !== 'string' || typeof body?.token !== 'string') return c.json({ error: 'bad request' }, 400);
+  const r = await c.env.DB.prepare('UPDATE shares SET revoked = 1 WHERE id = ? AND token = ?').bind(body.id, body.token).run();
+  return c.json({ ok: (r.meta?.changes ?? 0) > 0 });
+});
+
 app.post('/api/beacon', async c => {
   if (!sameOrigin(c)) return c.body(null, 204);
   try {
     const { p } = await c.req.json();
     // Only count paths that match a real route family, so forged beacons can't pollute analytics.
-    const VALID_PATH = /^\/$|^\/(name|letter|year|state|compare|list|meaning|og\/name|og\/list|og\/meaning|og\/compare)\/[a-z0-9'.-]{1,60}$|^\/decade\/\d{4}s$|^\/(top\/girls|top\/boys|trending|unisex|browse|about|privacy|terms|favorites|search|generator|pricing)$/;
+    const VALID_PATH = /^\/$|^\/(name|letter|year|state|compare|list|meaning|og\/name|og\/list|og\/meaning|og\/compare)\/[a-z0-9'.-]{1,60}$|^\/decade\/\d{4}s$|^\/s\/[a-z0-9]{8}$|^\/og\/share\/[a-z0-9.]{1,20}$|^\/(top\/girls|top\/boys|trending|unisex|browse|about|privacy|terms|favorites|search|generator|pricing|matcher)$/;
     if (typeof p === 'string' && p.length <= 100 && VALID_PATH.test(p) && !(await overQuota(c, 'beacon', 300))) {
       const day = new Date().toISOString().slice(0, 10);
       await c.env.DB.prepare('INSERT INTO hits (day, path, count) VALUES (?, ?, 1) ON CONFLICT(day, path) DO UPDATE SET count = count + 1')
@@ -1155,7 +1265,7 @@ app.get('/sitemaps/:shard{.+\\.xml}', async c => {
   const shard = c.req.param('shard').replace(/\.xml$/, '');
   const urls = [];
   if (shard === 'static') {
-    urls.push('/', '/top/girls', '/top/boys', '/unisex', '/trending', '/browse', '/generator', '/pricing', '/about', '/privacy', '/terms');
+    urls.push('/', '/top/girls', '/top/boys', '/unisex', '/trending', '/browse', '/generator', '/matcher', '/pricing', '/about', '/privacy', '/terms');
     for (const s of Object.keys(LISTS)) urls.push(`/list/${s}`);
     for (const w of MEANING_WORDS) urls.push(`/meaning/${w}`);
     for (const ch of 'abcdefghijklmnopqrstuvwxyz') urls.push(`/letter/${ch}`);

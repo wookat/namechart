@@ -3,7 +3,7 @@
 export const SITE = 'NameChart';
 export const ORIGIN = 'https://namechart.zalize.com';
 export const START_YEAR = 1880;
-export const ASSET_VER = 10; // bump when styles.css or app.js change, to bust the long asset cache
+export const ASSET_VER = 11; // bump when styles.css or app.js change, to bust the long asset cache
 export const END_YEAR = 2025;
 
 export const SISTER_SITES = [
@@ -60,6 +60,7 @@ ${jsonld ? `<script type="application/ld+json">${JSON.stringify(jsonld)}</script
       <a class="hover:text-indigo-700" href="/top/boys">Boys</a>
       <a class="hover:text-indigo-700" href="/trending">Trending</a>
       <a class="hover:text-indigo-700 hidden sm:inline" href="/generator">Generator</a>
+      <a class="hover:text-indigo-700 hidden md:inline" href="/matcher">Matcher</a>
       <a class="hover:text-indigo-700" href="/browse">Browse</a>
       <a class="hover:text-indigo-700 hidden sm:inline" href="/pricing">Pricing</a>
     </nav>
