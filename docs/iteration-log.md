@@ -1297,3 +1297,13 @@
 - 榜单页族 14→18。IndexNow 第 14 批 3,266 URL（200）。CACHE_VER 70，版本 ff13350b。
 
 **证据**：4 页/OG 全 200；axe clean；375px 无溢出；ItemList JSON-LD 有效。
+
+## Round 135（2026-08-09）
+**收口回归**
+- 22 路由全 200；6 安全头齐全；http→https 301；TTFB 69–76ms（边缘缓存）；axe（/、/browse、/generator）clean；console 零报错。
+- 本轮五驱动扫描无新增有价值改进项（第 1 轮）。
+
+## Round 136（2026-08-09）
+**最终扫描**
+- backlog 复核：昵称（数据面仍仅约 104 条可证）、国际排名（仍缺官方公开源）、pop culture（编辑内容非数据自证）——维持搁置；含义组榜单已覆盖 nature/celestial/royal/virtue 四大主题，剩余词组命中不足 5 名不再扩容。
+- 连续两轮无有价值改进项——按老板规则转低强度运营。
