@@ -1285,3 +1285,8 @@
 **内链补强 + 回归**
 - 名字页「Explore related lists」补 nature/celestial 谓词（与新榜单定义一致的词边界匹配），如 /name/luna→Celestial girl names、/name/rose→Nature girl names。CACHE_VER 69，版本 e22b416b。
 - 全量回归：16 路由 200；搜索 XSS payload 实体转义无反射；CSP 在位。
+
+## Round 133（2026-08-09）
+**移动端/UX 走查**
+- 375px：/browse 已自动列出 4 个新榜单入口、无溢出；/list/celestial-girl-names 渲染正常无溢出（r133-celestial-mobile.png）。无缺陷。
+- 五驱动扫描后暂无新 P0/P1；本批收口。
