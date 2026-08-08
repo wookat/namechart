@@ -1368,3 +1368,9 @@
 - P1-d Recent years 近 12 年逐年表（rank/births/"1 in N" 人话率）。
 **R159 超越项**：对照表末列 9 项（双线 146 年曲线/全免费无广告/州维度/无账号收藏+分享短链/Matcher/频率句+人话解释/性能 3-78KB vs 183-386KB/对比页族/meaning 页族免费）。World rankings、跨语言昵称、pop culture 编辑内容维持 P2（缺公开数据源，不伪造）。
 **R160 回归**：测试代理录屏走查全通过——Luna（#27 Top100 胶囊/8 锚点落位/12 行表 1 in 265）、Agnes/Theodore/Mabel 条件渲染、375px 无溢出、axe 0 违规、reduced-motion scroll 降级、console 零错误。Births 列为男女合计（Luna 6,085=6,076F+9M），设计如此。
+
+## R161–164：复刻升级（页面覆盖率 + 技术标准审计）— 2026-08-08
+- R161 全页面覆盖盘点：抓取 Nameberry robots/sitemap（10 万 URL）+ 导航/footer 逐层爬查，梳理出 20 类页面类型；15 类已覆盖对照（非 n/a 覆盖率 100%），5 类 deliberate-n/a（未来预测=非官方数据红线、博客/游戏=编辑线、账号/论坛=无账号定位）。对照表新增 §4。
+- R162 技术标准黑盒审计：渲染/框架/字体/图片/缓存/结构化数据/性能（headless Chrome 实测：名字页 LCP 140ms vs 536ms、CLS 0 vs 0.099、传输 87KB vs 1,386KB）/无障碍/安全头十项落表（对照表 §5），10/10 达标、8 项反超。
+- R163 缺口修复上线：① HTML 响应补 ETag + If-None-Match→304（对齐标杆条件请求标准，实测 304 生效）；② 生成器补 Ends with / Contains 筛选（对齐标杆高级搜索维度，ends=a&has=ell → Bella/Ella/Stella 等验证通过）。CACHE_VER 76→77，版本 b6c39915。
+- R164 回归：ETag/304、生成器新筛选、首页/名字页/生成器 200 + console 干净、375px 生成器表单无溢出、axe 生成器 0 violations。

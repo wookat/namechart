@@ -44,21 +44,39 @@ const slugify = s => (s || '').toLowerCase().replace(/[^a-z'-]/g, '').slice(0, 4
 // Prefix search via index-friendly range scan (LIKE on a BINARY PK can't use the index
 // and D1 rejects patterns >= 50 chars).
 const NAME_COUNT = 105954; // rows in `names`; update when reimporting data
-const CACHE_VER = 76; // bump to invalidate the edge HTML cache on deploys that change rendering/data
+const CACHE_VER = 77; // bump to invalidate the edge HTML cache on deploys that change rendering/data
 // '~' (0x7E) sorts after every character allowed in slugs (a-z, apostrophe, hyphen).
 const prefixWhere = "slug >= ?1 AND slug < (?1 || '~')";
+
+const etagOf = async buf => {
+  const d = await crypto.subtle.digest('SHA-1', buf);
+  return '"' + [...new Uint8Array(d)].map(b => b.toString(16).padStart(2, '0')).join('') + '"';
+};
+const notModified = res => {
+  const h = new Headers();
+  for (const k of ['ETag', 'Cache-Control']) if (res.headers.get(k)) h.set(k, res.headers.get(k));
+  return new Response(null, { status: 304, headers: h });
+};
 
 // Edge-cache successful HTML/XML GETs so repeat traffic doesn't hit D1.
 app.use('*', async (c, next) => {
   if (c.req.method !== 'GET') return next();
   const url = new URL(c.req.url);
   if (url.pathname.startsWith('/api/') || url.pathname === '/search') return next();
+  const inm = c.req.header('If-None-Match');
   const key = new Request(url.origin + '/__v' + CACHE_VER + url.pathname, { method: 'GET' });
   const hit = await caches.default.match(key);
-  if (hit) return new Response(hit.body, hit);
+  if (hit) {
+    if (inm && inm === hit.headers.get('ETag')) return notModified(hit);
+    return new Response(hit.body, hit);
+  }
   await next();
   if (c.res.status === 200 && (c.res.headers.get('Cache-Control') || '').includes('s-maxage')) {
-    c.executionCtx.waitUntil(caches.default.put(key, c.res.clone()));
+    const buf = await c.res.arrayBuffer();
+    const res = new Response(buf, c.res);
+    res.headers.set('ETag', await etagOf(buf));
+    c.executionCtx.waitUntil(caches.default.put(key, res.clone()));
+    c.res = inm && inm === res.headers.get('ETag') ? notModified(res) : res;
   }
 });
 
@@ -891,7 +909,9 @@ app.get('/generator', async c => {
   const letter = /^[a-z]$/.test(c.req.query('letter') || '') ? c.req.query('letter') : null;
   const style = ['popular', 'vintage', 'uncommon'].includes(c.req.query('style')) ? c.req.query('style') : 'popular';
   const mean = MEANING_WORDS.includes(c.req.query('mean')) ? c.req.query('mean') : null;
-  const hasQuery = sexQ || letter || c.req.query('style') || mean;
+  const ends = /^[a-z]{1,4}$/.test((c.req.query('ends') || '').toLowerCase()) ? c.req.query('ends').toLowerCase() : null;
+  const has = /^[a-z]{2,8}$/.test((c.req.query('has') || '').toLowerCase()) ? c.req.query('has').toLowerCase() : null;
+  const hasQuery = sexQ || letter || c.req.query('style') || mean || ends || has;
   let results = [];
   if (hasQuery) {
     let slugs;
@@ -906,6 +926,8 @@ app.get('/generator', async c => {
         .filter(r => !sexQ || (sexQ === 'F' ? r.f_total > r.m_total : r.m_total > r.f_total))
         .map(r => r.slug);
       if (letter) slugs = slugs.filter(s => s.startsWith(letter));
+      if (ends) slugs = slugs.filter(s => s.endsWith(ends));
+      if (has) slugs = slugs.filter(s => s.includes(has));
     } else {
       const rankCap = style === 'popular' ? 200 : style === 'vintage' ? 500 : 1000;
       const yr = style === 'vintage' ? END_YEAR - 100 : END_YEAR;
@@ -917,6 +939,8 @@ app.get('/generator', async c => {
       }
       slugs = [...new Set(cands.map(n => n.toLowerCase()))];
       if (letter) slugs = slugs.filter(s => s.startsWith(letter));
+      if (ends) slugs = slugs.filter(s => s.endsWith(ends));
+      if (has) slugs = slugs.filter(s => s.includes(has));
       if (style === 'uncommon') slugs = slugs.slice(Math.floor(slugs.length / 2));
     }
     // Fisher-Yates shuffle for a fresh set on every visit
@@ -951,6 +975,12 @@ app.get('/generator', async c => {
       <option value="">Any meaning</option>
       ${[...MEANING_WORDS].sort().map(w => `<option value="${w}"${w === mean ? ' selected' : ''}>${cap(w)}</option>`).join('')}
     </select>
+  </div>
+  <div class="flex flex-wrap items-center gap-3">
+    <label class="text-sm font-semibold" for="gen-ends">Ends with</label>
+    <input id="gen-ends" name="ends" value="${esc(ends || '')}" maxlength="4" pattern="[A-Za-z]{1,4}" placeholder="e.g. a" class="w-24 rounded-lg border border-slate-300 px-3 py-1.5 text-sm bg-white">
+    <label class="text-sm font-semibold" for="gen-has">Contains</label>
+    <input id="gen-has" name="has" value="${esc(has || '')}" maxlength="8" pattern="[A-Za-z]{2,8}" placeholder="e.g. ell" class="w-28 rounded-lg border border-slate-300 px-3 py-1.5 text-sm bg-white">
     <button class="rounded-full bg-indigo-600 text-white px-6 py-2 text-sm font-semibold hover:bg-indigo-700">Generate names</button>
   </div>
 </form>
