@@ -44,7 +44,7 @@ const slugify = s => (s || '').toLowerCase().replace(/[^a-z'-]/g, '').slice(0, 4
 // Prefix search via index-friendly range scan (LIKE on a BINARY PK can't use the index
 // and D1 rejects patterns >= 50 chars).
 const NAME_COUNT = 105954; // rows in `names`; update when reimporting data
-const CACHE_VER = 71; // bump to invalidate the edge HTML cache on deploys that change rendering/data
+const CACHE_VER = 72; // bump to invalidate the edge HTML cache on deploys that change rendering/data
 // '~' (0x7E) sorts after every character allowed in slugs (a-z, apostrophe, hyphen).
 const prefixWhere = "slug >= ?1 AND slug < (?1 || '~')";
 
@@ -123,6 +123,16 @@ app.get('/', async c => {
     <div><dt class="sr-only">States</dt><dd class="font-display text-2xl font-bold">51</dd><dd class="text-xs uppercase tracking-wide text-slate-600">states &amp; DC</dd></div>
     <div><dt class="sr-only">Cost during Beta</dt><dd class="font-display text-2xl font-bold">$0</dd><dd class="text-xs uppercase tracking-wide text-slate-600">during beta</dd></div>
   </dl>
+</section>
+<section aria-label="How it works" class="mb-8 rounded-2xl bg-white border border-slate-200 p-5 sm:p-6">
+  <h2 class="sr-only">How NameChart works</h2>
+  <ol class="grid sm:grid-cols-3 gap-4 text-sm">
+    ${[['1', 'Search a name', 'Type any name above — or start from the <a href="/top/girls" class="text-indigo-600 underline">top charts</a>.', ''], ['2', 'Read its 146-year story', 'Every name page has the full popularity curve, meaning, famous namesakes and state map.', ''], ['3', 'Shortlist &amp; match', 'Tap ♡ to build a shareable shortlist, then find <a href="/matcher" class="text-indigo-600 underline">sibling &amp; middle names</a> that fit.', '']].map(([n, t, d]) => `<li class="flex gap-3"><span aria-hidden="true" class="shrink-0 w-7 h-7 grid place-items-center rounded-full bg-indigo-600 text-white font-bold">${n}</span><div><p class="font-semibold">${t}</p><p class="mt-0.5 text-slate-600">${d}</p></div></li>`).join('')}
+  </ol>
+</section>
+<section aria-label="Tools" class="mb-8 grid sm:grid-cols-2 gap-4">
+  <a href="/generator" class="card-lift block rounded-2xl bg-white border border-slate-200 p-5 hover:border-indigo-300"><p class="font-bold">Baby Name Generator</p><p class="mt-1 text-sm text-slate-600">Fresh ideas by gender, style, letter and meaning — from real data.</p></a>
+  <a href="/matcher" class="card-lift block rounded-2xl bg-white border border-slate-200 p-5 hover:border-indigo-300"><p class="font-bold">Sibling &amp; Middle Name Matcher <span class="align-middle ml-1 rounded-full bg-rose-100 text-rose-700 text-[10px] font-bold px-2 py-0.5 uppercase tracking-wide">New</span></p><p class="mt-1 text-sm text-slate-600">Enter names you love, get sibling names and middle names that fit.</p></a>
 </section>
 ${notd ? `<section class="mb-8 rounded-2xl bg-indigo-700 text-white p-5 sm:p-6 flex flex-wrap items-center justify-between gap-4">
   <div><p class="text-indigo-200 text-xs font-semibold uppercase tracking-wide">Name of the day · ${today}</p>
@@ -260,6 +270,7 @@ ${meaning && (meaning.etymology || meaning.ipa) ? `
   <button id="nc-share" class="rounded-full border border-slate-300 px-4 py-2 text-sm font-medium hover:bg-slate-100">↗ Share this chart</button>
   <button id="nc-fav" data-slug="${slug}" data-name="${esc(r.name)}" class="rounded-full border border-rose-200 text-rose-700 px-4 py-2 text-sm font-medium hover:bg-rose-50">♡ Save to shortlist</button>
 </div>
+<div id="nc-tip" hidden class="mt-3 rounded-xl bg-rose-50 border border-rose-200 px-4 py-2.5 text-sm text-slate-700 flex items-start justify-between gap-3"><span>Tip: tap <strong>♡ Save to shortlist</strong> to collect names you like — you can compare and share the list later.</span><button id="nc-tip-x" aria-label="Dismiss tip" class="shrink-0 text-slate-500 hover:text-slate-800 px-1 font-bold">×</button></div>
 ${rankHist.results.length ? `<section class="mt-10"><h2 class="font-bold text-lg mb-3">Rank through the decades</h2><p class="text-sm text-slate-600 -mt-2 mb-3">${esc(r.name)}'s rank among U.S. ${primary} names at 25-year milestones.</p><div class="rounded-2xl bg-white border border-slate-200 p-4 overflow-x-auto"><table class="text-sm w-full"><thead><tr class="text-left text-xs uppercase tracking-wide text-slate-600"><th class="py-1 pr-4">Year</th>${rankHist.results.some(x => x.sex === 'F') ? '<th class="py-1 pr-4">Girls rank</th>' : ''}${rankHist.results.some(x => x.sex === 'M') ? '<th class="py-1">Boys rank</th>' : ''}</tr></thead><tbody>${[...new Set(rankHist.results.map(x => x.year))].map(y => { const f = rankHist.results.find(x => x.year === y && x.sex === 'F'); const m = rankHist.results.find(x => x.year === y && x.sex === 'M'); return `<tr class="border-t border-slate-100"><td class="py-1.5 pr-4 font-medium">${y}</td>${rankHist.results.some(x => x.sex === 'F') ? `<td class="py-1.5 pr-4">${f ? '#' + fmt(f.rank) : '—'}</td>` : ''}${rankHist.results.some(x => x.sex === 'M') ? `<td class="py-1.5">${m ? '#' + fmt(m.rank) : '—'}</td>` : ''}</tr>`; }).join('')}</tbody></table></div><p class="mt-2 text-xs text-slate-600">— means outside the top 1000 that year.</p></section>` : ''}
 ${stateRows.results.length ? `<section class="mt-10"><h2 class="font-bold text-lg mb-3">Where ${esc(r.name)} ranks highest (${END_YEAR})</h2><p class="text-sm text-slate-600 -mt-2 mb-3">States where ${esc(r.name)} places best in the state top 100.</p><div class="flex flex-wrap gap-2 text-sm">${stateRows.results.map(s => `<a href="/state/${s.state.toLowerCase()}" class="px-3 py-1.5 rounded-full bg-white border border-slate-200 hover:border-indigo-400">${STATES[s.state] || s.state} <span class="text-slate-600">#${s.rank} ${s.sex === 'F' ? 'girls' : 'boys'}</span></a>`).join('')}</div></section>` : ''}
 ${variants.length ? `<section class="mt-10"><h2 class="font-bold text-lg mb-3">Spellings &amp; variants</h2><p class="text-sm text-slate-600 -mt-2 mb-3">Names one letter away from ${esc(r.name)} — alternate spellings parents actually use.</p><div class="grid grid-cols-2 sm:grid-cols-3 gap-3">${variants.map(nameCard).join('')}</div></section>` : ''}
@@ -444,7 +455,7 @@ app.get('/search', async c => {
 <h1 class="text-2xl font-bold">Search results for “${esc(q)}”</h1>
 ${like.results.length
     ? `<div class="mt-6 grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 gap-3">${like.results.map(nameCard).join('')}</div>`
-    : `<p class="mt-4 text-slate-600">No names found. The data only includes names given to 5+ babies in a single year.</p>${didYouMean.length ? `<h2 class="mt-6 font-bold">Did you mean…</h2><div class="mt-3 grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 gap-3">${didYouMean.map(nameCard).join('')}</div>` : ''}`}
+    : `<p class="mt-4 text-slate-600">No names found. The data only includes names given to 5+ babies in a single year.</p>${didYouMean.length ? `<h2 class="mt-6 font-bold">Did you mean…</h2><div class="mt-3 grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 gap-3">${didYouMean.map(nameCard).join('')}</div>` : ''}<div class="mt-8 flex flex-wrap gap-2 text-sm"><a href="/generator" class="rounded-full bg-indigo-600 text-white px-4 py-2 font-semibold hover:bg-indigo-700">Get ideas from the generator →</a><a href="/browse" class="rounded-full bg-white border border-slate-300 px-4 py-2 text-slate-700 hover:border-indigo-400">Browse by letter, year or state</a></div>`}
 ${emailForm()}`;
   return htmlPrivate(c, layout({ title: `“${q}” — name search | ${SITE}`, desc: `Search results for ${q}`, path: '/search', noindex: true, body }));
 });
@@ -899,7 +910,7 @@ app.get('/generator', async c => {
     <button class="rounded-full bg-indigo-600 text-white px-6 py-2 text-sm font-semibold hover:bg-indigo-700">Generate names</button>
   </div>
 </form>
-${results.length ? `<div class="mt-6 grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 gap-3">${results.map(nameCard).join('')}</div>` : hasQuery ? '<p class="mt-6 text-slate-600">No matches — try a different letter or style.</p>' : ''}
+${results.length ? `<div class="mt-6 grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 gap-3">${results.map(nameCard).join('')}</div>` : hasQuery ? '<p class="mt-6 text-slate-600">No matches — try a different letter or style.</p>' : `<div class="mt-6"><p class="text-sm font-semibold text-slate-700">Not sure where to start? Try one of these:</p><div class="mt-2 flex flex-wrap gap-2 text-sm">${[['?sex=girl&style=vintage', 'Vintage girl names'], ['?sex=boy&letter=a', 'Boy names starting with A'], ['?mean=moon', 'Names that mean “moon”'], ['?sex=girl&style=uncommon', 'Less common girl names']].map(([q, t]) => `<a href="/generator${q}" class="px-3 py-1.5 rounded-full bg-indigo-50 text-indigo-700 border border-indigo-100 hover:border-indigo-400">${t}</a>`).join('')}</div></div>`}
 ${emailForm()}`;
   return htmlPrivate(c, layout({ title: `Baby Name Generator — Real Names from Real Data | ${SITE}`, desc: 'Generate baby name ideas by gender, style and first letter, drawn from 146 years of U.S. SSA data. No ads, open in Beta.', path: '/generator', body }));
 });
@@ -951,6 +962,7 @@ app.get('/matcher', async c => {
 ${missing.length ? `<p class="mt-4 text-sm text-rose-700">Not in the data: ${missing.map(esc).join(', ')} — check the spelling or try another name.</p>` : ''}
 ${sibs ? `<section class="mt-8"><h2 class="font-bold text-xl mb-1">Sibling names for ${rows.map(r => esc(r.name)).join(' &amp; ')}</h2><p class="text-sm text-slate-600 mb-4">Same era (peaked within 10 years) and a similar popularity tier, with different first letters and endings so the set doesn't blur together.</p><div class="space-y-6">${group('Sisters', sibs.girls)}${group('Brothers', sibs.boys)}</div>${!sibs.girls.length && !sibs.boys.length ? '<p class="text-slate-600">No close matches — try a more common name.</p>' : ''}</section>` : ''}
 ${mids && (mids.girls.length || mids.boys.length) ? `<section class="mt-10"><h2 class="font-bold text-xl mb-1">Middle names for ${esc(mids.first.name)}</h2><p class="text-sm text-slate-600 mb-4">Enduring classics (in use since before 1900) with a ${mids.first.name.length >= 6 ? 'shorter' : 'longer'} shape that balances ${esc(mids.first.name)}.</p><div class="flex flex-wrap gap-2 text-sm">${[...mids.girls, ...mids.boys].map(s => `<a href="/name/${s.slug}" class="px-3 py-1.5 rounded-full bg-white border border-slate-200 hover:border-indigo-400">${esc(mids.first.name)} <strong>${esc(s.name)}</strong></a>`).join('')}</div></section>` : ''}
+${!rows.length && !missing.length ? `<div class="mt-4"><p class="text-sm font-semibold text-slate-700">See it in action:</p><div class="mt-2 flex flex-wrap gap-2 text-sm">${[['?names=luna&names=leo', 'Try Luna &amp; Leo'], ['?names=olivia', 'Try Olivia'], ['?names=theodore&names=eleanor', 'Try Theodore &amp; Eleanor']].map(([q, t]) => `<a href="/matcher${q}" class="px-3 py-1.5 rounded-full bg-indigo-50 text-indigo-700 border border-indigo-100 hover:border-indigo-400">${t}</a>`).join('')}</div></div>` : ''}
 ${!rows.length ? `<section class="mt-8 grid sm:grid-cols-3 gap-4 text-sm">${[['Same era', 'Siblings\u2019 names usually come from the same generation — we match on when each name peaked.'], ['Same popularity tier', 'A very common name next to a very rare one can feel mismatched — we match on how many babies ever got each name.'], ['Distinct sounds', 'We skip names sharing a first letter or ending with yours, so every child keeps their own sound.']].map(([t, d]) => `<div class="rounded-xl bg-white border border-slate-200 p-4"><p class="font-semibold">${t}</p><p class="mt-1 text-slate-600">${d}</p></div>`).join('')}</section>` : ''}
 ${emailForm()}`;
   return htmlPrivate(c, layout({ title: `Sibling & Middle Name Matcher | ${SITE}`, desc: 'Enter names you love and get matching sibling names from the same era and popularity tier, plus middle names that flow — from 146 years of U.S. data.', path: '/matcher', body }));

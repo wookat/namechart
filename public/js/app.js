@@ -65,6 +65,26 @@
     });
   }
 
+  function seen(k) { try { return localStorage.getItem(k) === '1'; } catch (e) { return true; } }
+  function markSeen(k) { try { localStorage.setItem(k, '1'); } catch (e) {} }
+
+  var newDot = document.getElementById('nc-new-dot');
+  if (newDot) {
+    if (location.pathname === '/matcher') markSeen('nc-seen-matcher');
+    else if (!seen('nc-seen-matcher')) {
+      newDot.hidden = false;
+      document.getElementById('nc-nav-matcher').addEventListener('click', function () { markSeen('nc-seen-matcher'); });
+    }
+  }
+
+  var tip = document.getElementById('nc-tip');
+  if (tip && !seen('nc-tip-fav')) {
+    tip.hidden = false;
+    document.getElementById('nc-tip-x').addEventListener('click', function () { markSeen('nc-tip-fav'); tip.hidden = true; });
+    var favBtn = document.getElementById('nc-fav');
+    if (favBtn) favBtn.addEventListener('click', function () { markSeen('nc-tip-fav'); tip.hidden = true; });
+  }
+
   var shareBox = document.getElementById('nc-fav-share');
   if (shareBox) {
     var stored;

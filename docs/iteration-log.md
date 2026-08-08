@@ -1325,3 +1325,17 @@
 ## Round 139（2026-08-08）测试代理全量回归 + 修正
 - 录屏回归全部通过：/matcher 三态、分享全流程（收藏→短链→复制→打开 200→删除→404）、375px 三页无溢出、axe 0 violations、主导航/browse 入口、全站冒烟 console 零报错。报告 test-report.md。
 - 回归观察修正：中间名原为男女混列，改为跟随首名性别（Luna 只出女性经典中间名，12 个），版本 da746fed 已上线验证。
+
+## Round 140–143（2026-08-08）「用户引导/Onboarding」专项
+**R140 竞品 onboarding 速看**
+- Nameberry 首页：无强制引导/教程弹窗，模式为「价值主张 + 立即可用的搜索 + 分类入口」+ 新版公告区块（"Welcome to the New Nameberry"）——克制式引导，与我们定位一致。The Bump 生成器页 403（反爬，遵守不绕开）。
+**R141 首访引导**
+- 首页 hero 下新增「三步上手」条（1 搜名字 → 2 读 146 年故事 → 3 存清单&配名，带内链）+ 双工具入口卡（Generator / Matcher 带 New 徽章）。
+**R142 空状态 CTA**
+- 搜索无结果：补「Get ideas from the generator →」「Browse by letter…」双 CTA；
+- 生成器未选参数：新增 4 个一键示例（Vintage girl / Boy A- / mean moon / uncommon girl）；
+- Matcher 空态：新增 3 个一键示例（Luna&Leo / Olivia / Theodore&Eleanor）。
+**R143 新功能发现 + 首次轻提示（均一次性、可跳过、localStorage 记忆、无动画无打扰）**
+- 主导航 Matcher 加 "New" 徽标（nc-seen-matcher：点击或访问 /matcher 即永久消失）；
+- 名字页首次访问显示一条可关闭提示（教 ♡ 存清单，nc-tip-fav：点 × 或点收藏即永久消失；SSR 默认 hidden，无 JS 时不出现）。
+- CACHE_VER 72 / ASSET_VER 12，版本 fe0a96a4。线上验证：8 路由 200，步骤条/工具卡/各空态 CTA/tip/New 徽标均在 HTML 中按设计输出。
