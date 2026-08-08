@@ -44,7 +44,7 @@ const slugify = s => (s || '').toLowerCase().replace(/[^a-z'-]/g, '').slice(0, 4
 // Prefix search via index-friendly range scan (LIKE on a BINARY PK can't use the index
 // and D1 rejects patterns >= 50 chars).
 const NAME_COUNT = 105954; // rows in `names`; update when reimporting data
-const CACHE_VER = 68; // bump to invalidate the edge HTML cache on deploys that change rendering/data
+const CACHE_VER = 69; // bump to invalidate the edge HTML cache on deploys that change rendering/data
 // '~' (0x7E) sorts after every character allowed in slugs (a-z, apostrophe, hyphen).
 const prefixWhere = "slug >= ?1 AND slug < (?1 || '~')";
 
@@ -276,6 +276,10 @@ ${(() => {
   if (r.name.length >= 9) rels.push([`long-${g}-names`, `Long ${g} names`]);
   if (r.first_year >= 1990) rels.push([`new-${g}-names`, `Modern ${g} names`]);
   if (r.peak_year < 1940 && rank && rank <= 500) rels.push([`vintage-${g}-names`, `Vintage ${g} names making a comeback`]);
+  if (meaning?.etymology) {
+    if (NATURE_WORDS.some(w => new RegExp(`\\b${w}\\b`, 'i').test(meaning.etymology))) rels.push([`nature-${g}-names`, `Nature ${g} names`]);
+    if (CELESTIAL_WORDS.some(w => new RegExp(`\\b${w}\\b`, 'i').test(meaning.etymology))) rels.push([`celestial-${g}-names`, `Celestial ${g} names`]);
+  }
   if (!rels.length) return '';
   return `<section class="mt-10"><h2 class="font-bold text-lg mb-3">Explore related lists</h2><div class="flex flex-wrap gap-2 text-sm">${rels.map(([s, t]) => `<a href="/list/${s}" class="px-3 py-1.5 rounded-full bg-white border border-slate-200 hover:border-indigo-400">${t} →</a>`).join('')}</div></section>`;
 })()}

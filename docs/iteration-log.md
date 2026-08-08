@@ -1280,3 +1280,8 @@
 **CWV 复测 + 竞品复访**
 - /name/luna 真实浏览器：TTFB 283ms（未缓存首击）、LCP 376ms、CLS≈0——全部 Good 区间。
 - Nameberry 复访：nature 榜单旧 URL 已 404（其榜单体系改版中）；无新增可数据自证的功能缺口。
+
+## Round 132（2026-08-09）
+**内链补强 + 回归**
+- 名字页「Explore related lists」补 nature/celestial 谓词（与新榜单定义一致的词边界匹配），如 /name/luna→Celestial girl names、/name/rose→Nature girl names。CACHE_VER 69，版本 e22b416b。
+- 全量回归：16 路由 200；搜索 XSS payload 实体转义无反射；CSP 在位。
