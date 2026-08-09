@@ -3,7 +3,7 @@
 export const SITE = 'NameChart';
 export const ORIGIN = 'https://namechart.zalize.com';
 export const START_YEAR = 1880;
-export const ASSET_VER = 16; // bump when styles.css or app.js change, to bust the long asset cache
+export const ASSET_VER = 17; // bump when styles.css or app.js change, to bust the long asset cache
 export const END_YEAR = 2025;
 
 export const SISTER_SITES = [
@@ -66,7 +66,7 @@ ${jsonld ? `<script type="application/ld+json">${JSON.stringify(jsonld)}</script
       <a class="nav-link hover:text-indigo-700 hidden sm:inline" href="/pricing">Pricing</a>
       <details class="relative md:hidden">
         <summary class="nav-link list-none cursor-pointer hover:text-indigo-700 select-none" aria-label="More pages">More ▾</summary>
-        <div class="absolute right-0 mt-2 w-44 rounded-xl bg-white border border-slate-200 shadow-lg py-2 text-sm z-30">
+        <div class="absolute right-0 mt-2 w-44 max-w-[calc(100vw-1.5rem)] rounded-xl bg-white border border-slate-200 shadow-lg py-2 text-sm z-30">
           <a class="block px-4 py-2.5 hover:bg-indigo-50 sm:hidden" href="/generator">Generator</a>
           <a class="block px-4 py-2.5 hover:bg-indigo-50" href="/matcher">Sibling matcher</a>
           <a class="block px-4 py-2.5 hover:bg-indigo-50" href="/favorites">My shortlist ♡</a>
