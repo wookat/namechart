@@ -1374,3 +1374,11 @@
 - R162 技术标准黑盒审计：渲染/框架/字体/图片/缓存/结构化数据/性能（headless Chrome 实测：名字页 LCP 140ms vs 536ms、CLS 0 vs 0.099、传输 87KB vs 1,386KB）/无障碍/安全头十项落表（对照表 §5），10/10 达标、8 项反超。
 - R163 缺口修复上线：① HTML 响应补 ETag + If-None-Match→304（对齐标杆条件请求标准，实测 304 生效）；② 生成器补 Ends with / Contains 筛选（对齐标杆高级搜索维度，ends=a&has=ell → Bella/Ella/Stella 等验证通过）。CACHE_VER 76→77，版本 b6c39915。
 - R164 回归：ETag/304、生成器新筛选、首页/名字页/生成器 200 + console 干净、375px 生成器表单无溢出、axe 生成器 0 violations。
+
+## R165–168：验收官整改批（80 分报告 P1×1 + P2×3 + 共性自查）— 2026-08-09
+- P1 内容安全：名人栏负面人物过滤三层落地——① Worker 运行时过滤（NEGATIVE_FIGURE_RE 描述关键词 + BLOCKED_FAMOUS 显式黑名单 + FIGURE_EXCEPTION_RE 防误伤 anti-Nazi/resistance/victim）；② fetch-famous.mjs 导入时过滤（防再引入）；③ clean-famous.mjs 清洗线上 D1（2,574 行扫描，移除 Ted Bundy/Kaczynski/Epstein/Goebbels/Escobar/Capone/Mengele 等 29 人；误伤 Carl Jung「psychothe-rapist」/Sophie Scholl/Max von Laue/Patty Hearst 等 7 人经词界+例外修正后恢复）。
+- P2-1 图表内置 tooltip：SVG 内深色气泡跟随光标 + 双线年份数据点圆点 + 竖线，读数行保留为无障碍冗余；旧缓存 HTML 缺几何字段时优雅降级。
+- P2-2 首页 hero：Beta 免费信息从长句拆出为独立徽章行（Beta 徽标+「All features free during Beta — see plans →」胶囊链接）。
+- P2-3 结果卡「为什么推荐」钩子：nameCard 增加数据自证标签行（↗ At its peak right now / Modern favorite / Mid-century pick / Vintage classic · peaked YYYY），生成器/榜单/相似名全站生效。
+- 共性自查：AI 等待体验 n/a（全 SSR 同步）；空态/错误态已覆盖（R140-144）；移动导航收敛——375px 导航新增「More ▾」disclosure 菜单（CSS-only details，含 Generator/Matcher/Shortlist/Pricing，修复小屏功能入口缺失）；邮箱用途/频率/隐私文案已有。
+- 回归：375/1440 无溢出、axe 0 违规、console 零错误、tooltip 实测（1938: 12 girls）、More 菜单实测展开。CACHE_VER 78、ASSET_VER 16、版本 250c7f8c。

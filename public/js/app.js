@@ -126,19 +126,43 @@
   var cur = document.getElementById('nc-cursor');
   var box = svg.viewBox.baseVal, hx = +hit.getAttribute('x'), hw = +hit.getAttribute('width');
   var n = d.f.length;
+  var dotF = document.getElementById('nc-dot-f'), dotM = document.getElementById('nc-dot-m');
+  var hasGeom = d.max > 0 && d.ih > 0; // stale cached HTML may predate the geometry fields
+  var tip = hasGeom ? document.getElementById('nc-tip') : null;
+  var tipRect = tip && tip.querySelector('rect'), tipText = tip && tip.querySelector('text');
+  if (!hasGeom) { dotF = null; dotM = null; }
+  function yOf(v) { return d.padT + d.ih - (v / d.max) * d.ih; }
   function show(ev) {
     var r = svg.getBoundingClientRect();
     var cx = ((ev.touches ? ev.touches[0].clientX : ev.clientX) - r.left) / r.width * box.width;
     var i = Math.round((cx - hx) / hw * (n - 1));
     if (i < 0) i = 0; if (i > n - 1) i = n - 1;
     var yr = d.s + i, g = d.f[i], b = d.m[i];
-    cur.setAttribute('x1', hx + i / (n - 1) * hw);
-    cur.setAttribute('x2', hx + i / (n - 1) * hw);
+    var px = hx + i / (n - 1) * hw;
+    cur.setAttribute('x1', px);
+    cur.setAttribute('x2', px);
     cur.style.display = '';
-    el.textContent = yr + ': ' + (g ? g.toLocaleString() + ' girls' : '') + (g && b ? ' \u00b7 ' : '') + (b ? b.toLocaleString() + ' boys' : '') + (!g && !b ? 'no recorded births' : '');
+    if (dotF) { if (g) { dotF.setAttribute('cx', px); dotF.setAttribute('cy', yOf(g)); dotF.style.display = ''; } else dotF.style.display = 'none'; }
+    if (dotM) { if (b) { dotM.setAttribute('cx', px); dotM.setAttribute('cy', yOf(b)); dotM.style.display = ''; } else dotM.style.display = 'none'; }
+    var msg = yr + ': ' + (g ? g.toLocaleString() + ' girls' : '') + (g && b ? ' \u00b7 ' : '') + (b ? b.toLocaleString() + ' boys' : '') + (!g && !b ? 'no recorded births' : '');
+    if (tip) {
+      tipText.textContent = msg;
+      var tw = tipText.getComputedTextLength() + 16;
+      var tx = px + 10 + tw > box.width ? px - 10 - tw : px + 10;
+      tipRect.setAttribute('x', tx); tipRect.setAttribute('y', d.padT + 6); tipRect.setAttribute('width', tw); tipRect.setAttribute('height', 22);
+      tipText.setAttribute('x', tx + 8); tipText.setAttribute('y', d.padT + 21);
+      tip.style.display = '';
+    }
+    el.textContent = msg;
   }
   var defaultText = el.textContent;
-  svg.addEventListener('mouseleave', function () { cur.style.display = 'none'; el.textContent = defaultText; });
+  svg.addEventListener('mouseleave', function () {
+    cur.style.display = 'none';
+    if (tip) tip.style.display = 'none';
+    if (dotF) dotF.style.display = 'none';
+    if (dotM) dotM.style.display = 'none';
+    el.textContent = defaultText;
+  });
   svg.addEventListener('mousemove', show);
   svg.addEventListener('touchmove', function (e) { show(e); e.preventDefault(); }, { passive: false });
   svg.addEventListener('touchstart', show);

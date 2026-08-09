@@ -3,7 +3,7 @@
 export const SITE = 'NameChart';
 export const ORIGIN = 'https://namechart.zalize.com';
 export const START_YEAR = 1880;
-export const ASSET_VER = 15; // bump when styles.css or app.js change, to bust the long asset cache
+export const ASSET_VER = 16; // bump when styles.css or app.js change, to bust the long asset cache
 export const END_YEAR = 2025;
 
 export const SISTER_SITES = [
@@ -64,6 +64,15 @@ ${jsonld ? `<script type="application/ld+json">${JSON.stringify(jsonld)}</script
       <a class="nav-link hover:text-indigo-700 hidden md:inline" href="/matcher" id="nc-nav-matcher">Matcher<span id="nc-new-dot" hidden class="ml-1 rounded-full bg-rose-100 text-rose-700 text-[10px] font-bold px-1.5 py-0.5 uppercase tracking-wide">New</span></a>
       <a class="nav-link hover:text-indigo-700" href="/browse">Browse</a>
       <a class="nav-link hover:text-indigo-700 hidden sm:inline" href="/pricing">Pricing</a>
+      <details class="relative md:hidden">
+        <summary class="nav-link list-none cursor-pointer hover:text-indigo-700 select-none" aria-label="More pages">More ▾</summary>
+        <div class="absolute right-0 mt-2 w-44 rounded-xl bg-white border border-slate-200 shadow-lg py-2 text-sm z-30">
+          <a class="block px-4 py-2.5 hover:bg-indigo-50 sm:hidden" href="/generator">Generator</a>
+          <a class="block px-4 py-2.5 hover:bg-indigo-50" href="/matcher">Sibling matcher</a>
+          <a class="block px-4 py-2.5 hover:bg-indigo-50" href="/favorites">My shortlist ♡</a>
+          <a class="block px-4 py-2.5 hover:bg-indigo-50 sm:hidden" href="/pricing">Pricing</a>
+        </div>
+      </details>
     </nav>
   </div>
   <form action="/search" method="get" class="sm:hidden px-4 pb-3" role="search">
@@ -143,6 +152,9 @@ export function chartSVG(series, { width = 800, height = 280 } = {}) {
   ${hasF ? `<g><rect x="${padL}" y="${padT}" width="10" height="3" fill="#db2777"/><text x="${padL + 14}" y="${padT + 5}" font-size="11" fill="#475569">Girls</text></g>` : ''}
   ${hasM ? `<g><rect x="${padL + 60}" y="${padT}" width="10" height="3" fill="#2563eb"/><text x="${padL + 74}" y="${padT + 5}" font-size="11" fill="#475569">Boys</text></g>` : ''}
   <line id="nc-cursor" x1="0" x2="0" y1="${padT}" y2="${padT + ih}" stroke="#6366f1" stroke-width="1" stroke-dasharray="3 3" style="display:none"/>
+  <circle id="nc-dot-f" r="3.5" fill="#db2777" stroke="#fff" stroke-width="1.5" style="display:none"/>
+  <circle id="nc-dot-m" r="3.5" fill="#2563eb" stroke="#fff" stroke-width="1.5" style="display:none"/>
+  <g id="nc-tip" style="display:none"><rect rx="6" fill="#1e293b" opacity="0.92"/><text font-size="11" fill="#fff"></text></g>
   <rect id="nc-hit" x="${padL}" y="${padT}" width="${iw}" height="${ih}" fill="transparent"/>
 </svg>`;
 }
@@ -150,7 +162,8 @@ export function chartSVG(series, { width = 800, height = 280 } = {}) {
 // Hover/touch readout for the name chart. Values are rendered server-side into a data attribute.
 export function chartReadout(series) {
   const { f, m } = expandSeries(series);
-  const data = JSON.stringify({ s: series.s, f, m });
+  const max = Math.max(1, ...f, ...m);
+  const data = JSON.stringify({ s: series.s, f, m, max, padT: 12, ih: 280 - 12 - 26 });
   return `<div id="nc-readout" class="mt-2 text-sm text-slate-600 tabular-nums" data-series='${esc(data)}'>Hover or tap the chart to read any year.</div>`;
 }
 
@@ -181,9 +194,12 @@ export function nameCard(r) {
     : g === 'girl'
       ? '<span class="text-xs rounded-full bg-pink-100 text-pink-700 px-2 py-0.5">girl</span>'
       : '<span class="text-xs rounded-full bg-blue-100 text-blue-700 px-2 py-0.5">boy</span>';
+  const hook = r.peak_year
+    ? `<p class="text-xs mt-1 ${r.peak_year >= END_YEAR - 5 ? 'text-emerald-700' : 'text-slate-600'}">${r.peak_year >= END_YEAR - 5 ? '↗ At its peak right now' : r.peak_year >= END_YEAR - 30 ? `Modern favorite · peaked ${r.peak_year}` : r.peak_year <= END_YEAR - 70 ? `Vintage classic · peaked ${r.peak_year}` : `Mid-century pick · peaked ${r.peak_year}`}</p>`
+    : '';
   return `<a href="/name/${r.slug}" class="card-lift block rounded-xl bg-white border border-slate-200 p-4 hover:border-indigo-300">
     <div class="flex items-center justify-between gap-2"><span class="font-semibold">${esc(r.name)}</span>${sexBadge}</div>
-    <p class="text-xs text-slate-600 mt-1">${fmt(r.total)} babies since ${r.first_year}</p>
+    <p class="text-xs text-slate-600 mt-1">${fmt(r.total)} babies since ${r.first_year}</p>${hook}
   </a>`;
 }
 

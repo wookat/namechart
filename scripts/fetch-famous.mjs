@@ -29,6 +29,13 @@ async function sparql(query) {
   throw new Error('sparql failed');
 }
 
+// Content safety: never import violent criminals / perpetrators of atrocities
+// (kept in sync with NEGATIVE_FIGURE_RE / BLOCKED_FAMOUS in src/index.js).
+const NEGATIVE_FIGURE_RE = /serial killer|murder|assassin|criminal|\brapist|sex offender|p(?:a|ae)?edophile|terroris|nazi|dictator|kidnapp|cult leader|mobster|gangster|mob boss|crime boss|drug (?:lord|trafficker|kingpin)|fraudster|ponzi|molest|genocide|warlord|hijack|cannibal|bank robber|human traffick|poisoner|mass shooting|school shooter/i;
+const BLOCKED_FAMOUS = new Set(['ted bundy', 'ted kaczynski', 'adolf hitler', 'jeffrey dahmer', 'charles manson', 'john wayne gacy', 'osama bin laden', 'joseph stalin', 'pol pot', 'harold shipman', 'anders behring breivik', 'timothy mcveigh', 'lee harvey oswald', 'aileen wuornos', 'richard ramirez', 'dennis rader', 'gary ridgway', 'david berkowitz']);
+const FIGURE_EXCEPTION_RE = /anti-nazi|resistance|victim|survivor/i;
+const isBlocked = p => (NEGATIVE_FIGURE_RE.test(p.d || '') && !FIGURE_EXCEPTION_RE.test(p.d || '')) || BLOCKED_FAMOUS.has((p.n || '').toLowerCase());
+
 const names = await d1(`SELECT slug, name FROM names ORDER BY total DESC LIMIT ${LIMIT}`);
 console.log(`querying wikidata for ${names.length} names in batches of ${BATCH}`);
 
@@ -56,7 +63,9 @@ for (let i = 0; i < names.length; i += BATCH) {
       const arr = (bySlug[n.slug] ||= []);
       const label = row.personLabel?.value || '';
       if (!label || /^Q\d+$/.test(label) || arr.length >= 4 || arr.some(p => p.n === label)) continue;
-      arr.push({ n: label, d: (row.desc?.value || '').slice(0, 120), l: Number(row.links.value) });
+      const person = { n: label, d: (row.desc?.value || '').slice(0, 120), l: Number(row.links.value) };
+      if (isBlocked(person)) continue;
+      arr.push(person);
     }
     console.log(`${i + batch.length}/${names.length} — ${Object.keys(bySlug).length} names with people`);
   } catch (e) {

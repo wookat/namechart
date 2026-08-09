@@ -44,9 +44,16 @@ const slugify = s => (s || '').toLowerCase().replace(/[^a-z'-]/g, '').slice(0, 4
 // Prefix search via index-friendly range scan (LIKE on a BINARY PK can't use the index
 // and D1 rejects patterns >= 50 chars).
 const NAME_COUNT = 105954; // rows in `names`; update when reimporting data
-const CACHE_VER = 77; // bump to invalidate the edge HTML cache on deploys that change rendering/data
+const CACHE_VER = 78; // bump to invalidate the edge HTML cache on deploys that change rendering/data
 // '~' (0x7E) sorts after every character allowed in slugs (a-z, apostrophe, hyphen).
 const prefixWhere = "slug >= ?1 AND slug < (?1 || '~')";
+
+// Content safety: famous namesakes shown to expecting parents must never include
+// violent criminals or perpetrators of atrocities. Filter by Wikidata description
+// keywords plus an explicit name blocklist (kept in sync with scripts/fetch-famous.mjs).
+const NEGATIVE_FIGURE_RE = /serial killer|murder|assassin|criminal|\brapist|sex offender|p(?:a|ae)?edophile|terroris|nazi|dictator|kidnapp|cult leader|mobster|gangster|mob boss|crime boss|drug (?:lord|trafficker|kingpin)|fraudster|ponzi|molest|genocide|warlord|hijack|cannibal|bank robber|human traffick|poisoner|mass shooting|school shooter/i;
+const FIGURE_EXCEPTION_RE = /anti-nazi|resistance|victim|survivor/i;
+const BLOCKED_FAMOUS = new Set(['ted bundy', 'ted kaczynski', 'adolf hitler', 'jeffrey dahmer', 'charles manson', 'john wayne gacy', 'osama bin laden', 'joseph stalin', 'pol pot', 'harold shipman', 'anders behring breivik', 'timothy mcveigh', 'lee harvey oswald', 'aileen wuornos', 'richard ramirez', 'dennis rader', 'gary ridgway', 'david berkowitz']);
 
 const etagOf = async buf => {
   const d = await crypto.subtle.digest('SHA-1', buf);
@@ -130,7 +137,8 @@ app.get('/', async c => {
   <div aria-hidden="true" class="absolute inset-0 -z-10 bg-gradient-to-br from-rose-50 via-indigo-50/60 to-amber-50"></div>
   <div class="hero-glow" aria-hidden="true"></div>
   <h1 class="fade-up font-display text-4xl sm:text-6xl font-bold tracking-tight">Every name tells a story.<br class="hidden sm:block"> <em class="text-gradient">See it in one chart.</em></h1>
-  <p class="fade-up-2 mt-4 text-slate-600 max-w-xl mx-auto">Popularity charts, rankings and insights for ${fmt(NAME_COUNT)} names — from 146 years of official U.S. birth records. Every feature is open during our free Beta — <a class="text-indigo-600 underline" href="/pricing">see plans</a>.</p>
+  <p class="fade-up-2 mt-4 text-slate-600 max-w-xl mx-auto">Popularity charts, rankings and insights for ${fmt(NAME_COUNT)} names — from 146 years of official U.S. birth records.</p>
+  <p class="fade-up-2 mt-3"><a href="/pricing" class="inline-flex items-center gap-2 rounded-full bg-indigo-50 border border-indigo-100 px-4 py-1.5 text-sm text-indigo-700 hover:border-indigo-400"><span class="rounded-full bg-indigo-600 text-white text-xs font-semibold px-2 py-0.5">Beta</span>All features free during Beta — see plans →</a></p>
   <form action="/search" method="get" class="mt-6 max-w-md mx-auto flex gap-2">
     <input name="q" placeholder="Try “Olivia”, “Theodore”, “Luna”…" autocomplete="off"
       class="flex-1 min-w-0 rounded-full border border-slate-300 bg-white px-4 sm:px-5 py-3 shadow-sm focus:outline-none focus:ring-2 focus:ring-indigo-400">
@@ -242,6 +250,7 @@ app.get('/name/:slug', async c => {
   };
   let famous = [];
   try { famous = famousRow ? JSON.parse(famousRow.people) : []; } catch { famous = []; }
+  famous = famous.filter(p => !((NEGATIVE_FIGURE_RE.test(p.d || '') && !FIGURE_EXCEPTION_RE.test(p.d || '')) || BLOCKED_FAMOUS.has((p.n || '').toLowerCase())));
   const variants = (await fuzzyMatches(db, slug, 1)).filter(v => v.slug !== slug).slice(0, 6);
   const bestRank = Math.min(r.latest_rank_f || 9999, r.latest_rank_m || 9999);
   const stats = [
