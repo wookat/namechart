@@ -1426,3 +1426,7 @@
 ## R183：结构化数据补全 — 2026-08-09
 - /trending、/top/girls|boys、/unisex 三类高价值榜单页此前缺 JSON-LD，补 ItemList（trending 取 rising 30、Top-1000 取前 100 控制体积、unisex 全 100），与既有 /list 页族口径一致。CACHE_VER 87，版本 c712951a。
 - 回归：三页 ItemList 实测输出、375px 六页族 axe 0 违规、无溢出、console 零错误。
+
+## R184：重音字符搜索归一 — 2026-08-09
+- 搜索「José/Zoë/Renée」曾把重音字符整个剥掉 → José 误落 /name/jos（另一个名字）。slugify 增加 Unicode NFD 分解+组合符剥离，重音折叠为基础字母：José→jose、Zoë→zoe、Renée→renee（搜索与 /name/ URL 双路径生效，/name/José 301→/name/jose）。版本 ecd02107。
+- 回归：三重音词搜索 302 正确落页、375px 六页族 axe 0 违规、console 零错误。

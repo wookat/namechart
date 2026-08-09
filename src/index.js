@@ -39,7 +39,7 @@ const html = (c, body, status = 200) => c.html(body, status, status === 200 ? ca
 const htmlPrivate = (c, body, status = 200) => c.html(body, status, noStore);
 
 const SLUG_RE = /^[a-z][a-z'-]{0,39}$/;
-const slugify = s => (s || '').toLowerCase().replace(/[^a-z'-]/g, '').slice(0, 40);
+const slugify = s => (s || '').normalize('NFD').replace(/[\u0300-\u036f]/g, '').toLowerCase().replace(/[^a-z'-]/g, '').slice(0, 40);
 
 // Prefix search via index-friendly range scan (LIKE on a BINARY PK can't use the index
 // and D1 rejects patterns >= 50 chars).
