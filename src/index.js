@@ -44,7 +44,7 @@ const slugify = s => (s || '').toLowerCase().replace(/[^a-z'-]/g, '').slice(0, 4
 // Prefix search via index-friendly range scan (LIKE on a BINARY PK can't use the index
 // and D1 rejects patterns >= 50 chars).
 const NAME_COUNT = 105954; // rows in `names`; update when reimporting data
-const CACHE_VER = 82; // bump to invalidate the edge HTML cache on deploys that change rendering/data
+const CACHE_VER = 83; // bump to invalidate the edge HTML cache on deploys that change rendering/data
 // '~' (0x7E) sorts after every character allowed in slugs (a-z, apostrophe, hyphen).
 const prefixWhere = "slug >= ?1 AND slug < (?1 || '~')";
 
@@ -908,6 +908,10 @@ const VIRTUE_WORDS = ['grace', 'joy', 'peace', 'honor', 'brave', 'strong', 'pure
 const WARRIOR_WORDS = ['warrior', 'battle', 'protector', 'defender', 'army', 'war'];
 const DIVINE_WORDS = ['god', 'goddess', 'divine'];
 
+// Astronomy/usage asides (e.g. "(moon of Uranus)", "The moon is named for the character")
+// mention a word without the name actually meaning it — strip them before matching.
+const stripUsageNotes = e => (e || '').replace(/\(moons? of [^)]+\)/gi, '').replace(/[^.;*]*\bmoons?\s+(?:is|are|was|were)\s+named[^.;*]*/gi, '');
+
 // Names whose documented etymology matches any of the group's words (word-boundary checked in JS).
 async function meaningGroupList(db, words, sex) {
   const cand = await db.prepare(`SELECT m.slug, m.etymology, n.name, n.total, n.f_total, n.m_total, n.first_year
@@ -916,7 +920,7 @@ async function meaningGroupList(db, words, sex) {
     .bind(...words.map(w => `%${w}%`)).all();
   const res = words.map(w => new RegExp(`\\b${w}\\b`, 'i'));
   return cand.results
-    .filter(r => res.some(re => re.test(r.etymology)))
+    .filter(r => { const e = stripUsageNotes(r.etymology); return res.some(re => re.test(e)); })
     .filter(r => (sex === 'F' ? r.f_total > r.m_total : r.m_total > r.f_total))
     .slice(0, 40);
 }
@@ -1137,12 +1141,12 @@ app.get('/meaning/:word', async c => {
       FROM meanings m JOIN names n ON n.slug = m.slug
       WHERE m.etymology LIKE ? ORDER BY n.total DESC LIMIT 200`).bind(`%${word}%`).all();
   const re = new RegExp(`\\b${word}\\b`, 'i');
-  const rows = cand.results.filter(r => re.test(r.etymology)).slice(0, 48);
+  const rows = cand.results.filter(r => re.test(stripUsageNotes(r.etymology))).slice(0, 48);
   const capWord = cap(word);
   const body = `
 <h1 class="font-display text-3xl sm:text-4xl font-bold">Names That Mean ${capWord}</h1>
 <p class="mt-2 text-slate-600 max-w-2xl">${rows.length} names whose etymology relates to “${word}” — drawn from documented origins, sorted by all-time U.S. popularity.</p>
-<div class="mt-6 space-y-3">${rows.map(r => `<div class="rounded-xl bg-white border border-slate-200 p-4 flex flex-wrap items-baseline gap-x-4 gap-y-1"><a href="/name/${r.slug}" class="font-semibold text-indigo-700 hover:underline">${esc(r.name)}</a><span class="text-sm text-slate-600">${esc(r.etymology.length > 180 ? r.etymology.slice(0, 177) + '…' : r.etymology)}</span></div>`).join('')}</div>
+<div class="mt-6 space-y-3">${rows.map(r => `<div class="rounded-xl bg-white border border-slate-200 p-4"><div class="flex flex-wrap items-baseline gap-x-3 gap-y-1"><a href="/name/${r.slug}" class="font-semibold text-indigo-700 hover:underline">${esc(r.name)}</a><span class="text-xs rounded-full ${r.f_total > r.m_total ? 'bg-pink-100 text-pink-700' : 'bg-blue-100 text-blue-700'} px-2 py-0.5">${r.f_total > r.m_total ? 'girl' : 'boy'}</span><span class="text-xs text-slate-500 tabular-nums">${fmt(r.total)} babies since ${r.first_year}</span></div><p class="mt-1 text-sm text-slate-600">${esc(r.etymology.length > 180 ? r.etymology.slice(0, 177) + '…' : r.etymology)}</p></div>`).join('')}</div>
 <section class="mt-10"><h2 class="font-bold mb-2">More meanings</h2><div class="flex flex-wrap gap-2 text-sm">${MEANING_WORDS.filter(w => w !== word).map(w => `<a href="/meaning/${w}" class="px-3 py-1.5 rounded-full bg-white border border-slate-200 hover:border-indigo-400">${cap(w)}</a>`).join('')}</div></section>
 <p class="mt-6 text-xs text-slate-600">Etymologies adapted from <a class="underline hover:text-indigo-600" href="https://en.wiktionary.org" rel="license noopener">Wiktionary</a>, licensed <a class="underline hover:text-indigo-600" href="https://creativecommons.org/licenses/by-sa/4.0/" rel="license noopener">CC BY-SA 4.0</a>.</p>
 ${emailForm()}`;

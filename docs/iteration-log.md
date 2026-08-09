@@ -1396,3 +1396,7 @@
 - R173 对比页：图表补 y 轴刻度标签（compact 格式），新增「领先易主」洞察句（如 "Olivia has led since 2019 — before that, Emma was ahead."，逐年双线符号扫描，平局/从未易主均处理）。
 - R174 Top-1000 榜单页：桌面端由单列改 md 2 列 / xl 3 列（CSS columns + break-inside-avoid），消除宽屏大留白与超长滚动；首页/年份页窄卡保持单列。ASSET_VER 18、CACHE_VER 82，版本 cf9b639b。
 - 回归：375px 四页族 axe 0 违规、无溢出、console 零错误；1440 实测 3 列生效。
+
+## R175：含义页相关性与信息密度 — 2026-08-09
+- 数据可信度：/meaning/moon 曾混入 Portia/Ferdinand/Francisco/Ariel 等「天王星卫星命名」类词条（词源中 moon 仅为天文用法注记）。新增 stripUsageNotes 预处理（剥离 "(moon of Uranus)" 与 "moon is named…" 用法句）后再词边界匹配，12→7 名全部真实相关；同逻辑应用于含义组榜单。
+- 行信息密度：含义页每行补性别徽章 + 累计出生数（与全站 nameCard 口径一致）。CACHE_VER 83，版本 d10641d0。
