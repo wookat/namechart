@@ -44,7 +44,7 @@ const slugify = s => (s || '').toLowerCase().replace(/[^a-z'-]/g, '').slice(0, 4
 // Prefix search via index-friendly range scan (LIKE on a BINARY PK can't use the index
 // and D1 rejects patterns >= 50 chars).
 const NAME_COUNT = 105954; // rows in `names`; update when reimporting data
-const CACHE_VER = 80; // bump to invalidate the edge HTML cache on deploys that change rendering/data
+const CACHE_VER = 82; // bump to invalidate the edge HTML cache on deploys that change rendering/data
 // '~' (0x7E) sorts after every character allowed in slugs (a-z, apostrophe, hyphen).
 const prefixWhere = "slug >= ?1 AND slug < (?1 || '~')";
 
@@ -412,6 +412,7 @@ app.get('/og/name/:file', async c => {
 });
 
 // ---------- compare ----------
+const compact = v => v >= 1e6 ? `${(v / 1e6).toFixed(1).replace(/\.0$/, '')}M` : v >= 1e3 ? `${(v / 1e3).toFixed(1).replace(/\.0$/, '')}k` : String(Math.round(v));
 app.get('/compare/:pair', async c => {
   const db = c.env.DB;
   const mth = c.req.param('pair').toLowerCase().match(/^([a-z'-]+)-vs-([a-z'-]+)$/);
@@ -430,7 +431,7 @@ app.get('/compare/:pair', async c => {
   const line = arr => arr.map((v, i) => `${i ? 'L' : 'M'}${x(i).toFixed(1)},${y(v).toFixed(1)}`).join('');
   const xTicks = []; for (let yr = 1900; yr <= END_YEAR; yr += 20) xTicks.push(yr);
   const svg = `<svg viewBox="0 0 ${W} ${H}" class="w-full h-auto" role="img" aria-label="Comparison chart">
-    ${[0.25, 0.5, 0.75, 1].map(t => `<line x1="${padL}" x2="${W - padR}" y1="${y(max * t)}" y2="${y(max * t)}" stroke="#e2e8f0"/>`).join('')}
+    ${[0.25, 0.5, 0.75, 1].map(t => `<line x1="${padL}" x2="${W - padR}" y1="${y(max * t)}" y2="${y(max * t)}" stroke="#e2e8f0"/><text x="${padL - 6}" y="${y(max * t) + 3}" text-anchor="end" font-size="10" fill="#94a3b8">${compact(max * t)}</text>`).join('')}
     ${xTicks.map(yr => `<text x="${x(yr - START_YEAR)}" y="${H - 8}" text-anchor="middle" font-size="10" fill="#94a3b8">${yr}</text>`).join('')}
     <path d="${line(ta)}" fill="none" stroke="#4f46e5" stroke-width="2"/>
     <path d="${line(tb)}" fill="none" stroke="#f59e0b" stroke-width="2"/>
@@ -438,9 +439,23 @@ app.get('/compare/:pair', async c => {
     <rect x="${padL + 90}" y="${padT}" width="10" height="3" fill="#f59e0b"/><text x="${padL + 104}" y="${padT + 5}" font-size="11" fill="#475569">${esc(b.name)}</text>
   </svg>`;
   const winner = a.total >= b.total ? a : b;
+  // Current leader and the year the lead last changed hands.
+  let lastFlip = -1, prevSign = 0;
+  for (let i = 0; i < n; i++) {
+    const s = Math.sign(ta[i] - tb[i]);
+    if (s !== 0) {
+      if (prevSign !== 0 && s !== prevSign) lastFlip = i;
+      prevSign = s;
+    }
+  }
+  const nowLeader = ta[n - 1] >= tb[n - 1] ? a : b;
+  const leadNote = ta[n - 1] === tb[n - 1] ? ''
+    : lastFlip === -1
+      ? `${esc(nowLeader.name)} has led every year on record.`
+      : `${esc(nowLeader.name)} has led since ${START_YEAR + lastFlip} — before that, ${esc(nowLeader === a ? b.name : a.name)} was ahead.`;
   const body = `
 <h1 class="font-display text-3xl sm:text-4xl font-bold tracking-tight">${esc(a.name)} <span class="text-slate-600">vs</span> ${esc(b.name)}</h1>
-<p class="mt-2 text-slate-600">All-time, <strong>${esc(winner.name)}</strong> leads: ${fmt(winner.total)} babies vs ${fmt(winner === a ? b.total : a.total)}.</p>
+<p class="mt-2 text-slate-600">All-time, <strong>${esc(winner.name)}</strong> leads: ${fmt(winner.total)} babies vs ${fmt(winner === a ? b.total : a.total)}.${leadNote ? ` ${leadNote}` : ''}</p>
 <div class="mt-6 rounded-2xl bg-white border border-slate-200 p-4 sm:p-6">${svg}</div>
 <div class="mt-6 grid grid-cols-2 gap-3">
   ${[a, b].map(r => `<a href="/name/${r.slug}" class="rounded-xl bg-white border border-slate-200 p-4 hover:border-indigo-400">
@@ -538,7 +553,7 @@ async function topPage(c, sex, label) {
   const body = `
 <h1 class="font-display text-3xl sm:text-4xl font-bold">Top 1000 ${label} names (${END_YEAR})</h1>
 <p class="mt-2 text-slate-600">Official ${END_YEAR} U.S. birth data. Click any name for its full 146-year chart.</p>
-<div class="mt-6 rounded-2xl bg-white border border-slate-200 p-4">${rankTable(rows.results)}</div>
+<div class="mt-6 rounded-2xl bg-white border border-slate-200 p-4">${rankTable(rows.results, { columns: true })}</div>
 ${emailForm()}`;
   return html(c, layout({
     title: `Top 1000 ${cap(label)} Names ${END_YEAR} — Official Rankings | ${SITE}`,

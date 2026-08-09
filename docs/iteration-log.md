@@ -1391,3 +1391,8 @@
 - R170 恢复后冒烟：16 路由全 200（/search 302 正常）、375px 三页族 axe 0 违规、console 零错误、无溢出。
 - R171 数据复盘：近 5 日 PV 25–145（内部为主），零结果搜索仅 XSS 探针（均安全处理）、无真实缺口词。
 - R172 pSEO 周更：新增 warrior/divine ×男女 4 榜单页（词源词边界数据自证，warrior-girl 11 名、divine-boy 40 名），IndexNow 第 15 批 3,270 URL。CACHE_VER 80，版本 a9787743。
+
+## R173–174：对比页与榜单页升级 — 2026-08-09
+- R173 对比页：图表补 y 轴刻度标签（compact 格式），新增「领先易主」洞察句（如 "Olivia has led since 2019 — before that, Emma was ahead."，逐年双线符号扫描，平局/从未易主均处理）。
+- R174 Top-1000 榜单页：桌面端由单列改 md 2 列 / xl 3 列（CSS columns + break-inside-avoid），消除宽屏大留白与超长滚动；首页/年份页窄卡保持单列。ASSET_VER 18、CACHE_VER 82，版本 cf9b639b。
+- 回归：375px 四页族 axe 0 违规、无溢出、console 零错误；1440 实测 3 列生效。

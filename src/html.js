@@ -3,7 +3,7 @@
 export const SITE = 'NameChart';
 export const ORIGIN = 'https://namechart.zalize.com';
 export const START_YEAR = 1880;
-export const ASSET_VER = 17; // bump when styles.css or app.js change, to bust the long asset cache
+export const ASSET_VER = 18; // bump when styles.css or app.js change, to bust the long asset cache
 export const END_YEAR = 2025;
 
 export const SISTER_SITES = [
@@ -203,9 +203,9 @@ export function nameCard(r) {
   </a>`;
 }
 
-export function rankTable(rows, { showCount = true } = {}) {
-  return `<ol class="divide-y divide-slate-100">
-    ${rows.map(r => `<li><a href="/name/${r.name.toLowerCase()}" class="flex items-center gap-4 px-2 py-2.5 hover:bg-indigo-50 rounded-lg">
+export function rankTable(rows, { showCount = true, columns = false } = {}) {
+  return `<ol class="${columns ? 'md:columns-2 xl:columns-3 md:gap-8' : 'divide-y divide-slate-100'}">
+    ${rows.map(r => `<li class="${columns ? 'break-inside-avoid border-b border-slate-100' : ''}"><a href="/name/${r.name.toLowerCase()}" class="flex items-center gap-4 px-2 py-2.5 hover:bg-indigo-50 rounded-lg">
       <span class="w-8 text-right text-sm text-slate-600 tabular-nums">${r.rank}</span>
       <span class="font-medium flex-1">${esc(r.name)}</span>
       ${showCount ? `<span class="text-sm text-slate-600 tabular-nums">${fmt(r.count)}</span>` : ''}
