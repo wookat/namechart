@@ -44,7 +44,7 @@ const slugify = s => (s || '').toLowerCase().replace(/[^a-z'-]/g, '').slice(0, 4
 // Prefix search via index-friendly range scan (LIKE on a BINARY PK can't use the index
 // and D1 rejects patterns >= 50 chars).
 const NAME_COUNT = 105954; // rows in `names`; update when reimporting data
-const CACHE_VER = 79; // bump to invalidate the edge HTML cache on deploys that change rendering/data
+const CACHE_VER = 80; // bump to invalidate the edge HTML cache on deploys that change rendering/data
 // '~' (0x7E) sorts after every character allowed in slugs (a-z, apostrophe, hyphen).
 const prefixWhere = "slug >= ?1 AND slug < (?1 || '~')";
 
@@ -860,12 +860,38 @@ const LISTS = {
     intro: 'Boy names with a documented etymological link to a virtue, ranked by all-time U.S. births.',
     rows: db => meaningGroupList(db, VIRTUE_WORDS, 'M'),
   },
+  'warrior-girl-names': {
+    title: 'Warrior Girl Names — Battle & Protector Meanings',
+    desc: 'Girl names whose documented etymology relates to warriors, battle, protectors and defenders.',
+    intro: 'Girl names with a documented etymological link to warriors, battle and protection, ranked by all-time U.S. births.',
+    rows: db => meaningGroupList(db, WARRIOR_WORDS, 'F'),
+  },
+  'warrior-boy-names': {
+    title: 'Warrior Boy Names — Battle & Protector Meanings',
+    desc: 'Boy names whose documented etymology relates to warriors, battle, protectors and defenders.',
+    intro: 'Boy names with a documented etymological link to warriors, battle and protection, ranked by all-time U.S. births.',
+    rows: db => meaningGroupList(db, WARRIOR_WORDS, 'M'),
+  },
+  'divine-girl-names': {
+    title: 'Divine Girl Names — God & Goddess Meanings',
+    desc: 'Girl names whose documented etymology relates to God, goddesses or the divine.',
+    intro: 'Girl names with a documented etymological link to God, a goddess or the divine, ranked by all-time U.S. births.',
+    rows: db => meaningGroupList(db, DIVINE_WORDS, 'F'),
+  },
+  'divine-boy-names': {
+    title: 'Divine Boy Names — God & Divine Meanings',
+    desc: 'Boy names whose documented etymology relates to God or the divine.',
+    intro: 'Boy names with a documented etymological link to God or the divine, ranked by all-time U.S. births.',
+    rows: db => meaningGroupList(db, DIVINE_WORDS, 'M'),
+  },
 };
 
 const NATURE_WORDS = ['flower', 'rose', 'river', 'forest', 'meadow', 'valley', 'mountain', 'sea', 'earth', 'bird', 'deer', 'wolf', 'bear', 'lion', 'spring', 'stone', 'water'];
 const CELESTIAL_WORDS = ['moon', 'star', 'sky', 'light', 'dawn', 'heaven'];
 const ROYAL_WORDS = ['king', 'queen', 'prince', 'ruler', 'crown', 'noble'];
 const VIRTUE_WORDS = ['grace', 'joy', 'peace', 'honor', 'brave', 'strong', 'pure', 'gracious', 'glory', 'victory'];
+const WARRIOR_WORDS = ['warrior', 'battle', 'protector', 'defender', 'army', 'war'];
+const DIVINE_WORDS = ['god', 'goddess', 'divine'];
 
 // Names whose documented etymology matches any of the group's words (word-boundary checked in JS).
 async function meaningGroupList(db, words, sex) {

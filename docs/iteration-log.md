@@ -1386,3 +1386,8 @@
 ## R169：复验遗留 P2 修复 — 2026-08-09
 - 375px More 菜单溢出裁切：根因是 styles.css 未重建、缺 right-0/shadow-lg 等新工具类；重建 Tailwind 产物并加 max-w-[calc(100vw-1.5rem)] 视口保险。实测菜单 right 373.7 < 375 视口内。ASSET_VER 17、CACHE_VER 79、版本 9faf460d。
 - 测试账号清理：subscribers 表无 qa/example.com/resend.dev 格式账号（验收官测试未在本产品留数据）。
+
+## R170–172：新循环启动（100 轮·验收官质量线）— 2026-08-05
+- R170 恢复后冒烟：16 路由全 200（/search 302 正常）、375px 三页族 axe 0 违规、console 零错误、无溢出。
+- R171 数据复盘：近 5 日 PV 25–145（内部为主），零结果搜索仅 XSS 探针（均安全处理）、无真实缺口词。
+- R172 pSEO 周更：新增 warrior/divine ×男女 4 榜单页（词源词边界数据自证，warrior-girl 11 名、divine-boy 40 名），IndexNow 第 15 批 3,270 URL。CACHE_VER 80，版本 a9787743。
