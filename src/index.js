@@ -44,7 +44,7 @@ const slugify = s => (s || '').normalize('NFD').replace(/[\u0300-\u036f]/g, '').
 // Prefix search via index-friendly range scan (LIKE on a BINARY PK can't use the index
 // and D1 rejects patterns >= 50 chars).
 const NAME_COUNT = 105954; // rows in `names`; update when reimporting data
-const CACHE_VER = 89; // bump to invalidate the edge HTML cache on deploys that change rendering/data
+const CACHE_VER = 90; // bump to invalidate the edge HTML cache on deploys that change rendering/data
 // '~' (0x7E) sorts after every character allowed in slugs (a-z, apostrophe, hyphen).
 const prefixWhere = "slug >= ?1 AND slug < (?1 || '~')";
 
@@ -1320,6 +1320,7 @@ app.get('/favorites', c => html(c, layout({
   body: `<h1 class="font-display text-3xl sm:text-4xl font-bold">My shortlist</h1>
 <p class="mt-2 text-slate-600">Names you save are stored only in this browser — no account needed. Nothing leaves your device unless you create a share link below.</p>
 <div id="nc-fav-list" class="mt-6 grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 gap-3"><p class="text-slate-600 col-span-full">Loading…</p></div>
+<div id="nc-fav-actions" class="mt-6"></div>
 <div id="nc-fav-share" class="mt-6"></div>
 <p class="mt-6 text-sm text-slate-600">Tip: open any <a href="/top/girls" class="text-indigo-600 underline">name page</a> and tap “♡ Save to shortlist”.</p>`,
 })));

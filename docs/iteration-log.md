@@ -1458,3 +1458,8 @@
 - sitemap 巡检：索引+static 327 URL+名字分片健全、robots 正常。
 - 对比页此前是爬取死角（无出站 compare 链接）。补「More comparisons」区块：基于 similarNames 的 6 个同年代同热度对比（规范化字母序 slug 防重复索引）。CACHE_VER 89，版本 bc794f41。
 - 回归：375px 六页族 axe 0 违规、无溢出、console 零错误。
+
+## R192：收藏页行动区 — 2026-08-09
+- /favorites 新增「Do more with your shortlist」行动区（纯客户端渲染，与清单同源 localStorage）：相邻收藏名对比链接（规范化字母序 slug）+ 一键带入 Matcher（最多 3 名预填）。收藏 1 名时也给 Matcher 入口，删除名字即时刷新。ASSET_VER 21、CACHE_VER 90，版本 4bba02cd。
+- 实测：3 名收藏 → Compare Luna vs Ivy / Compare Ivy vs Leo / matcher?names=luna&names=ivy&names=leo 直出兄弟姐妹名结果；console 零错误。
+- 回归：375px 六页族 axe 0 违规、无溢出、console 零错误。
