@@ -714,8 +714,13 @@ ${emailForm()}`;
 // ---------- state ----------
 app.get('/state/:st', async c => {
   const db = c.env.DB;
-  const st = c.req.param('st').toUpperCase();
-  if (!STATES[st]) return c.notFound();
+  let st = c.req.param('st').toUpperCase();
+  if (!STATES[st]) {
+    const full = Object.keys(STATES).find(k => STATES[k].toLowerCase().replace(/[^a-z]/g, '') === c.req.param('st').toLowerCase().replace(/[^a-z]/g, ''));
+    if (full) return c.redirect(`/state/${full.toLowerCase()}`, 301);
+    return c.notFound();
+  }
+  if (c.req.param('st') !== st.toLowerCase()) return c.redirect(`/state/${st.toLowerCase()}`, 301);
   const [g, b, nat] = await Promise.all([
     db.prepare('SELECT * FROM state_ranks WHERE state=? AND sex=? ORDER BY rank LIMIT 100').bind(st, 'F').all(),
     db.prepare('SELECT * FROM state_ranks WHERE state=? AND sex=? ORDER BY rank LIMIT 100').bind(st, 'M').all(),

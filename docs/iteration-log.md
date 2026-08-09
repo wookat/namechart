@@ -1448,3 +1448,8 @@
 - /letter/E、/letter/É 曾直接 200/404（大小写重复索引风险 + 重音死路）。统一 slugify：/letter/E 与 /letter/É 均 301 → /letter/e，非单字母仍 404；生成器 letter 参数同口径折叠。CACHE_VER 88，版本 3c32b73e。
 - 注：zalize.com 域对非 ASCII 路径由 Cloudflare 边缘直接 404（zone 层行为，无碍）；workers.dev 直连验证 301 正确。
 - 回归：375px 六页族 axe 0 违规、无溢出、console 零错误。
+
+## R190：内容安全抽检 + 州路由归一 — 2026-08-09
+- 内容安全抽检：adolf/saddam/osama 无名人区块、benito 仅 Juárez/Pérez Galdós/Floro（墨索里尼被过滤）、vladimir 干净——负面人物三层过滤持续生效。
+- 州路由归一：/state/california、/state/new-york、/state/CA 等全名/大小写变体 301 → 两字母小写规范 URL（避免死路与重复索引）。版本 ab8fb574。
+- 回归：375px 六页族 axe 0 违规、无溢出、console 零错误。
