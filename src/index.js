@@ -44,7 +44,7 @@ const slugify = s => (s || '').toLowerCase().replace(/[^a-z'-]/g, '').slice(0, 4
 // Prefix search via index-friendly range scan (LIKE on a BINARY PK can't use the index
 // and D1 rejects patterns >= 50 chars).
 const NAME_COUNT = 105954; // rows in `names`; update when reimporting data
-const CACHE_VER = 83; // bump to invalidate the edge HTML cache on deploys that change rendering/data
+const CACHE_VER = 84; // bump to invalidate the edge HTML cache on deploys that change rendering/data
 // '~' (0x7E) sorts after every character allowed in slugs (a-z, apostrophe, hyphen).
 const prefixWhere = "slug >= ?1 AND slug < (?1 || '~')";
 
@@ -358,18 +358,21 @@ ${(() => {
   if (r.name.length >= 9) rels.push([`long-${g}-names`, `Long ${g} names`]);
   if (r.first_year >= 1990) rels.push([`new-${g}-names`, `Modern ${g} names`]);
   if (r.peak_year < 1940 && rank && rank <= 500) rels.push([`vintage-${g}-names`, `Vintage ${g} names making a comeback`]);
-  if (meaning?.etymology) {
-    if (NATURE_WORDS.some(w => new RegExp(`\\b${w}\\b`, 'i').test(meaning.etymology))) rels.push([`nature-${g}-names`, `Nature ${g} names`]);
-    if (CELESTIAL_WORDS.some(w => new RegExp(`\\b${w}\\b`, 'i').test(meaning.etymology))) rels.push([`celestial-${g}-names`, `Celestial ${g} names`]);
-    if (ROYAL_WORDS.some(w => new RegExp(`\\b${w}\\b`, 'i').test(meaning.etymology))) rels.push([`royal-${g}-names`, `Royal ${g} names`]);
-    if (VIRTUE_WORDS.some(w => new RegExp(`\\b${w}\\b`, 'i').test(meaning.etymology))) rels.push([`virtue-${g}-names`, `Virtue ${g} names`]);
+  const etymClean = meaning?.etymology ? stripUsageNotes(meaning.etymology) : '';
+  if (etymClean) {
+    if (NATURE_WORDS.some(w => new RegExp(`\\b${w}\\b`, 'i').test(etymClean))) rels.push([`nature-${g}-names`, `Nature ${g} names`]);
+    if (CELESTIAL_WORDS.some(w => new RegExp(`\\b${w}\\b`, 'i').test(etymClean))) rels.push([`celestial-${g}-names`, `Celestial ${g} names`]);
+    if (ROYAL_WORDS.some(w => new RegExp(`\\b${w}\\b`, 'i').test(etymClean))) rels.push([`royal-${g}-names`, `Royal ${g} names`]);
+    if (VIRTUE_WORDS.some(w => new RegExp(`\\b${w}\\b`, 'i').test(etymClean))) rels.push([`virtue-${g}-names`, `Virtue ${g} names`]);
+    if (WARRIOR_WORDS.some(w => new RegExp(`\\b${w}\\b`, 'i').test(etymClean))) rels.push([`warrior-${g}-names`, `Warrior ${g} names`]);
+    if (DIVINE_WORDS.some(w => new RegExp(`\\b${w}\\b`, 'i').test(etymClean))) rels.push([`divine-${g}-names`, `Divine ${g} names`]);
   }
   if (!rels.length) return '';
   return `<section class="mt-10"><h2 class="font-bold text-lg mb-3">Explore related lists</h2><div class="flex flex-wrap gap-2 text-sm">${rels.map(([s, t]) => `<a href="/list/${s}" class="px-3 py-1.5 rounded-full bg-white border border-slate-200 hover:border-indigo-400">${t} →</a>`).join('')}</div></section>`;
 })()}
 ${(() => {
   if (!meaning || !meaning.etymology) return '';
-  const ws = MEANING_WORDS.filter(w => new RegExp(`\\b${w}\\b`, 'i').test(meaning.etymology));
+  const ws = MEANING_WORDS.filter(w => new RegExp(`\\b${w}\\b`, 'i').test(stripUsageNotes(meaning.etymology)));
   if (!ws.length) return '';
   return `<section class="mt-10"><h2 class="font-bold text-lg mb-3">Names with the same meaning</h2><p class="text-sm text-slate-600 -mt-2 mb-3">${esc(r.name)} relates to ${ws.map(w => `“${w}”`).join(', ')} — explore other names with documented ties to the same meaning.</p><div class="flex flex-wrap gap-2 text-sm">${ws.map(w => `<a href="/meaning/${w}" class="px-3 py-1.5 rounded-full bg-white border border-slate-200 hover:border-indigo-400">Names that mean ${w} →</a>`).join('')}</div></section>`;
 })()}

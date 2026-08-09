@@ -1400,3 +1400,6 @@
 ## R175：含义页相关性与信息密度 — 2026-08-09
 - 数据可信度：/meaning/moon 曾混入 Portia/Ferdinand/Francisco/Ariel 等「天王星卫星命名」类词条（词源中 moon 仅为天文用法注记）。新增 stripUsageNotes 预处理（剥离 "(moon of Uranus)" 与 "moon is named…" 用法句）后再词边界匹配，12→7 名全部真实相关；同逻辑应用于含义组榜单。
 - 行信息密度：含义页每行补性别徽章 + 累计出生数（与全站 nameCard 口径一致）。CACHE_VER 83，版本 d10641d0。
+
+## R176：名字页相关榜单内链扩展 — 2026-08-09
+- 名字页「Explore related lists」补 warrior/divine 两个新榜单族的归属判定，并统一用 stripUsageNotes 清洗后的词源做归属匹配（与榜单/含义页口径一致，避免链去名字已不在的榜单）。CACHE_VER 84，版本 191df2fa。实测 /name/walter 出现 Warrior boy names、/name/luna 保持 Celestial girl names。
