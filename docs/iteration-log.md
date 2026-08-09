@@ -1435,3 +1435,11 @@
 - R185 CWV 复测（JSON-LD 补全后）：/ TTFB 31ms/LCP 160ms、/top/girls 102KB（+2KB 可忽略）、/trending LCP 92ms，CLS 全 0、6 请求。无劣化。
 - R186 Matcher 输入归一：matcher 名字输入改走 slugify（与搜索同口径），重音输入 José 正确匹配 Jose 并出兄弟姐妹名结果。版本 9132a15f。
 - 回归：375px 六页族 axe 0 违规、无溢出、console 零错误。
+
+## R187–188：竞品复访 + 移动触控回归 — 2026-08-09
+- R187 竞品复访（每 10 轮例行）：Nameberry 名字页 11 节结构与 R177 一致，无新区块；BabyNames.com/The Bump 403 bot wall（不绕）。已知缺口不变（World rankings/pop culture/昵称仍缺公开数据源，维持 P2 不伪造）。
+- R188 移动触控走查：375px 真实触屏事件实测——对比页 tap 出 "1953: 1,600 Emma · 620 Olivia"、名字页 tap 出年读数，console 零错误。（首测名字页无响应系测试脚本未滚动图表入视口，产品无缺陷。）
+
+## 阶段小结（R170–188）
+- 本段 19 轮：4 新 pSEO 榜单族+IndexNow 第 15 批 3,270 URL、对比页 y 轴刻度+领先易主洞察+交互 tooltip、Top-1000 桌面 2/3 列、含义页天文用法误报清洗、卡片快速收藏 ♡、名字页重复 ID P1 修复（存清单提示条恢复）、URL/搜索卫生（垃圾 slug 直接 404、重音折叠 José→jose 全路径）、trending/top/unisex 补 ItemList JSON-LD。
+- 质量线：CWV 全 Good（TTFB 30–41ms、LCP 92–184ms、CLS 0、85–102KB/6 请求）、375px 六页族 axe 0 违规、console 零错误。数据面：PV 42–145/日仍以内部为主，零结果搜索仅安全探针。
