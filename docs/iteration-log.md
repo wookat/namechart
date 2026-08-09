@@ -1453,3 +1453,8 @@
 - 内容安全抽检：adolf/saddam/osama 无名人区块、benito 仅 Juárez/Pérez Galdós/Floro（墨索里尼被过滤）、vladimir 干净——负面人物三层过滤持续生效。
 - 州路由归一：/state/california、/state/new-york、/state/CA 等全名/大小写变体 301 → 两字母小写规范 URL（避免死路与重复索引）。版本 ab8fb574。
 - 回归：375px 六页族 axe 0 违规、无溢出、console 零错误。
+
+## R191：对比页内链 + sitemap 巡检 — 2026-08-09
+- sitemap 巡检：索引+static 327 URL+名字分片健全、robots 正常。
+- 对比页此前是爬取死角（无出站 compare 链接）。补「More comparisons」区块：基于 similarNames 的 6 个同年代同热度对比（规范化字母序 slug 防重复索引）。CACHE_VER 89，版本 bc794f41。
+- 回归：375px 六页族 axe 0 违规、无溢出、console 零错误。

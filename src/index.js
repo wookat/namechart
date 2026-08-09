@@ -44,7 +44,7 @@ const slugify = s => (s || '').normalize('NFD').replace(/[\u0300-\u036f]/g, '').
 // Prefix search via index-friendly range scan (LIKE on a BINARY PK can't use the index
 // and D1 rejects patterns >= 50 chars).
 const NAME_COUNT = 105954; // rows in `names`; update when reimporting data
-const CACHE_VER = 88; // bump to invalidate the edge HTML cache on deploys that change rendering/data
+const CACHE_VER = 89; // bump to invalidate the edge HTML cache on deploys that change rendering/data
 // '~' (0x7E) sorts after every character allowed in slugs (a-z, apostrophe, hyphen).
 const prefixWhere = "slug >= ?1 AND slug < (?1 || '~')";
 
@@ -456,6 +456,10 @@ app.get('/compare/:pair', async c => {
       prevSign = s;
     }
   }
+  const sims = await similarNames(db, a);
+  const pairSlug = (x, y) => (x < y ? `${x}-vs-${y}` : `${y}-vs-${x}`);
+  const moreCompares = sims.filter(s => s.slug !== b.slug).slice(0, 6)
+    .map(s => [pairSlug(a.slug, s.slug), `${esc(a.name)} vs ${esc(s.name)}`]);
   const nowLeader = ta[n - 1] >= tb[n - 1] ? a : b;
   const leadNote = ta[n - 1] === tb[n - 1] ? ''
     : lastFlip === -1
@@ -476,6 +480,7 @@ app.get('/compare/:pair', async c => {
   <input name="b" placeholder="Second name" value="${esc(b.name)}" class="flex-1 rounded-full border border-slate-300 px-4 py-2 text-sm bg-white">
   <button class="rounded-full bg-indigo-600 text-white px-5 py-2 text-sm font-semibold hover:bg-indigo-700">Compare</button>
 </form>
+${moreCompares.length ? `<section class="mt-8"><h2 class="font-bold text-lg mb-2">More comparisons</h2><div class="flex flex-wrap gap-2 text-sm">${moreCompares.map(([slug, label]) => `<a href="/compare/${slug}" class="px-3 py-1.5 rounded-full bg-white border border-slate-200 hover:border-indigo-400">${label}</a>`).join('')}</div></section>` : ''}
 ${emailForm()}`;
   return html(c, layout({
     title: `${a.name} vs ${b.name} — Which Name Is More Popular? | ${SITE}`,
