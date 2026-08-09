@@ -44,7 +44,7 @@ const slugify = s => (s || '').toLowerCase().replace(/[^a-z'-]/g, '').slice(0, 4
 // Prefix search via index-friendly range scan (LIKE on a BINARY PK can't use the index
 // and D1 rejects patterns >= 50 chars).
 const NAME_COUNT = 105954; // rows in `names`; update when reimporting data
-const CACHE_VER = 85; // bump to invalidate the edge HTML cache on deploys that change rendering/data
+const CACHE_VER = 86; // bump to invalidate the edge HTML cache on deploys that change rendering/data
 // '~' (0x7E) sorts after every character allowed in slugs (a-z, apostrophe, hyphen).
 const prefixWhere = "slug >= ?1 AND slug < (?1 || '~')";
 
@@ -440,6 +440,11 @@ app.get('/compare/:pair', async c => {
     <path d="${line(tb)}" fill="none" stroke="#f59e0b" stroke-width="2"/>
     <rect x="${padL}" y="${padT}" width="10" height="3" fill="#4f46e5"/><text x="${padL + 14}" y="${padT + 5}" font-size="11" fill="#475569">${esc(a.name)}</text>
     <rect x="${padL + 90}" y="${padT}" width="10" height="3" fill="#f59e0b"/><text x="${padL + 104}" y="${padT + 5}" font-size="11" fill="#475569">${esc(b.name)}</text>
+    <line id="nc-cursor" x1="0" x2="0" y1="${padT}" y2="${padT + ih}" stroke="#6366f1" stroke-width="1" stroke-dasharray="3 3" style="display:none"/>
+    <circle id="nc-dot-f" r="3.5" fill="#4f46e5" stroke="#fff" stroke-width="1.5" style="display:none"/>
+    <circle id="nc-dot-m" r="3.5" fill="#f59e0b" stroke="#fff" stroke-width="1.5" style="display:none"/>
+    <g id="nc-chart-tip" style="display:none"><rect rx="6" fill="#1e293b" opacity="0.92"/><text font-size="11" fill="#fff"></text></g>
+    <rect id="nc-hit" x="${padL}" y="${padT}" width="${iw}" height="${ih}" fill="transparent"/>
   </svg>`;
   const winner = a.total >= b.total ? a : b;
   // Current leader and the year the lead last changed hands.
@@ -459,7 +464,7 @@ app.get('/compare/:pair', async c => {
   const body = `
 <h1 class="font-display text-3xl sm:text-4xl font-bold tracking-tight">${esc(a.name)} <span class="text-slate-600">vs</span> ${esc(b.name)}</h1>
 <p class="mt-2 text-slate-600">All-time, <strong>${esc(winner.name)}</strong> leads: ${fmt(winner.total)} babies vs ${fmt(winner === a ? b.total : a.total)}.${leadNote ? ` ${leadNote}` : ''}</p>
-<div class="mt-6 rounded-2xl bg-white border border-slate-200 p-4 sm:p-6">${svg}</div>
+<div class="mt-6 rounded-2xl bg-white border border-slate-200 p-4 sm:p-6">${svg}<div id="nc-readout" class="mt-2 text-sm text-slate-600 tabular-nums" data-series='${esc(JSON.stringify({ s: START_YEAR, f: ta, m: tb, max, padT, ih, la: a.name, lb: b.name }))}'>Hover or tap the chart to read any year.</div></div>
 <div class="mt-6 grid grid-cols-2 gap-3">
   ${[a, b].map(r => `<a href="/name/${r.slug}" class="rounded-xl bg-white border border-slate-200 p-4 hover:border-indigo-400">
     <p class="font-bold">${esc(r.name)}</p>

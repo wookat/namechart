@@ -1411,3 +1411,9 @@
 ## R179：卡片快速收藏 — 2026-08-09
 - 全站名字卡（榜单/生成器/含义组/分享页等）新增 ♡ 快速收藏角标：无 JS 时隐藏、点击不跳转、与名字页 ♡ 同一 localStorage 清单、aria-pressed 状态。实测列表页点击→♥→/favorites 出现该名。为避免嵌套交互元素（axe nested-interactive），卡片重构为 div 包裹 a+button。ASSET_VER 19、CACHE_VER 85，版本 18f93567。
 - 回归：375px 四页族 axe 0 违规、无溢出、console 零错误。
+
+## R180：对比页交互图表 + 名字页重复 ID 修复（P1）— 2026-08-09
+- 对比页图表升级为与名字页同级的交互体验：hover/touch 竖线光标 + 双数据点 + 深色 tooltip + 文本读数行；tooltip 标签数据驱动（la/lb，对比页显示名字如 "1981: 534 Emma · 1,030 Olivia"，名字页保持 girls/boys）。
+- 修 P1：名字页 SVG tooltip `<g id="nc-tip">` 与「♡ 存清单」一次性提示条 `<div id="nc-tip">` 重复 ID——getElementById 命中 SVG 组导致提示条从未显示（R140 引导专项功能被 R166 tooltip 无声覆盖）。tooltip 组改名 nc-chart-tip，两者互不干扰，实测提示条恢复首现。
+- ASSET_VER 20、CACHE_VER 86，版本 1aca43a0。
+- 回归：实测名字页提示条显示 + tooltip 正常、对比页 tooltip "1981: 534 Emma · 1,030 Olivia"、375px 六页族 axe 0 违规、无溢出、console 零错误。

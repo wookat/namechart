@@ -3,7 +3,7 @@
 export const SITE = 'NameChart';
 export const ORIGIN = 'https://namechart.zalize.com';
 export const START_YEAR = 1880;
-export const ASSET_VER = 19; // bump when styles.css or app.js change, to bust the long asset cache
+export const ASSET_VER = 20; // bump when styles.css or app.js change, to bust the long asset cache
 export const END_YEAR = 2025;
 
 export const SISTER_SITES = [
@@ -154,7 +154,7 @@ export function chartSVG(series, { width = 800, height = 280 } = {}) {
   <line id="nc-cursor" x1="0" x2="0" y1="${padT}" y2="${padT + ih}" stroke="#6366f1" stroke-width="1" stroke-dasharray="3 3" style="display:none"/>
   <circle id="nc-dot-f" r="3.5" fill="#db2777" stroke="#fff" stroke-width="1.5" style="display:none"/>
   <circle id="nc-dot-m" r="3.5" fill="#2563eb" stroke="#fff" stroke-width="1.5" style="display:none"/>
-  <g id="nc-tip" style="display:none"><rect rx="6" fill="#1e293b" opacity="0.92"/><text font-size="11" fill="#fff"></text></g>
+  <g id="nc-chart-tip" style="display:none"><rect rx="6" fill="#1e293b" opacity="0.92"/><text font-size="11" fill="#fff"></text></g>
   <rect id="nc-hit" x="${padL}" y="${padT}" width="${iw}" height="${ih}" fill="transparent"/>
 </svg>`;
 }
@@ -163,7 +163,7 @@ export function chartSVG(series, { width = 800, height = 280 } = {}) {
 export function chartReadout(series) {
   const { f, m } = expandSeries(series);
   const max = Math.max(1, ...f, ...m);
-  const data = JSON.stringify({ s: series.s, f, m, max, padT: 12, ih: 280 - 12 - 26 });
+  const data = JSON.stringify({ s: series.s, f, m, max, padT: 12, ih: 280 - 12 - 26, la: 'girls', lb: 'boys' });
   return `<div id="nc-readout" class="mt-2 text-sm text-slate-600 tabular-nums" data-series='${esc(data)}'>Hover or tap the chart to read any year.</div>`;
 }
 

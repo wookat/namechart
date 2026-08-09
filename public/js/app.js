@@ -149,7 +149,7 @@
   var n = d.f.length;
   var dotF = document.getElementById('nc-dot-f'), dotM = document.getElementById('nc-dot-m');
   var hasGeom = d.max > 0 && d.ih > 0; // stale cached HTML may predate the geometry fields
-  var tip = hasGeom ? document.getElementById('nc-tip') : null;
+  var tip = hasGeom ? document.getElementById('nc-chart-tip') : null;
   var tipRect = tip && tip.querySelector('rect'), tipText = tip && tip.querySelector('text');
   if (!hasGeom) { dotF = null; dotM = null; }
   function yOf(v) { return d.padT + d.ih - (v / d.max) * d.ih; }
@@ -165,7 +165,8 @@
     cur.style.display = '';
     if (dotF) { if (g) { dotF.setAttribute('cx', px); dotF.setAttribute('cy', yOf(g)); dotF.style.display = ''; } else dotF.style.display = 'none'; }
     if (dotM) { if (b) { dotM.setAttribute('cx', px); dotM.setAttribute('cy', yOf(b)); dotM.style.display = ''; } else dotM.style.display = 'none'; }
-    var msg = yr + ': ' + (g ? g.toLocaleString() + ' girls' : '') + (g && b ? ' \u00b7 ' : '') + (b ? b.toLocaleString() + ' boys' : '') + (!g && !b ? 'no recorded births' : '');
+    var la = d.la || 'girls', lb = d.lb || 'boys';
+    var msg = yr + ': ' + (g ? g.toLocaleString() + ' ' + la : '') + (g && b ? ' \u00b7 ' : '') + (b ? b.toLocaleString() + ' ' + lb : '') + (!g && !b ? 'no recorded births' : '');
     if (tip) {
       tipText.textContent = msg;
       var tw = tipText.getComputedTextLength() + 16;
