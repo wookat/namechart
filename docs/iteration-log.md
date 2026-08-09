@@ -1403,3 +1403,7 @@
 
 ## R176：名字页相关榜单内链扩展 — 2026-08-09
 - 名字页「Explore related lists」补 warrior/divine 两个新榜单族的归属判定，并统一用 stripUsageNotes 清洗后的词源做归属匹配（与榜单/含义页口径一致，避免链去名字已不在的榜单）。CACHE_VER 84，版本 191df2fa。实测 /name/walter 出现 Warrior boy names、/name/luna 保持 Celestial girl names。
+
+## R177–178：竞品复访 + CWV 复测 — 2026-08-09
+- R177 竞品复访（每 10 轮例行）：Nameberry 名字页节结构无变化（对照表仍有效）；新扫 BehindTheName（Related Names/Popularity/用户投票/Name Days）——用户投票需账号体系（定位外 n/a）、Name Days 无官方美国数据源、Related Names 我方已有 variants+similar 覆盖。names.org 403 bot wall 不绕。无新的可数据自证缺口。
+- R178 CWV 复测：/ LCP 148ms、/name/luna 108ms、/top/girls 184ms（3 列改造后仍 Good）；CLS 全 0、传输 85–100KB、6 请求。无劣化。
