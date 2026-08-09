@@ -1443,3 +1443,8 @@
 ## 阶段小结（R170–188）
 - 本段 19 轮：4 新 pSEO 榜单族+IndexNow 第 15 批 3,270 URL、对比页 y 轴刻度+领先易主洞察+交互 tooltip、Top-1000 桌面 2/3 列、含义页天文用法误报清洗、卡片快速收藏 ♡、名字页重复 ID P1 修复（存清单提示条恢复）、URL/搜索卫生（垃圾 slug 直接 404、重音折叠 José→jose 全路径）、trending/top/unisex 补 ItemList JSON-LD。
 - 质量线：CWV 全 Good（TTFB 30–41ms、LCP 92–184ms、CLS 0、85–102KB/6 请求）、375px 六页族 axe 0 违规、console 零错误。数据面：PV 42–145/日仍以内部为主，零结果搜索仅安全探针。
+
+## R189：letter 路由/生成器参数归一 — 2026-08-09
+- /letter/E、/letter/É 曾直接 200/404（大小写重复索引风险 + 重音死路）。统一 slugify：/letter/E 与 /letter/É 均 301 → /letter/e，非单字母仍 404；生成器 letter 参数同口径折叠。CACHE_VER 88，版本 3c32b73e。
+- 注：zalize.com 域对非 ASCII 路径由 Cloudflare 边缘直接 404（zone 层行为，无碍）；workers.dev 直连验证 301 正确。
+- 回归：375px 六页族 axe 0 违规、无溢出、console 零错误。

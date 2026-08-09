@@ -44,7 +44,7 @@ const slugify = s => (s || '').normalize('NFD').replace(/[\u0300-\u036f]/g, '').
 // Prefix search via index-friendly range scan (LIKE on a BINARY PK can't use the index
 // and D1 rejects patterns >= 50 chars).
 const NAME_COUNT = 105954; // rows in `names`; update when reimporting data
-const CACHE_VER = 87; // bump to invalidate the edge HTML cache on deploys that change rendering/data
+const CACHE_VER = 88; // bump to invalidate the edge HTML cache on deploys that change rendering/data
 // '~' (0x7E) sorts after every character allowed in slugs (a-z, apostrophe, hyphen).
 const prefixWhere = "slug >= ?1 AND slug < (?1 || '~')";
 
@@ -630,8 +630,9 @@ ${emailForm()}`;
 // ---------- letter ----------
 app.get('/letter/:l', async c => {
   const db = c.env.DB;
-  const l = c.req.param('l').toLowerCase();
+  const l = slugify(c.req.param('l'));
   if (!/^[a-z]$/.test(l)) return c.notFound();
+  if (l !== c.req.param('l')) return c.redirect(`/letter/${l}`, 301);
   const [rows, stats] = await Promise.all([
     db.prepare('SELECT slug,name,total,f_total,m_total,first_year FROM names WHERE slug LIKE ? ORDER BY total DESC LIMIT 200').bind(l + '%').all(),
     db.prepare(`SELECT COUNT(*) n, SUM(CASE WHEN f_total > m_total THEN 1 ELSE 0 END) girls FROM names WHERE ${prefixWhere}`).bind(l).first(),
@@ -979,7 +980,7 @@ app.get('/og/year/:file', async c => {
 app.get('/generator', async c => {
   const db = c.env.DB;
   const sexQ = c.req.query('sex') === 'boy' ? 'M' : c.req.query('sex') === 'girl' ? 'F' : null;
-  const letter = /^[a-z]$/.test(c.req.query('letter') || '') ? c.req.query('letter') : null;
+  const letter = /^[a-z]$/.test(slugify(c.req.query('letter'))) ? slugify(c.req.query('letter')) : null;
   const style = ['popular', 'vintage', 'uncommon'].includes(c.req.query('style')) ? c.req.query('style') : 'popular';
   const mean = MEANING_WORDS.includes(c.req.query('mean')) ? c.req.query('mean') : null;
   const ends = /^[a-z]{1,4}$/.test((c.req.query('ends') || '').toLowerCase()) ? c.req.query('ends').toLowerCase() : null;
