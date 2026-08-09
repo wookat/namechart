@@ -1422,3 +1422,7 @@
 - R181 数据复盘：近 5 日 PV 42–145（内部为主），零结果搜索仅 XSS/压测探针（zzzqqq、scriptalertscript 等，均安全处理），无真实内容缺口词。
 - R182 URL 卫生：/name/1900s 这类含数字的垃圾 slug 曾 301 → /name/s（清洗后错误单字符 slug，形成误导性重定向链）。改为只有清洗后 slug 真实存在才 301（大小写归一如 /name/Luna 保持 301），否则直接 404+Did-you-mean。实测 /name/Luna 301、/name/1900s 与 /name/xyzzynotaname 直接 404。版本 75ec6864。
 - 桌面 UX 走查 /trending /favorites /matcher /top 无缺陷。
+
+## R183：结构化数据补全 — 2026-08-09
+- /trending、/top/girls|boys、/unisex 三类高价值榜单页此前缺 JSON-LD，补 ItemList（trending 取 rising 30、Top-1000 取前 100 控制体积、unisex 全 100），与既有 /list 页族口径一致。CACHE_VER 87，版本 c712951a。
+- 回归：三页 ItemList 实测输出、375px 六页族 axe 0 违规、无溢出、console 零错误。

@@ -44,7 +44,7 @@ const slugify = s => (s || '').toLowerCase().replace(/[^a-z'-]/g, '').slice(0, 4
 // Prefix search via index-friendly range scan (LIKE on a BINARY PK can't use the index
 // and D1 rejects patterns >= 50 chars).
 const NAME_COUNT = 105954; // rows in `names`; update when reimporting data
-const CACHE_VER = 86; // bump to invalidate the edge HTML cache on deploys that change rendering/data
+const CACHE_VER = 87; // bump to invalidate the edge HTML cache on deploys that change rendering/data
 // '~' (0x7E) sorts after every character allowed in slugs (a-z, apostrophe, hyphen).
 const prefixWhere = "slug >= ?1 AND slug < (?1 || '~')";
 
@@ -567,6 +567,7 @@ ${emailForm()}`;
     title: `Top 1000 ${cap(label)} Names ${END_YEAR} — Official Rankings | ${SITE}`,
     desc: `The 1000 most popular ${label} names of ${END_YEAR} from official U.S. birth records, with full popularity charts for each.`,
     path: `/top/${label}s`, body,
+    jsonld: { '@context': 'https://schema.org', '@type': 'ItemList', name: `Top ${label} names ${END_YEAR}`, itemListElement: rows.results.slice(0, 100).map((r, i) => ({ '@type': 'ListItem', position: i + 1, name: r.name, url: `${ORIGIN}/name/${r.name.toLowerCase()}` })) },
   }));
 }
 app.get('/top/girls', c => topPage(c, 'F', 'girl'));
@@ -583,7 +584,12 @@ app.get('/unisex', async c => {
 <p class="mt-2 text-slate-600">Names where at least 25% of babies are each gender, ranked by all-time popularity.</p>
 <div class="mt-6 grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 gap-3">${rows.results.map(nameCard).join('')}</div>
 ${emailForm()}`;
-  return html(c, layout({ title: `100 Truly Unisex Baby Names, Ranked by Data | ${SITE}`, desc: 'Genuinely gender-neutral names — at least 25% girls and 25% boys — ranked by 146 years of U.S. birth data.', path: '/unisex', body }));
+  return html(c, layout({
+    title: `100 Truly Unisex Baby Names, Ranked by Data | ${SITE}`,
+    desc: 'Genuinely gender-neutral names — at least 25% girls and 25% boys — ranked by 146 years of U.S. birth data.',
+    path: '/unisex', body,
+    jsonld: { '@context': 'https://schema.org', '@type': 'ItemList', name: 'Truly unisex baby names', itemListElement: rows.results.map((r, i) => ({ '@type': 'ListItem', position: i + 1, name: r.name, url: `${ORIGIN}/name/${r.slug}` })) },
+  }));
 });
 
 // ---------- trending ----------
@@ -613,7 +619,12 @@ app.get('/trending', async c => {
   <div class="rounded-2xl bg-white border border-slate-200 p-4"><h2 class="font-bold mb-2 text-rose-700">📉 Fastest falling</h2>${list(falling)}</div>
 </div>
 ${emailForm()}`;
-  return html(c, layout({ title: `Rising & Falling Baby Names (${END_YEAR - 5}–${END_YEAR}) | ${SITE}`, desc: `The fastest rising and fastest falling baby names in the U.S. top 1000, ${END_YEAR - 5} to ${END_YEAR}.`, path: '/trending', body }));
+  return html(c, layout({
+    title: `Rising & Falling Baby Names (${END_YEAR - 5}–${END_YEAR}) | ${SITE}`,
+    desc: `The fastest rising and fastest falling baby names in the U.S. top 1000, ${END_YEAR - 5} to ${END_YEAR}.`,
+    path: '/trending', body,
+    jsonld: { '@context': 'https://schema.org', '@type': 'ItemList', name: `Fastest rising baby names ${END_YEAR - 5}–${END_YEAR}`, itemListElement: rising.map((r, i) => ({ '@type': 'ListItem', position: i + 1, name: r.name, url: `${ORIGIN}/name/${r.name.toLowerCase()}` })) },
+  }));
 });
 
 // ---------- letter ----------
