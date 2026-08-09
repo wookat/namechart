@@ -1417,3 +1417,8 @@
 - 修 P1：名字页 SVG tooltip `<g id="nc-tip">` 与「♡ 存清单」一次性提示条 `<div id="nc-tip">` 重复 ID——getElementById 命中 SVG 组导致提示条从未显示（R140 引导专项功能被 R166 tooltip 无声覆盖）。tooltip 组改名 nc-chart-tip，两者互不干扰，实测提示条恢复首现。
 - ASSET_VER 20、CACHE_VER 86，版本 1aca43a0。
 - 回归：实测名字页提示条显示 + tooltip 正常、对比页 tooltip "1981: 534 Emma · 1,030 Olivia"、375px 六页族 axe 0 违规、无溢出、console 零错误。
+
+## R181–182：数据复盘 + URL 卫生 — 2026-08-09
+- R181 数据复盘：近 5 日 PV 42–145（内部为主），零结果搜索仅 XSS/压测探针（zzzqqq、scriptalertscript 等，均安全处理），无真实内容缺口词。
+- R182 URL 卫生：/name/1900s 这类含数字的垃圾 slug 曾 301 → /name/s（清洗后错误单字符 slug，形成误导性重定向链）。改为只有清洗后 slug 真实存在才 301（大小写归一如 /name/Luna 保持 301），否则直接 404+Did-you-mean。实测 /name/Luna 301、/name/1900s 与 /name/xyzzynotaname 直接 404。版本 75ec6864。
+- 桌面 UX 走查 /trending /favorites /matcher /top 无缺陷。
