@@ -47,6 +47,27 @@
     render();
   }
 
+  // Quick-save hearts on name cards (hidden without JS).
+  var cardFavs = document.querySelectorAll('.nc-card-fav');
+  if (cardFavs.length) {
+    var paint = function (btn) {
+      var saved = favs().some(function (f) { return f.slug === btn.dataset.slug; });
+      btn.textContent = saved ? '\u2665' : '\u2661';
+      btn.setAttribute('aria-pressed', saved ? 'true' : 'false');
+      btn.hidden = false;
+    };
+    cardFavs.forEach(function (btn) {
+      paint(btn);
+      btn.addEventListener('click', function (e) {
+        e.preventDefault();
+        var a = favs(), s = btn.dataset.slug;
+        if (a.some(function (f) { return f.slug === s; })) a = a.filter(function (f) { return f.slug !== s; });
+        else a.push({ slug: s, name: btn.dataset.name });
+        saveFavs(a); paint(btn);
+      });
+    });
+  }
+
   var list = document.getElementById('nc-fav-list');
   if (list) {
     var a = favs();

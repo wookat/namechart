@@ -1407,3 +1407,7 @@
 ## R177–178：竞品复访 + CWV 复测 — 2026-08-09
 - R177 竞品复访（每 10 轮例行）：Nameberry 名字页节结构无变化（对照表仍有效）；新扫 BehindTheName（Related Names/Popularity/用户投票/Name Days）——用户投票需账号体系（定位外 n/a）、Name Days 无官方美国数据源、Related Names 我方已有 variants+similar 覆盖。names.org 403 bot wall 不绕。无新的可数据自证缺口。
 - R178 CWV 复测：/ LCP 148ms、/name/luna 108ms、/top/girls 184ms（3 列改造后仍 Good）；CLS 全 0、传输 85–100KB、6 请求。无劣化。
+
+## R179：卡片快速收藏 — 2026-08-09
+- 全站名字卡（榜单/生成器/含义组/分享页等）新增 ♡ 快速收藏角标：无 JS 时隐藏、点击不跳转、与名字页 ♡ 同一 localStorage 清单、aria-pressed 状态。实测列表页点击→♥→/favorites 出现该名。为避免嵌套交互元素（axe nested-interactive），卡片重构为 div 包裹 a+button。ASSET_VER 19、CACHE_VER 85，版本 18f93567。
+- 回归：375px 四页族 axe 0 违规、无溢出、console 零错误。

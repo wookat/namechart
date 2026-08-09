@@ -3,7 +3,7 @@
 export const SITE = 'NameChart';
 export const ORIGIN = 'https://namechart.zalize.com';
 export const START_YEAR = 1880;
-export const ASSET_VER = 18; // bump when styles.css or app.js change, to bust the long asset cache
+export const ASSET_VER = 19; // bump when styles.css or app.js change, to bust the long asset cache
 export const END_YEAR = 2025;
 
 export const SISTER_SITES = [
@@ -197,10 +197,13 @@ export function nameCard(r) {
   const hook = r.peak_year
     ? `<p class="text-xs mt-1 ${r.peak_year >= END_YEAR - 5 ? 'text-emerald-700' : 'text-slate-600'}">${r.peak_year >= END_YEAR - 5 ? '↗ At its peak right now' : r.peak_year >= END_YEAR - 30 ? `Modern favorite · peaked ${r.peak_year}` : r.peak_year <= END_YEAR - 70 ? `Vintage classic · peaked ${r.peak_year}` : `Mid-century pick · peaked ${r.peak_year}`}</p>`
     : '';
-  return `<a href="/name/${r.slug}" class="card-lift block rounded-xl bg-white border border-slate-200 p-4 hover:border-indigo-300">
-    <div class="flex items-center justify-between gap-2"><span class="font-semibold">${esc(r.name)}</span>${sexBadge}</div>
-    <p class="text-xs text-slate-600 mt-1">${fmt(r.total)} babies since ${r.first_year}</p>${hook}
-  </a>`;
+  return `<div class="relative">
+    <a href="/name/${r.slug}" class="card-lift block rounded-xl bg-white border border-slate-200 p-4 hover:border-indigo-300">
+      <div class="flex items-center justify-between gap-2"><span class="font-semibold">${esc(r.name)}</span>${sexBadge}</div>
+      <p class="text-xs text-slate-600 mt-1">${fmt(r.total)} babies since ${r.first_year}</p>${hook}
+    </a>
+    <button type="button" class="nc-card-fav absolute -top-2 -right-2 w-8 h-8 grid place-items-center rounded-full bg-white border border-slate-200 text-rose-600 shadow-sm hover:border-rose-300" data-slug="${r.slug}" data-name="${esc(r.name)}" aria-label="Save ${esc(r.name)} to shortlist" hidden>♡</button>
+  </div>`;
 }
 
 export function rankTable(rows, { showCount = true, columns = false } = {}) {
