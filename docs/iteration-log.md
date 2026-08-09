@@ -1430,3 +1430,8 @@
 ## R184：重音字符搜索归一 — 2026-08-09
 - 搜索「José/Zoë/Renée」曾把重音字符整个剥掉 → José 误落 /name/jos（另一个名字）。slugify 增加 Unicode NFD 分解+组合符剥离，重音折叠为基础字母：José→jose、Zoë→zoe、Renée→renee（搜索与 /name/ URL 双路径生效，/name/José 301→/name/jose）。版本 ecd02107。
 - 回归：三重音词搜索 302 正确落页、375px 六页族 axe 0 违规、console 零错误。
+
+## R185–186：CWV 复测 + Matcher 输入归一 — 2026-08-09
+- R185 CWV 复测（JSON-LD 补全后）：/ TTFB 31ms/LCP 160ms、/top/girls 102KB（+2KB 可忽略）、/trending LCP 92ms，CLS 全 0、6 请求。无劣化。
+- R186 Matcher 输入归一：matcher 名字输入改走 slugify（与搜索同口径），重音输入 José 正确匹配 Jose 并出兄弟姐妹名结果。版本 9132a15f。
+- 回归：375px 六页族 axe 0 违规、无溢出、console 零错误。

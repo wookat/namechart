@@ -1066,7 +1066,7 @@ ${emailForm()}`;
 app.get('/matcher', async c => {
   const db = c.env.DB;
   const inputsRaw = (c.req.queries('names') || []).join(',').toLowerCase();
-  const inputs = [...new Set(inputsRaw.split(',').map(s => s.trim().replace(/[^a-z'-]/g, '')).filter(s => s.length >= 2 && s.length <= 40))].slice(0, 3);
+  const inputs = [...new Set(inputsRaw.split(',').map(s => slugify(s.trim())).filter(s => s.length >= 2 && s.length <= 40))].slice(0, 3);
   const rows = inputs.length ? await namesBySlugs(db, inputs) : [];
   const missing = inputs.filter(s => !rows.some(r => r.slug === s));
   let sibs = null, mids = null;
