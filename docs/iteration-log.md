@@ -1463,3 +1463,7 @@
 - /favorites 新增「Do more with your shortlist」行动区（纯客户端渲染，与清单同源 localStorage）：相邻收藏名对比链接（规范化字母序 slug）+ 一键带入 Matcher（最多 3 名预填）。收藏 1 名时也给 Matcher 入口，删除名字即时刷新。ASSET_VER 21、CACHE_VER 90，版本 4bba02cd。
 - 实测：3 名收藏 → Compare Luna vs Ivy / Compare Ivy vs Leo / matcher?names=luna&names=ivy&names=leo 直出兄弟姐妹名结果；console 零错误。
 - 回归：375px 六页族 axe 0 违规、无溢出、console 零错误。
+
+## R193–194：OG 资产 + 安全回归 — 2026-08-09
+- R193 OG 巡检：name/list/meaning/compare 四族 OG 图全 200（PNG 250–287KB）。
+- R194 安全回归：6 安全头齐全（CSP 无放宽）、XSS 路径 404、跨源 beacon 静默丢弃（204 不写库）、ETag+If-None-Match→304 正常（HEAD 无 ETag 属中间件只处理 GET，无碍）。无需修复。
