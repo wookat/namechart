@@ -1382,3 +1382,7 @@
 - P2-3 结果卡「为什么推荐」钩子：nameCard 增加数据自证标签行（↗ At its peak right now / Modern favorite / Mid-century pick / Vintage classic · peaked YYYY），生成器/榜单/相似名全站生效。
 - 共性自查：AI 等待体验 n/a（全 SSR 同步）；空态/错误态已覆盖（R140-144）；移动导航收敛——375px 导航新增「More ▾」disclosure 菜单（CSS-only details，含 Generator/Matcher/Shortlist/Pricing，修复小屏功能入口缺失）；邮箱用途/频率/隐私文案已有。
 - 回归：375/1440 无溢出、axe 0 违规、console 零错误、tooltip 实测（1938: 12 girls）、More 菜单实测展开。CACHE_VER 78、ASSET_VER 16、版本 250c7f8c。
+
+## R169：复验遗留 P2 修复 — 2026-08-09
+- 375px More 菜单溢出裁切：根因是 styles.css 未重建、缺 right-0/shadow-lg 等新工具类；重建 Tailwind 产物并加 max-w-[calc(100vw-1.5rem)] 视口保险。实测菜单 right 373.7 < 375 视口内。ASSET_VER 17、CACHE_VER 79、版本 9faf460d。
+- 测试账号清理：subscribers 表无 qa/example.com/resend.dev 格式账号（验收官测试未在本产品留数据）。
