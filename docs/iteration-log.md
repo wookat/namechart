@@ -1467,3 +1467,7 @@
 ## R193–194：OG 资产 + 安全回归 — 2026-08-09
 - R193 OG 巡检：name/list/meaning/compare 四族 OG 图全 200（PNG 250–287KB）。
 - R194 安全回归：6 安全头齐全（CSP 无放宽）、XSS 路径 404、跨源 beacon 静默丢弃（204 不写库）、ETag+If-None-Match→304 正常（HEAD 无 ETag 属中间件只处理 GET，无碍）。无需修复。
+
+## R195：收口复核 — 2026-08-09
+- 数据/OG/安全/名字页结构化数据（Dataset+BreadcrumbList+FAQPage）复核均健全；R193–195 连续三轮审计无新缺陷，剩余 backlog 均为公开数据源缺口（昵称/国际排名/pop culture），维持 P2 不伪造。
+- 终检：CWV 全 Good（/ LCP 160ms、/name/luna 96ms、CLS 0、85–89KB/6 请求）、375px 六页族 axe 0 违规、console 零错误。收益递减明显，本批收口转低强度运营。
