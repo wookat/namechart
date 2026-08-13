@@ -1478,3 +1478,9 @@
 - 空态近似名：/search 已有编辑距离 ≤2 的 Did-you-mean；Zzzyx 类无近邻时确为死胡同。修复：fuzzy 为空时回退「同首字母热门名 8 个 + /letter/x 链接」，不发明不存在的近似名。
 - 顺带修 P1 级缓存缺陷：边缘缓存 key 只含 pathname，/compare 落地页上缓存后会遮蔽 /compare?a=&b= 的 302（实测复现）。修复：带 query 的请求整体绕过边缘缓存（此类页本就 private 不缓存）。
 - 回归：/compare 与 /search?q=Zzzyx 375px axe 0 违规、无溢出、console 零错误；六页族原回归全绿；?a=&b= 302 实测恢复。CACHE_VER 90→91。
+
+## R197：审改分离·第 2 轮整改 — 2026-08-13
+Round 4 分报告：无新 P0/P1，复审 3/3 通过。整改两项：
+- P2 exact-match 跳转旁路：/search 精确命中直跳 /name/x 保留（体验好），新增 list=1 参数保持在前缀列表；名字页数据署名行补「see all names matching “X”」回链，用户可从详情页回到相似名列表，无循环重定向。
+- 更优方案：对比图把「lead 交换点」可视化——lastFlip 年份画灰色虚线竖标+「lead changed YYYY」标注（白色描边 halo 保证与曲线交叠时可读），结论句与图表自证一致。
+- 回归：name/compare/search?list=1 三页 375px axe 0 违规、无溢出、console 零错误；截图确认标注落位 2019 竖线。CACHE_VER 91→93。

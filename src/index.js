@@ -44,7 +44,7 @@ const slugify = s => (s || '').normalize('NFD').replace(/[\u0300-\u036f]/g, '').
 // Prefix search via index-friendly range scan (LIKE on a BINARY PK can't use the index
 // and D1 rejects patterns >= 50 chars).
 const NAME_COUNT = 105954; // rows in `names`; update when reimporting data
-const CACHE_VER = 91; // bump to invalidate the edge HTML cache on deploys that change rendering/data
+const CACHE_VER = 93; // bump to invalidate the edge HTML cache on deploys that change rendering/data
 // '~' (0x7E) sorts after every character allowed in slugs (a-z, apostrophe, hyphen).
 const prefixWhere = "slug >= ?1 AND slug < (?1 || '~')";
 
@@ -290,7 +290,7 @@ ${(() => {
   const oneIn = Math.round(denom / sexLatest);
   return ` In ${END_YEAR}, about <strong>1 in ${fmt(oneIn)}</strong> ${primary === 'girl' ? 'girls' : 'boys'} was named ${esc(r.name)}.`;
 })()}</p>
-<p class="mt-2 text-xs text-slate-600">Data: official U.S. Social Security records, 1880–${END_YEAR} · <a class="underline hover:text-indigo-600" href="/about">sources &amp; methodology</a></p>
+<p class="mt-2 text-xs text-slate-600">Data: official U.S. Social Security records, 1880–${END_YEAR} · <a class="underline hover:text-indigo-600" href="/about">sources &amp; methodology</a> · <a class="underline hover:text-indigo-600" href="/search?q=${slug}&list=1">see all names matching “${esc(r.name)}”</a></p>
 <nav aria-label="On this page" class="mt-4 flex flex-wrap gap-x-4 gap-y-1 text-sm text-indigo-700"><span class="text-slate-600">On this page:</span>${[
   meaning && (meaning.etymology || meaning.ipa) ? ['#meaning', 'Meaning'] : null,
   ['#popularity', 'Popularity'],
@@ -434,20 +434,6 @@ app.get('/compare/:pair', async c => {
   const x = i => padL + (i / (n - 1)) * iw, y = v => padT + ih - (v / max) * ih;
   const line = arr => arr.map((v, i) => `${i ? 'L' : 'M'}${x(i).toFixed(1)},${y(v).toFixed(1)}`).join('');
   const xTicks = []; for (let yr = 1900; yr <= END_YEAR; yr += 20) xTicks.push(yr);
-  const svg = `<svg viewBox="0 0 ${W} ${H}" class="w-full h-auto" role="img" aria-label="Comparison chart">
-    ${[0.25, 0.5, 0.75, 1].map(t => `<line x1="${padL}" x2="${W - padR}" y1="${y(max * t)}" y2="${y(max * t)}" stroke="#e2e8f0"/><text x="${padL - 6}" y="${y(max * t) + 3}" text-anchor="end" font-size="10" fill="#94a3b8">${compact(max * t)}</text>`).join('')}
-    ${xTicks.map(yr => `<text x="${x(yr - START_YEAR)}" y="${H - 8}" text-anchor="middle" font-size="10" fill="#94a3b8">${yr}</text>`).join('')}
-    <path d="${line(ta)}" fill="none" stroke="#4f46e5" stroke-width="2"/>
-    <path d="${line(tb)}" fill="none" stroke="#f59e0b" stroke-width="2"/>
-    <rect x="${padL}" y="${padT}" width="10" height="3" fill="#4f46e5"/><text x="${padL + 14}" y="${padT + 5}" font-size="11" fill="#475569">${esc(a.name)}</text>
-    <rect x="${padL + 90}" y="${padT}" width="10" height="3" fill="#f59e0b"/><text x="${padL + 104}" y="${padT + 5}" font-size="11" fill="#475569">${esc(b.name)}</text>
-    <line id="nc-cursor" x1="0" x2="0" y1="${padT}" y2="${padT + ih}" stroke="#6366f1" stroke-width="1" stroke-dasharray="3 3" style="display:none"/>
-    <circle id="nc-dot-f" r="3.5" fill="#4f46e5" stroke="#fff" stroke-width="1.5" style="display:none"/>
-    <circle id="nc-dot-m" r="3.5" fill="#f59e0b" stroke="#fff" stroke-width="1.5" style="display:none"/>
-    <g id="nc-chart-tip" style="display:none"><rect rx="6" fill="#1e293b" opacity="0.92"/><text font-size="11" fill="#fff"></text></g>
-    <rect id="nc-hit" x="${padL}" y="${padT}" width="${iw}" height="${ih}" fill="transparent"/>
-  </svg>`;
-  const winner = a.total >= b.total ? a : b;
   // Current leader and the year the lead last changed hands.
   let lastFlip = -1, prevSign = 0;
   for (let i = 0; i < n; i++) {
@@ -457,6 +443,22 @@ app.get('/compare/:pair', async c => {
       prevSign = s;
     }
   }
+  const flipX = lastFlip > 0 ? x(lastFlip) : 0;
+  const svg = `<svg viewBox="0 0 ${W} ${H}" class="w-full h-auto" role="img" aria-label="Comparison chart">
+    ${[0.25, 0.5, 0.75, 1].map(t => `<line x1="${padL}" x2="${W - padR}" y1="${y(max * t)}" y2="${y(max * t)}" stroke="#e2e8f0"/><text x="${padL - 6}" y="${y(max * t) + 3}" text-anchor="end" font-size="10" fill="#94a3b8">${compact(max * t)}</text>`).join('')}
+    ${xTicks.map(yr => `<text x="${x(yr - START_YEAR)}" y="${H - 8}" text-anchor="middle" font-size="10" fill="#94a3b8">${yr}</text>`).join('')}
+    <path d="${line(ta)}" fill="none" stroke="#4f46e5" stroke-width="2"/>
+    <path d="${line(tb)}" fill="none" stroke="#f59e0b" stroke-width="2"/>
+    ${lastFlip > 0 ? `<line x1="${flipX.toFixed(1)}" x2="${flipX.toFixed(1)}" y1="${padT}" y2="${padT + ih}" stroke="#94a3b8" stroke-width="1" stroke-dasharray="4 3"/><text x="${(flipX + (flipX > W / 2 ? -5 : 5)).toFixed(1)}" y="${padT + 26}" text-anchor="${flipX > W / 2 ? 'end' : 'start'}" font-size="10" fill="#64748b" stroke="#ffffff" stroke-width="3" paint-order="stroke">lead changed ${START_YEAR + lastFlip}</text>` : ''}
+    <rect x="${padL}" y="${padT}" width="10" height="3" fill="#4f46e5"/><text x="${padL + 14}" y="${padT + 5}" font-size="11" fill="#475569">${esc(a.name)}</text>
+    <rect x="${padL + 90}" y="${padT}" width="10" height="3" fill="#f59e0b"/><text x="${padL + 104}" y="${padT + 5}" font-size="11" fill="#475569">${esc(b.name)}</text>
+    <line id="nc-cursor" x1="0" x2="0" y1="${padT}" y2="${padT + ih}" stroke="#6366f1" stroke-width="1" stroke-dasharray="3 3" style="display:none"/>
+    <circle id="nc-dot-f" r="3.5" fill="#4f46e5" stroke="#fff" stroke-width="1.5" style="display:none"/>
+    <circle id="nc-dot-m" r="3.5" fill="#f59e0b" stroke="#fff" stroke-width="1.5" style="display:none"/>
+    <g id="nc-chart-tip" style="display:none"><rect rx="6" fill="#1e293b" opacity="0.92"/><text font-size="11" fill="#fff"></text></g>
+    <rect id="nc-hit" x="${padL}" y="${padT}" width="${iw}" height="${ih}" fill="transparent"/>
+  </svg>`;
+  const winner = a.total >= b.total ? a : b;
   const sims = await similarNames(db, a);
   const pairSlug = (x, y) => (x < y ? `${x}-vs-${y}` : `${y}-vs-${x}`);
   const moreCompares = sims.filter(s => s.slug !== b.slug).slice(0, 6)
@@ -557,7 +559,8 @@ app.get('/search', async c => {
   const db = c.env.DB;
   const q = (c.req.query('q') || '').trim().slice(0, 60);
   const slug = slugify(q);
-  if (slug) {
+  // list=1 keeps the user on the prefix-match list instead of jumping to an exact match.
+  if (slug && c.req.query('list') !== '1') {
     const exact = await getName(db, slug);
     if (exact) return c.redirect(`/name/${slug}`);
   }
