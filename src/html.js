@@ -63,12 +63,14 @@ ${jsonld ? `<script type="application/ld+json">${JSON.stringify(jsonld)}</script
       <a class="nav-link hover:text-indigo-700 hidden sm:inline" href="/generator">Generator</a>
       <a class="nav-link hover:text-indigo-700 hidden md:inline" href="/matcher" id="nc-nav-matcher">Matcher<span id="nc-new-dot" hidden class="ml-1 rounded-full bg-rose-100 text-rose-700 text-[10px] font-bold px-1.5 py-0.5 uppercase tracking-wide">New</span></a>
       <a class="nav-link hover:text-indigo-700" href="/browse">Browse</a>
+      <a class="nav-link hover:text-indigo-700 hidden md:inline" href="/compare">Compare</a>
       <a class="nav-link hover:text-indigo-700 hidden sm:inline" href="/pricing">Pricing</a>
       <details class="relative md:hidden">
         <summary class="nav-link list-none cursor-pointer hover:text-indigo-700 select-none" aria-label="More pages">More ▾</summary>
         <div class="absolute right-0 mt-2 w-44 max-w-[calc(100vw-1.5rem)] rounded-xl bg-white border border-slate-200 shadow-lg py-2 text-sm z-30">
           <a class="block px-4 py-2.5 hover:bg-indigo-50 sm:hidden" href="/generator">Generator</a>
           <a class="block px-4 py-2.5 hover:bg-indigo-50" href="/matcher">Sibling matcher</a>
+          <a class="block px-4 py-2.5 hover:bg-indigo-50" href="/compare">Compare names</a>
           <a class="block px-4 py-2.5 hover:bg-indigo-50" href="/favorites">My shortlist ♡</a>
           <a class="block px-4 py-2.5 hover:bg-indigo-50 sm:hidden" href="/pricing">Pricing</a>
         </div>
@@ -95,6 +97,7 @@ ${jsonld ? `<script type="application/ld+json">${JSON.stringify(jsonld)}</script
         <li><a class="hover:text-indigo-700" href="/unisex">Unisex names</a></li>
         <li><a class="hover:text-indigo-700" href="/trending">Rising &amp; falling</a></li>
         <li><a class="hover:text-indigo-700" href="/browse">Browse A–Z, years, decades, states</a></li>
+        <li><a class="hover:text-indigo-700" href="/compare">Compare two names</a></li>
         <li><a class="hover:text-indigo-700" href="/favorites">My shortlist</a></li>
         <li><a class="hover:text-indigo-700" href="/pricing">Pricing</a></li>
         <li><a class="hover:text-indigo-700" href="/about">About &amp; data sources</a></li>

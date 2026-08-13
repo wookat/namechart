@@ -44,7 +44,7 @@ const slugify = s => (s || '').normalize('NFD').replace(/[\u0300-\u036f]/g, '').
 // Prefix search via index-friendly range scan (LIKE on a BINARY PK can't use the index
 // and D1 rejects patterns >= 50 chars).
 const NAME_COUNT = 105954; // rows in `names`; update when reimporting data
-const CACHE_VER = 90; // bump to invalidate the edge HTML cache on deploys that change rendering/data
+const CACHE_VER = 91; // bump to invalidate the edge HTML cache on deploys that change rendering/data
 // '~' (0x7E) sorts after every character allowed in slugs (a-z, apostrophe, hyphen).
 const prefixWhere = "slug >= ?1 AND slug < (?1 || '~')";
 
@@ -69,7 +69,8 @@ const notModified = res => {
 app.use('*', async (c, next) => {
   if (c.req.method !== 'GET') return next();
   const url = new URL(c.req.url);
-  if (url.pathname.startsWith('/api/') || url.pathname === '/search') return next();
+  // Query-string requests are never cached (the key is path-only), so don't serve them from cache either.
+  if (url.pathname.startsWith('/api/') || url.pathname === '/search' || url.search) return next();
   const inm = c.req.header('If-None-Match');
   const key = new Request(url.origin + '/__v' + CACHE_VER + url.pathname, { method: 'GET' });
   const hit = await caches.default.match(key);
@@ -500,9 +501,30 @@ app.get('/og/compare/:file', async c => {
   res.headers.set('Cache-Control', 'public, max-age=86400, s-maxage=604800');
   return res;
 });
-app.get('/compare', c => {
+app.get('/compare', async c => {
   const a = slugify(c.req.query('a')), b = slugify(c.req.query('b'));
-  return c.redirect(a && b ? `/compare/${a}-vs-${b}` : '/');
+  if (a && b) return c.redirect(`/compare/${a}-vs-${b}`);
+  const top = await c.env.DB.prepare('SELECT name FROM year_ranks WHERE year=? AND rank<=6 ORDER BY sex, rank').bind(END_YEAR).all();
+  const girls = top.results.slice(0, 6).map(r => r.name), boys = top.results.slice(6).map(r => r.name);
+  const pair = (x, y) => { const p = [x.toLowerCase(), y.toLowerCase()].sort(); return `${p[0]}-vs-${p[1]}`; };
+  const examples = [];
+  for (let i = 0; i + 1 < girls.length; i += 2) examples.push([girls[i], girls[i + 1]]);
+  for (let i = 0; i + 1 < boys.length; i += 2) examples.push([boys[i], boys[i + 1]]);
+  const body = `
+<h1 class="font-display text-3xl sm:text-4xl font-bold tracking-tight">Compare two names</h1>
+<p class="mt-2 text-slate-600">Put any two names head-to-head on one 146-year popularity chart — see who leads, when the lead changed, and how they rank today.</p>
+<form action="/compare" method="get" class="mt-6 flex flex-col sm:flex-row gap-2 max-w-lg">
+  <input name="a" required placeholder="First name" class="flex-1 rounded-full border border-slate-300 px-4 py-2 text-sm bg-white">
+  <input name="b" required placeholder="Second name" class="flex-1 rounded-full border border-slate-300 px-4 py-2 text-sm bg-white">
+  <button class="rounded-full bg-indigo-600 text-white px-5 py-2 text-sm font-semibold hover:bg-indigo-700">Compare</button>
+</form>
+<section class="mt-8"><h2 class="font-bold text-lg mb-2">Popular matchups (${END_YEAR} top names)</h2><div class="flex flex-wrap gap-2 text-sm">${examples.map(([x, y]) => `<a href="/compare/${pair(x, y)}" class="px-3 py-1.5 rounded-full bg-white border border-slate-200 hover:border-indigo-400">${esc(x)} vs ${esc(y)}</a>`).join('')}</div></section>
+${emailForm()}`;
+  return html(c, layout({
+    title: `Compare Baby Names Head-to-Head, 1880–${END_YEAR} | ${SITE}`,
+    desc: `Compare any two baby names on one chart: 146 years of official U.S. popularity data, head-to-head.`,
+    path: '/compare', body,
+  }));
 });
 
 // Edit-distance ≤2 suggestions for misspelled searches, over a popularity-capped candidate set.
@@ -544,6 +566,10 @@ app.get('/search', async c => {
     : { results: [] };
   let didYouMean = [];
   if (!like.results.length && slug.length >= 3) didYouMean = await fuzzyMatches(db, slug);
+  let letterPicks = [];
+  if (!like.results.length && !didYouMean.length && /^[a-z]/.test(slug)) {
+    letterPicks = (await db.prepare(`SELECT slug,name,total,f_total,m_total,first_year FROM names WHERE slug LIKE ? ORDER BY total DESC LIMIT 8`).bind(slug[0] + '%').all()).results;
+  }
   if (slug) {
     // Aggregate query counts (no user identifiers) to drive search-term analysis.
     c.executionCtx.waitUntil(db.prepare(
@@ -554,7 +580,7 @@ app.get('/search', async c => {
 <h1 class="text-2xl font-bold">Search results for “${esc(q)}”</h1>
 ${like.results.length
     ? `<div class="mt-6 grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 gap-3">${like.results.map(nameCard).join('')}</div>`
-    : `<p class="mt-4 text-slate-600">No names found. The data only includes names given to 5+ babies in a single year.</p>${didYouMean.length ? `<h2 class="mt-6 font-bold">Did you mean…</h2><div class="mt-3 grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 gap-3">${didYouMean.map(nameCard).join('')}</div>` : ''}<div class="mt-8 flex flex-wrap gap-2 text-sm"><a href="/generator" class="rounded-full bg-indigo-600 text-white px-4 py-2 font-semibold hover:bg-indigo-700">Get ideas from the generator →</a><a href="/browse" class="rounded-full bg-white border border-slate-300 px-4 py-2 text-slate-700 hover:border-indigo-400">Browse by letter, year or state</a></div>`}
+    : `<p class="mt-4 text-slate-600">No names found. The data only includes names given to 5+ babies in a single year.</p>${didYouMean.length ? `<h2 class="mt-6 font-bold">Did you mean…</h2><div class="mt-3 grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 gap-3">${didYouMean.map(nameCard).join('')}</div>` : ''}${letterPicks.length ? `<h2 class="mt-6 font-bold">Popular “${slug[0].toUpperCase()}” names to explore</h2><div class="mt-3 grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 gap-3">${letterPicks.map(nameCard).join('')}</div><p class="mt-3 text-sm"><a href="/letter/${slug[0]}" class="text-indigo-600 hover:underline">See all names starting with ${slug[0].toUpperCase()} →</a></p>` : ''}<div class="mt-8 flex flex-wrap gap-2 text-sm"><a href="/generator" class="rounded-full bg-indigo-600 text-white px-4 py-2 font-semibold hover:bg-indigo-700">Get ideas from the generator →</a><a href="/browse" class="rounded-full bg-white border border-slate-300 px-4 py-2 text-slate-700 hover:border-indigo-400">Browse by letter, year or state</a></div>`}
 ${emailForm()}`;
   return htmlPrivate(c, layout({ title: `“${q}” — name search | ${SITE}`, desc: `Search results for ${q}`, path: '/search', noindex: true, body }));
 });
@@ -1469,7 +1495,7 @@ app.get('/sitemaps/:shard{.+\\.xml}', async c => {
   const shard = c.req.param('shard').replace(/\.xml$/, '');
   const urls = [];
   if (shard === 'static') {
-    urls.push('/', '/top/girls', '/top/boys', '/unisex', '/trending', '/browse', '/generator', '/matcher', '/pricing', '/about', '/press', '/privacy', '/terms');
+    urls.push('/', '/top/girls', '/top/boys', '/unisex', '/trending', '/browse', '/generator', '/matcher', '/compare', '/pricing', '/about', '/press', '/privacy', '/terms');
     for (const s of Object.keys(LISTS)) urls.push(`/list/${s}`);
     for (const w of MEANING_WORDS) urls.push(`/meaning/${w}`);
     for (const ch of 'abcdefghijklmnopqrstuvwxyz') urls.push(`/letter/${ch}`);

@@ -1471,3 +1471,10 @@
 ## R195：收口复核 — 2026-08-09
 - 数据/OG/安全/名字页结构化数据（Dataset+BreadcrumbList+FAQPage）复核均健全；R193–195 连续三轮审计无新缺陷，剩余 backlog 均为公开数据源缺口（昵称/国际排名/pop culture），维持 P2 不伪造。
 - 终检：CWV 全 Good（/ LCP 160ms、/name/luna 96ms、CLS 0、85–89KB/6 请求）、375px 六页族 axe 0 违规、console 零错误。收益递减明显，本批收口转低强度运营。
+
+## R196：审改分离·第 1 轮整改 — 2026-08-13
+验收官 Round 3 分报告：无新 P0/P1；上轮 More 菜单裁切确认修复。两条「更优方案」系统性归因后处理：
+- 「缺名字对比页」为事实性误判——/compare/a-vs-b（图表+lead 分析+OG+ItemLink）自 R1 起即存在。归因到设计层的真问题是**可发现性**：对比功能只有语境入口（首页卡/名字页 chips/收藏页），全局导航/footer 无入口，裸 /compare 还静默 302 回首页。修复：/compare 无参时渲染落地页（双输入表单+当年热门配对示例），导航（md+ 与 More 菜单）与 footer 增 Compare 入口，静态 sitemap 收录 /compare。
+- 空态近似名：/search 已有编辑距离 ≤2 的 Did-you-mean；Zzzyx 类无近邻时确为死胡同。修复：fuzzy 为空时回退「同首字母热门名 8 个 + /letter/x 链接」，不发明不存在的近似名。
+- 顺带修 P1 级缓存缺陷：边缘缓存 key 只含 pathname，/compare 落地页上缓存后会遮蔽 /compare?a=&b= 的 302（实测复现）。修复：带 query 的请求整体绕过边缘缓存（此类页本就 private 不缓存）。
+- 回归：/compare 与 /search?q=Zzzyx 375px axe 0 违规、无溢出、console 零错误；六页族原回归全绿；?a=&b= 302 实测恢复。CACHE_VER 90→91。
