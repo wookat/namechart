@@ -44,7 +44,7 @@ const slugify = s => (s || '').normalize('NFD').replace(/[\u0300-\u036f]/g, '').
 // Prefix search via index-friendly range scan (LIKE on a BINARY PK can't use the index
 // and D1 rejects patterns >= 50 chars).
 const NAME_COUNT = 105954; // rows in `names`; update when reimporting data
-const CACHE_VER = 95; // bump to invalidate the edge HTML cache on deploys that change rendering/data
+const CACHE_VER = 96; // bump to invalidate the edge HTML cache on deploys that change rendering/data
 // '~' (0x7E) sorts after every character allowed in slugs (a-z, apostrophe, hyphen).
 const prefixWhere = "slug >= ?1 AND slug < (?1 || '~')";
 
@@ -224,7 +224,10 @@ app.get('/name/:slug', async c => {
   const latest = f[f.length - 1] + m[m.length - 1];
   const tenAgo = (f[f.length - 11] ?? 0) + (m[m.length - 11] ?? 0);
   const trendPct = tenAgo > 0 ? Math.round(((latest - tenAgo) / tenAgo) * 100) : null;
-  const girlPct = r.total ? Math.round((r.f_total / r.total) * 100) : 0;
+  const girlShare = r.total ? (r.f_total / r.total) * 100 : 0;
+  // Never round a nonzero share to 100%/0% — the same page can show ranks for the minority sex.
+  const pctLabel = p => p >= 99.5 ? '99%+' : p < 0.5 ? '<1%' : `${Math.round(p)}%`;
+  const girlPct = pctLabel(girlShare), boyPct = pctLabel(100 - girlShare);
   const gender = genderOf(r);
   const unisex = gender === 'unisex';
   const primary = gender === 'unisex' ? (r.f_total >= r.m_total ? 'girl' : 'boy') : gender;
@@ -271,7 +274,7 @@ app.get('/name/:slug', async c => {
     rankBits.length ? (bestRank <= 25 ? 'Very popular — expect classmates who share it' : bestRank <= 200 ? 'Popular but not everywhere' : 'Familiar yet uncommon') : 'Rare — a truly distinctive pick'],
     ['First recorded', String(r.first_year), `First year ${r.name} shows up in U.S. records`],
     ['10-year trend', trendPct === null ? 'New / returning' : `${trendPct > 0 ? '▲ +' : trendPct < 0 ? '▼ ' : ''}${trendPct}%`, trendPct === null ? 'Too new (or newly back) to compare' : trendPct > 15 ? 'On its way up — getting more common' : trendPct < -15 ? 'Fading — feels more distinctive each year' : 'Holding steady vs. 10 years ago'],
-    ['Gender split', r.f_total && r.m_total ? `${girlPct}% girls / ${100 - girlPct}% boys` : (r.f_total ? 'All girls' : 'All boys'), unisex ? 'Genuinely used for both — a true unisex name' : 'Share of all babies ever given this name'],
+    ['Gender split', r.f_total && r.m_total ? `${girlPct} girls / ${boyPct} boys` : (r.f_total ? 'All girls' : 'All boys'), unisex ? 'Genuinely used for both — a true unisex name' : 'Share of all babies ever given this name'],
   ];
   const body = `
 <nav aria-label="Breadcrumb" class="text-sm text-slate-600 mb-4"><a href="/" class="hover:text-indigo-600">Home</a> › <a href="/letter/${slug[0]}" class="hover:text-indigo-600">Names starting with ${slug[0].toUpperCase()}</a> › <span>${esc(r.name)}</span></nav>
@@ -388,7 +391,7 @@ ${(() => {
 <section id="faq" class="mt-10"><h2 class="font-bold text-lg mb-3">FAQ</h2><div class="space-y-3">
   <div class="rounded-xl bg-white border border-slate-200 p-4"><p class="font-semibold">How popular is the name ${esc(r.name)}?</p><p class="text-sm text-slate-600 mt-1">${esc(r.name)} has been given to ${fmt(r.total)} babies in the U.S. since ${r.first_year}.${rankBits.length ? ` In ${END_YEAR} it ranked ${rankBits.join(' and ')}.` : ` It ranked below the top 1000 in ${END_YEAR}.`}</p></div>
   <div class="rounded-xl bg-white border border-slate-200 p-4"><p class="font-semibold">When did the name ${esc(r.name)} peak?</p><p class="text-sm text-slate-600 mt-1">${esc(r.name)} peaked in ${r.peak_year}, when ${fmt(r.peak_count)} babies were given the name.</p></div>
-  <div class="rounded-xl bg-white border border-slate-200 p-4"><p class="font-semibold">Is ${esc(r.name)} a girl or boy name?</p><p class="text-sm text-slate-600 mt-1">${unisex ? `${esc(r.name)} is a unisex name, used for both girls and boys.` : `${esc(r.name)} is primarily a ${primary} name (${primary === 'girl' ? girlPct : 100 - girlPct}% of babies named ${esc(r.name)} are ${primary}s).`}</p></div>
+  <div class="rounded-xl bg-white border border-slate-200 p-4"><p class="font-semibold">Is ${esc(r.name)} a girl or boy name?</p><p class="text-sm text-slate-600 mt-1">${unisex ? `${esc(r.name)} is a unisex name, used for both girls and boys.` : `${esc(r.name)} is primarily a ${primary} name (${primary === 'girl' ? girlPct : boyPct} of babies named ${esc(r.name)} are ${primary}s).`}</p></div>
 </div></section>
 ${emailForm()}`;
   return html(c, layout({
@@ -407,7 +410,7 @@ ${emailForm()}`;
       { '@context': 'https://schema.org', '@type': 'FAQPage', mainEntity: [
         { '@type': 'Question', name: `How popular is the name ${r.name}?`, acceptedAnswer: { '@type': 'Answer', text: `${r.name} has been given to ${fmt(r.total)} babies in the U.S. since ${r.first_year}.${rankBits.length ? ` In ${END_YEAR} it ranked ${rankBits.join(' and ')}.` : ` It ranked below the top 1000 in ${END_YEAR}.`}` } },
         { '@type': 'Question', name: `When did the name ${r.name} peak?`, acceptedAnswer: { '@type': 'Answer', text: `${r.name} peaked in ${r.peak_year}, when ${fmt(r.peak_count)} babies were given the name.` } },
-        { '@type': 'Question', name: `Is ${r.name} a girl or boy name?`, acceptedAnswer: { '@type': 'Answer', text: unisex ? `${r.name} is a unisex name, used for both girls and boys.` : `${r.name} is primarily a ${primary} name (${primary === 'girl' ? girlPct : 100 - girlPct}% of babies named ${r.name} are ${primary}s).` } },
+        { '@type': 'Question', name: `Is ${r.name} a girl or boy name?`, acceptedAnswer: { '@type': 'Answer', text: unisex ? `${r.name} is a unisex name, used for both girls and boys.` : `${r.name} is primarily a ${primary} name (${primary === 'girl' ? girlPct : boyPct} of babies named ${r.name} are ${primary}s).` } },
       ] },
     ],
   }));

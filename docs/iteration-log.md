@@ -1509,3 +1509,6 @@ beacon 防伪（P2-4）最小防护：/api/beacon 增 `Sec-Fetch-Site: same-orig
 2. **CGNAT 误伤自查**：本线无 AI/发信成本端点，per-IP 配额只是 D1 写保护兜底；按「宽 IP 上限」原则放宽 share 20→60、sub 5→20、beacon 300→2000（/日/IP），CGNAT 共享出口不再互相挤占；不引入客户端 id（与无标识符隐私口径冲突，勿增实体）。
 3. **「计数不可防伪」口径**（P2-4）写入 docs/analytics-export.md 永久口径段。
 验证：ETag+If-None-Match → 304 实测通过；375px 两页 axe 0/无溢出/console 0。版本 ce3d5626。
+
+## R203：审改分离·第 9 轮（性别占比显示口径）— 2026-08-14
+P2：Gender split 取整到 100%/0% 与同页少数性别排名（如 Emma 1900 男 #519）矛盾。系统性修法：新增 pctLabel（≥99.5%→"99%+"、<0.5%→"<1%"，其余四舍五入），统计卡、FAQ 文案、FAQ JSON-LD 三处共用同一格式化，口径一次统一。实测 Emma "99%+ girls / <1% boys"、Michael "<1% girls / 99%+ boys"、Riley "57% girls / 43% boys"（中段不受影响）。CACHE_VER 95→96。回归：375px 两页 axe 0/无溢出/console 0。版本 feeaca9f。
