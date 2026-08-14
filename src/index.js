@@ -44,7 +44,7 @@ const slugify = s => (s || '').normalize('NFD').replace(/[\u0300-\u036f]/g, '').
 // Prefix search via index-friendly range scan (LIKE on a BINARY PK can't use the index
 // and D1 rejects patterns >= 50 chars).
 const NAME_COUNT = 105954; // rows in `names`; update when reimporting data
-const CACHE_VER = 94; // bump to invalidate the edge HTML cache on deploys that change rendering/data
+const CACHE_VER = 95; // bump to invalidate the edge HTML cache on deploys that change rendering/data
 // '~' (0x7E) sorts after every character allowed in slugs (a-z, apostrophe, hyphen).
 const prefixWhere = "slug >= ?1 AND slug < (?1 || '~')";
 
@@ -54,6 +54,10 @@ const prefixWhere = "slug >= ?1 AND slug < (?1 || '~')";
 const NEGATIVE_FIGURE_RE = /serial killer|murder|assassin|criminal|\brapist|sex offender|p(?:a|ae)?edophile|terroris|nazi|dictator|kidnapp|cult leader|mobster|gangster|mob boss|crime boss|drug (?:lord|trafficker|kingpin)|fraudster|ponzi|molest|genocide|warlord|hijack|cannibal|bank robber|human traffick|poisoner|mass shooting|school shooter/i;
 const FIGURE_EXCEPTION_RE = /anti-nazi|resistance|victim|survivor/i;
 const BLOCKED_FAMOUS = new Set(['ted bundy', 'ted kaczynski', 'adolf hitler', 'jeffrey dahmer', 'charles manson', 'john wayne gacy', 'osama bin laden', 'joseph stalin', 'pol pot', 'harold shipman', 'anders behring breivik', 'timothy mcveigh', 'lee harvey oswald', 'aileen wuornos', 'richard ramirez', 'dennis rader', 'gary ridgway', 'david berkowitz']);
+
+// Unified QA-traffic convention: internal test tooling appends "DevinQA" to its
+// User-Agent; such requests are served normally but excluded from analytics writes.
+const isQA = c => (c.req.header('User-Agent') || '').includes('DevinQA');
 
 const etagOf = async buf => {
   const d = await crypto.subtle.digest('SHA-1', buf);
@@ -577,7 +581,7 @@ app.get('/search', async c => {
   if (!like.results.length && !didYouMean.length && /^[a-z]/.test(slug)) {
     letterPicks = (await db.prepare(`SELECT slug,name,total,f_total,m_total,first_year FROM names WHERE slug LIKE ? ORDER BY total DESC LIMIT 8`).bind(slug[0] + '%').all()).results;
   }
-  if (slug) {
+  if (slug && !isQA(c)) {
     // Aggregate query counts (no user identifiers) to drive search-term analysis.
     c.executionCtx.waitUntil(db.prepare(
       'INSERT INTO searches (day, q, results) VALUES (?, ?, ?) ON CONFLICT(day, q) DO UPDATE SET count = count + 1'
@@ -1463,16 +1467,21 @@ app.post('/api/share/revoke', async c => {
   return c.json({ ok: (r.meta?.changes ?? 0) > 0 });
 });
 
+const EVENTS = new Set(['visit_new', 'visit_returning']);
 app.post('/api/beacon', async c => {
-  if (!sameOrigin(c)) return c.body(null, 204);
+  if (!sameOrigin(c) || isQA(c)) return c.body(null, 204);
   try {
-    const { p } = await c.req.json();
+    const { p, e } = await c.req.json();
     // Only count paths that match a real route family, so forged beacons can't pollute analytics.
     const VALID_PATH = /^\/$|^\/(name|letter|year|state|compare|list|meaning|og\/name|og\/list|og\/meaning|og\/compare)\/[a-z0-9'.-]{1,60}$|^\/decade\/\d{4}s$|^\/s\/[a-z0-9]{8}$|^\/og\/share\/[a-z0-9.]{1,20}$|^\/(top\/girls|top\/boys|trending|unisex|browse|about|privacy|terms|favorites|search|generator|pricing|matcher|press)$/;
     if (typeof p === 'string' && p.length <= 100 && VALID_PATH.test(p) && !(await overQuota(c, 'beacon', 300))) {
       const day = new Date().toISOString().slice(0, 10);
       await c.env.DB.prepare('INSERT INTO hits (day, path, count) VALUES (?, ?, 1) ON CONFLICT(day, path) DO UPDATE SET count = count + 1')
         .bind(day, p).run();
+      if (typeof e === 'string' && EVENTS.has(e)) {
+        await c.env.DB.prepare('INSERT INTO events (day, event, count) VALUES (?, ?, 1) ON CONFLICT(day, event) DO UPDATE SET count = count + 1')
+          .bind(day, e).run();
+      }
     }
   } catch { /* ignore */ }
   return c.body(null, 204);
@@ -1502,13 +1511,7 @@ app.get('/sitemaps/:shard{.+\\.xml}', async c => {
   const shard = c.req.param('shard').replace(/\.xml$/, '');
   const urls = [];
   if (shard === 'static') {
-    urls.push('/', '/top/girls', '/top/boys', '/unisex', '/trending', '/browse', '/generator', '/matcher', '/compare', '/pricing', '/about', '/press', '/privacy', '/terms');
-    for (const s of Object.keys(LISTS)) urls.push(`/list/${s}`);
-    for (const w of MEANING_WORDS) urls.push(`/meaning/${w}`);
-    for (const ch of 'abcdefghijklmnopqrstuvwxyz') urls.push(`/letter/${ch}`);
-    for (let y = START_YEAR; y <= END_YEAR; y++) urls.push(`/year/${y}`);
-    for (let d = 1880; d <= 2020; d += 10) urls.push(`/decade/${d}s`);
-    for (const st of Object.keys(STATES)) urls.push(`/state/${st.toLowerCase()}`);
+    urls.push(...staticPaths());
   } else {
     const mth = shard.match(/^names-(\d+)$/);
     if (!mth) return c.notFound();
@@ -1530,4 +1533,38 @@ app.get('/:key{[a-f0-9]{32}\\.txt}', c => {
 
 app.notFound(c => htmlPrivate(c, layout({ title: 'Page not found | ' + SITE, desc: 'Not found', path: '/404', noindex: true, body: `<div class="text-center py-20"><h1 class="font-display text-3xl sm:text-4xl font-bold">404</h1><p class="mt-2 text-slate-600">That page doesn't exist.</p><a href="/" class="inline-block mt-6 text-indigo-600 hover:underline">← Back to NameChart</a></div>` }), 404));
 
-export default app;
+function staticPaths() {
+  const urls = ['/', '/top/girls', '/top/boys', '/unisex', '/trending', '/browse', '/generator', '/matcher', '/compare', '/pricing', '/about', '/press', '/privacy', '/terms'];
+  for (const s of Object.keys(LISTS)) urls.push(`/list/${s}`);
+  for (const w of MEANING_WORDS) urls.push(`/meaning/${w}`);
+  for (const ch of 'abcdefghijklmnopqrstuvwxyz') urls.push(`/letter/${ch}`);
+  for (let y = START_YEAR; y <= END_YEAR; y++) urls.push(`/year/${y}`);
+  for (let d = 1880; d <= 2020; d += 10) urls.push(`/decade/${d}s`);
+  for (const st of Object.keys(STATES)) urls.push(`/state/${st.toLowerCase()}`);
+  return urls;
+}
+
+// Weekly IndexNow push: static routes plus every name page, in 10k-URL batches.
+async function runIndexNow(env) {
+  const urls = staticPaths().map(u => ORIGIN + u);
+  for (let off = 0; ; off += 10000) {
+    const rows = await env.DB.prepare('SELECT slug FROM names ORDER BY slug LIMIT 10000 OFFSET ?').bind(off).all();
+    if (!rows.results.length) break;
+    for (const r of rows.results) urls.push(`${ORIGIN}/name/${r.slug}`);
+    if (rows.results.length < 10000) break;
+  }
+  const host = new URL(ORIGIN).host;
+  for (let i = 0; i < urls.length; i += 10000) {
+    const res = await fetch('https://api.indexnow.org/indexnow', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json; charset=utf-8' },
+      body: JSON.stringify({ host, key: env.INDEXNOW_KEY, keyLocation: `${ORIGIN}/${env.INDEXNOW_KEY}.txt`, urlList: urls.slice(i, i + 10000) }),
+    });
+    console.log(`indexnow batch ${i / 10000}: ${res.status}`);
+  }
+}
+
+export default {
+  fetch: app.fetch,
+  scheduled: (event, env, ctx) => ctx.waitUntil(runIndexNow(env)),
+};

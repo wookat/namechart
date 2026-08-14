@@ -1,5 +1,16 @@
 (function () {
-  try { navigator.sendBeacon('/api/beacon', JSON.stringify({ p: location.pathname })); } catch (e) { /* noop */ }
+  try {
+    // Cookie-free returning-visitor signal: first-seen day lives only in this
+    // browser's localStorage; the server receives a day-level event count, no identifier.
+    var day = new Date().toISOString().slice(0, 10), ev = null;
+    try {
+      var first = localStorage.getItem('nc-first');
+      if (!first) { localStorage.setItem('nc-first', day); ev = 'visit_new'; }
+      else if (localStorage.getItem('nc-evday') !== day) { ev = first < day ? 'visit_returning' : null; }
+      if (ev) localStorage.setItem('nc-evday', day);
+    } catch (e2) { /* storage unavailable */ }
+    navigator.sendBeacon('/api/beacon', JSON.stringify(ev ? { p: location.pathname, e: ev } : { p: location.pathname }));
+  } catch (e) { /* noop */ }
 
   var inputs = document.querySelectorAll('input[name=q]');
   if (inputs.length) {

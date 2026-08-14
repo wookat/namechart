@@ -1491,3 +1491,10 @@ Round 5 分报告：无新 P1/P2 缺陷，第 2 轮复审全通过。三项建�
 - 更优方案1（lead 交换 hover 语句）：compare data-series 增 fl 字段，图表 tooltip 悬停到交换年追加「— Olivia takes the lead」完整语句，实测 2019 年读数正确。
 - 更优方案2（复古排序）：/search list=1 增 Most popular / Vintage first 排序 chips（sort=vintage 按 peak_year ASC，total≥500 滤噪），服务同一路由无新实体。
 - 回归：三页 375px axe 0 违规、无溢出、console 零错误；#from-search 显隐、flip tooltip、vintage 排序实测通过。ASSET_VER 21→22、CACHE_VER 93→94。
+
+## R200：审改分离·第 6 轮统一整改 — 2026-08-14
+三项全线统一要求落地：
+1. **IndexNow cron**（对齐 Shelfmark 模式）：Worker 增 `scheduled` 处理器 + `runIndexNow()`（静态路由复用 `staticPaths()` + D1 全量 name slug，10k/批 POST），wrangler `crons = ["0 9 * * 1"]` 每周一全量推送；本次已手动全量推送 106,224 URL（11 批全部 200）。
+2. **QA 流量统一标记**：约定测试 UA 含 `DevinQA`；`isQA()` 在 beacon/searches/events 采集端跳过。本机 /home/ubuntu/nb 全部测试脚本已加 UA。实测 QA 搜索不落库。
+3. **回访近似口径（HonestCV ev 模式）**：新表 `events(day,event,count)`（迁移 0005），beacon 增可选 `e`∈{visit_new, visit_returning}，客户端由 localStorage `nc-first` 首见日期推导、每日至多一次，无标识符上传。实测 visit_new 落库、console 0 错误。
+回归：375px 三页 axe 0/无溢出/console 0。ASSET_VER 22→23、CACHE_VER 94→95。版本 ec83de5d。
