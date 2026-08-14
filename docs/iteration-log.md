@@ -1515,3 +1515,6 @@ P2：Gender split 取整到 100%/0% 与同页少数性别排名（如 Emma 1900 
 
 ## R204：审改分离·第 11 轮（全集团统一 "free during beta" 口径）— 2026-08-14
 全站 grep 核清 "trial" 共 9 处（pricing 4、about 1、press 1、terms 2、footer 1）统一改为 "free during Beta"；docs/brand/brand-guide.md 口径规范同步更新（禁用 trial 字样）、PH launch kit FAQ 同步。生产六页 grep -i trial 全 0，pricing/footer 实测 "free during Beta"。CACHE_VER 96→97。回归：375px 两页 axe 0/无溢出/console 0。版本 89d753f6。
+
+## R205：国际排名立项落地（England & Wales / France / Ireland / Norway）— 2026-08-14
+竞品对比验收立项（Nameberry 33 国 vs 本线仅美国）。先论证后实现：docs/intl-data-sources.md 核定 4 国官方开放数据源（ONS OGL v3、INSEE Licence Ouverte、CSO CC BY 4.0、SSB NLOD），入选标准=官方机构+明确许可+可编程获取+年度更新；德国等无合规源的明确不做。实现：intl_ranks 表（与 state_ranks 同构，勿增实体）+ scripts/fetch-intl.mjs 一键重建（802 行，各国最新年 top 100×2 性别）；/international 总览页 + /international/:cc 四国家页（top 100 双表、来源署名、ItemList JSON-LD）；名字页新增 "around the world" 区块（如 Olivia：England & Wales #1）；footer/About/sitemap/beacon 白名单同步。CACHE_VER 97→98。回归：3 页 375px axe 0/无溢出/console 0。版本 14d7c1b5。

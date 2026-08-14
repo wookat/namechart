@@ -19,6 +19,16 @@ const STATES = {
   WA: 'Washington', WV: 'West Virginia', WI: 'Wisconsin', WY: 'Wyoming',
 };
 
+// International top-100 rankings from official statistics offices.
+// Sources, licences and methodology: docs/intl-data-sources.md; data via scripts/fetch-intl.mjs.
+const INTL = {
+  'gb-ew': { label: 'England & Wales', flag: '🇬🇧', source: 'Office for National Statistics', srcHref: 'https://www.ons.gov.uk/peoplepopulationandcommunity/birthsdeathsandmarriages/livebirths/bulletins/babynamesenglandandwales/latest', licence: 'Open Government Licence v3' },
+  fr: { label: 'France', flag: '🇫🇷', source: 'INSEE', srcHref: 'https://www.insee.fr/fr/statistiques/8595130', licence: 'Licence Ouverte (Etalab)' },
+  ie: { label: 'Ireland', flag: '🇮🇪', source: 'Central Statistics Office Ireland', srcHref: 'https://data.cso.ie/', licence: 'CC BY 4.0' },
+  no: { label: 'Norway', flag: '🇳🇴', source: 'Statistics Norway (SSB)', srcHref: 'https://www.ssb.no/en/statbank/table/10467', licence: 'NLOD / CC BY 4.0' },
+};
+const intlAttrib = cc => { const s = INTL[cc]; return `Source: <a class="underline hover:text-indigo-600" href="${s.srcHref}" rel="noopener">${s.source}</a> (${s.licence}).`; };
+
 app.use('*', async (c, next) => {
   await next();
   c.header('X-Content-Type-Options', 'nosniff');
@@ -44,7 +54,7 @@ const slugify = s => (s || '').normalize('NFD').replace(/[\u0300-\u036f]/g, '').
 // Prefix search via index-friendly range scan (LIKE on a BINARY PK can't use the index
 // and D1 rejects patterns >= 50 chars).
 const NAME_COUNT = 105954; // rows in `names`; update when reimporting data
-const CACHE_VER = 97; // bump to invalidate the edge HTML cache on deploys that change rendering/data
+const CACHE_VER = 98; // bump to invalidate the edge HTML cache on deploys that change rendering/data
 // '~' (0x7E) sorts after every character allowed in slugs (a-z, apostrophe, hyphen).
 const prefixWhere = "slug >= ?1 AND slug < (?1 || '~')";
 
@@ -234,7 +244,7 @@ app.get('/name/:slug', async c => {
   const rankBits = [];
   if (r.latest_rank_f && r.latest_rank_f <= 1000) rankBits.push(`#${fmt(r.latest_rank_f)} for girls`);
   if (r.latest_rank_m && r.latest_rank_m <= 1000) rankBits.push(`#${fmt(r.latest_rank_m)} for boys`);
-  const [similar, sibs, meaning, famousRow, rankHist, yearTot, stateRows, prevRanks, rhymes] = await Promise.all([
+  const [similar, sibs, meaning, famousRow, rankHist, yearTot, stateRows, prevRanks, rhymes, intlRows] = await Promise.all([
     similarNames(db, r),
     siblingNames(db, r),
     db.prepare('SELECT * FROM meanings WHERE slug = ?').bind(slug).first().catch(() => null),
@@ -246,6 +256,7 @@ app.get('/name/:slug', async c => {
     slug.length >= 4
       ? db.prepare('SELECT slug,name,total,f_total,m_total,first_year FROM names WHERE substr(slug,-3) = substr(?1,-3) AND slug != ?1 ORDER BY total DESC LIMIT 8').bind(slug).all().catch(() => ({ results: [] }))
       : Promise.resolve({ results: [] }),
+    db.prepare('SELECT country, sex, year, rank FROM intl_ranks WHERE slug = ? ORDER BY rank').bind(slug).all().catch(() => ({ results: [] })),
   ]);
   const [recentRanks, recentTotals] = await Promise.all([
     db.prepare('SELECT year, sex, rank FROM year_ranks WHERE name = ? AND year >= ? ORDER BY year DESC').bind(r.name, END_YEAR - 11).all().catch(() => ({ results: [] })),
@@ -307,6 +318,7 @@ ${(() => {
   ['#popularity', 'Popularity'],
   recentRanks.results.length ? ['#recent', 'Recent years'] : null,
   stateRows.results.length ? ['#states', 'By state'] : null,
+  intlRows.results.length ? ['#intl', 'Around the world'] : null,
   famous.length ? ['#famous', 'Famous'] : null,
   similar.length ? ['#similar', 'Similar names'] : null,
   sibs.girls.length || sibs.boys.length ? ['#siblings', 'Siblings'] : null,
@@ -356,6 +368,7 @@ ${recentRanks.results.length ? (() => {
   return `<section id="recent" class="mt-10"><h2 class="font-bold text-lg mb-3">Recent years</h2><p class="text-sm text-slate-600 -mt-2 mb-3">Year-by-year rank and births for ${esc(r.name)} — “1 in N” shows how many U.S. ${primary === 'girl' ? 'girls' : 'boys'} born that year got the name.</p><div class="rounded-2xl bg-white border border-slate-200 p-4 overflow-x-auto"><table class="text-sm w-full"><thead><tr class="text-left text-xs uppercase tracking-wide text-slate-600"><th class="py-1 pr-4">Year</th>${hasF ? '<th class="py-1 pr-4">Girls rank</th>' : ''}${hasM ? '<th class="py-1 pr-4">Boys rank</th>' : ''}<th class="py-1 pr-4">Births</th><th class="py-1">1 in N ${primary === 'girl' ? 'girls' : 'boys'}</th></tr></thead><tbody>${rows}</tbody></table></div></section>`;
 })() : ''}
 ${stateRows.results.length ? `<section id="states" class="mt-10"><h2 class="font-bold text-lg mb-3">Where ${esc(r.name)} ranks highest (${END_YEAR})</h2><p class="text-sm text-slate-600 -mt-2 mb-3">States where ${esc(r.name)} places best in the state top 100.</p><div class="flex flex-wrap gap-2 text-sm">${stateRows.results.map(s => `<a href="/state/${s.state.toLowerCase()}" class="px-3 py-1.5 rounded-full bg-white border border-slate-200 hover:border-indigo-400">${STATES[s.state] || s.state} <span class="text-slate-600">#${s.rank} ${s.sex === 'F' ? 'girls' : 'boys'}</span></a>`).join('')}</div></section>` : ''}
+${intlRows.results.length ? `<section id="intl" class="mt-10"><h2 class="font-bold text-lg mb-3">${esc(r.name)} around the world</h2><p class="text-sm text-slate-600 -mt-2 mb-3">Where ${esc(r.name)} appears in the latest official top 100 outside the U.S.</p><div class="flex flex-wrap gap-2 text-sm">${intlRows.results.map(x => `<a href="/international/${x.country}" class="px-3 py-1.5 rounded-full bg-white border border-slate-200 hover:border-indigo-400">${INTL[x.country]?.flag || ''} ${INTL[x.country]?.label || x.country} <span class="text-slate-600">#${x.rank} ${x.sex === 'f' ? 'girls' : 'boys'} (${x.year})</span></a>`).join('')}</div><p class="mt-2 text-xs text-slate-600">National statistics offices · <a class="underline hover:text-indigo-600" href="/international">all international top 100s</a></p></section>` : ''}
 ${variants.length ? `<section class="mt-10"><h2 class="font-bold text-lg mb-3">Spellings &amp; variants</h2><p class="text-sm text-slate-600 -mt-2 mb-3">Names one letter away from ${esc(r.name)} — alternate spellings parents actually use.</p><div class="grid grid-cols-2 sm:grid-cols-3 gap-3">${variants.map(nameCard).join('')}</div></section>` : ''}
 ${famous.length ? `<section id="famous" class="mt-10"><h2 class="font-bold text-lg mb-3">Famous people named ${esc(r.name)}</h2><div class="grid sm:grid-cols-2 gap-3">${famous.map(p => `<div class="rounded-xl bg-white border border-slate-200 p-4"><p class="font-semibold">${esc(p.n)}</p>${p.d ? `<p class="text-sm text-slate-600 mt-1">${esc(cap(p.d))}</p>` : ''}</div>`).join('')}</div><p class="mt-2 text-xs text-slate-600">Notability data from <a class="underline hover:text-indigo-600" href="https://www.wikidata.org/" rel="noopener">Wikidata</a> (CC0).</p></section>` : ''}
 ${similar.length ? `<section id="similar" class="mt-10"><h2 class="font-bold text-lg mb-3">Names with a similar vibe</h2><p class="text-sm text-slate-600 -mt-2 mb-3">Same primary gender, peaked around the same years, and roughly as common as ${esc(r.name)}.</p><div class="grid grid-cols-2 sm:grid-cols-4 gap-3">${similar.map(nameCard).join('')}</div>
@@ -801,6 +814,49 @@ app.get('/og/state/:file', async c => {
   const res = await ogList(c, `Top Names in ${STATES[st]}`, rows.results.map(r => r.name));
   res.headers.set('Cache-Control', 'public, max-age=86400, s-maxage=604800');
   return res;
+});
+
+// ---------- international rankings ----------
+app.get('/international', async c => {
+  const rows = await c.env.DB.prepare('SELECT i.country, i.sex, i.year, i.rank, i.name, n.slug AS link FROM intl_ranks i LEFT JOIN names n ON n.slug = i.slug WHERE i.rank <= 10 ORDER BY i.country, i.sex, i.rank').all();
+  const byCountry = {};
+  for (const x of rows.results) (byCountry[x.country] ||= []).push(x);
+  const nameLink = x => x.link ? `<a class="hover:text-indigo-700 underline decoration-slate-300" href="/name/${x.link}">${esc(x.name)}</a>` : esc(x.name);
+  const body = `
+<h1 class="font-display text-3xl sm:text-4xl font-bold">International top baby names</h1>
+<p class="mt-3 text-slate-600 max-w-2xl">The latest official top 100 girl and boy names from national statistics offices around the world — the same year-of-birth ranking methodology as the U.S. charts.</p>
+<div class="mt-8 grid sm:grid-cols-2 gap-6">${Object.entries(INTL).map(([cc, s]) => {
+    const list = byCountry[cc] || [];
+    const year = list[0]?.year;
+    const top = sex => list.filter(x => x.sex === sex).slice(0, 5).map(nameLink).join(', ');
+    return `<div class="rounded-2xl bg-white border border-slate-200 p-5"><h2 class="font-bold text-lg">${s.flag} ${s.label}${year ? ` <span class="font-normal text-sm text-slate-600">(${year})</span>` : ''}</h2><p class="mt-2 text-sm text-slate-700"><span class="text-pink-700 font-medium">Girls:</span> ${top('f')}</p><p class="mt-1 text-sm text-slate-700"><span class="text-blue-700 font-medium">Boys:</span> ${top('m')}</p><a class="inline-block mt-3 text-sm text-indigo-600 hover:underline" href="/international/${cc}">Full top 100 →</a><p class="mt-2 text-xs text-slate-600">${intlAttrib(cc)}</p></div>`;
+  }).join('')}</div>
+${emailForm()}`;
+  return html(c, layout({ title: `International Top Baby Names | ${SITE}`, desc: 'The latest official top 100 baby names in England & Wales, France, Ireland and Norway, from national statistics offices.', path: '/international', body }));
+});
+
+app.get('/international/:cc', async c => {
+  const cc = c.req.param('cc');
+  const s = INTL[cc];
+  if (!s) return c.notFound();
+  const rows = await c.env.DB.prepare('SELECT i.sex, i.year, i.rank, i.name, i.births, n.slug AS link FROM intl_ranks i LEFT JOIN names n ON n.slug = i.slug WHERE i.country = ? ORDER BY i.sex, i.rank').bind(cc).all();
+  const year = rows.results[0]?.year;
+  const table = sex => `<ol class="divide-y divide-slate-100">${rows.results.filter(x => x.sex === sex).map(x => `<li><div class="flex items-center gap-4 px-2 py-2.5 rounded-lg"><span class="w-8 text-right text-sm text-slate-600 tabular-nums">${x.rank}</span><span class="font-medium flex-1">${x.link ? `<a class="hover:text-indigo-700" href="/name/${x.link}">${esc(x.name)}</a>` : esc(x.name)}</span>${x.births ? `<span class="text-sm text-slate-600 tabular-nums">${fmt(x.births)}</span>` : ''}</div></li>`).join('')}</ol>`;
+  const body = `
+<nav aria-label="Breadcrumb" class="text-sm text-slate-600 mb-4"><a href="/" class="hover:text-indigo-600">Home</a> › <a href="/international" class="hover:text-indigo-600">International</a> › <span>${s.label}</span></nav>
+<h1 class="font-display text-3xl sm:text-4xl font-bold">Most popular baby names in ${s.flag} ${s.label}${year ? ` (${year})` : ''}</h1>
+<p class="mt-3 text-slate-600 max-w-2xl">Official top 100 girl and boy names by year of birth. Linked names have a full U.S. popularity chart — spelling and accents can differ between countries.</p>
+<div class="mt-6 grid md:grid-cols-2 gap-6">
+  <div class="rounded-2xl bg-white border border-slate-200 p-4"><h2 class="font-bold mb-2">Girls</h2>${table('f')}</div>
+  <div class="rounded-2xl bg-white border border-slate-200 p-4"><h2 class="font-bold mb-2">Boys</h2>${table('m')}</div>
+</div>
+<p class="mt-4 text-xs text-slate-600">${intlAttrib(cc)} Counts are births in the reference year; small counts are suppressed at the source.</p>
+<div class="mt-4 flex flex-wrap gap-2 text-sm">${Object.entries(INTL).filter(([k]) => k !== cc).map(([k, v]) => `<a href="/international/${k}" class="px-3 py-1.5 rounded-full bg-white border border-slate-200 hover:border-indigo-400">${v.flag} ${v.label}</a>`).join('')}</div>
+${emailForm()}`;
+  return html(c, layout({ title: `Top Baby Names in ${s.label}${year ? ' ' + year : ''} | ${SITE}`, desc: `The 100 most popular girl and boy names in ${s.label}${year ? ` in ${year}` : ''}, from ${s.source}.`, path: `/international/${cc}`, body, jsonld: {
+    '@context': 'https://schema.org', '@type': 'ItemList', name: `Top Baby Names in ${s.label}${year ? ` (${year})` : ''}`,
+    itemListElement: rows.results.filter(x => x.rank <= 10 && x.link).slice(0, 20).map((x, i) => ({ '@type': 'ListItem', position: i + 1, name: x.name, url: `${ORIGIN}/name/${x.link}` })),
+  } }));
 });
 
 // ---------- curated lists ----------
@@ -1314,6 +1370,7 @@ app.get('/about', c => html(c, layout({
 <p class="mt-4">NameChart gives every name a complete popularity chart — no ads, no signup. We're currently in Beta: every feature, including everything in our planned paid plans, is free during Beta. See <a class="text-indigo-600 underline" href="/pricing">pricing</a> for what's planned.</p>
 <h2 class="text-xl font-bold mt-8">Data sources</h2>
 <p class="mt-2">All national data comes from the <a class="text-indigo-600 underline" href="https://www.ssa.gov/oact/babynames/">U.S. Social Security Administration</a> baby names dataset (1880–${END_YEAR}), which is in the public domain. State rankings come from the SSA state-level dataset. Names given to fewer than 5 babies of a gender in a year are excluded at the source to protect privacy.</p>
+<p class="mt-2"><a class="text-indigo-600 underline" href="/international">International rankings</a> come from official national statistics offices: the Office for National Statistics (England &amp; Wales, Open Government Licence v3), INSEE (France, Licence Ouverte), the Central Statistics Office Ireland (CC BY 4.0) and Statistics Norway (NLOD/CC BY 4.0).</p>
 <p class="mt-2">Note on wording: our &ldquo;Peak year&rdquo; is the year with the <em>most babies</em> given a name. SSA&rsquo;s &ldquo;most popular year&rdquo; refers to the year a name achieved its <em>highest rank</em>, so the two can differ. Data snapshot: SSA release covering births through ${END_YEAR}.</p>
 <h2 class="text-xl font-bold mt-8">Methodology</h2>
 <ul class="mt-2 list-disc pl-5 space-y-1">
@@ -1481,7 +1538,7 @@ app.post('/api/beacon', async c => {
   try {
     const { p, e } = await c.req.json();
     // Only count paths that match a real route family, so forged beacons can't pollute analytics.
-    const VALID_PATH = /^\/$|^\/(name|letter|year|state|compare|list|meaning|og\/name|og\/list|og\/meaning|og\/compare)\/[a-z0-9'.-]{1,60}$|^\/decade\/\d{4}s$|^\/s\/[a-z0-9]{8}$|^\/og\/share\/[a-z0-9.]{1,20}$|^\/(top\/girls|top\/boys|trending|unisex|browse|about|privacy|terms|favorites|search|generator|pricing|matcher|press)$/;
+    const VALID_PATH = /^\/$|^\/(name|letter|year|state|compare|list|meaning|international|og\/name|og\/list|og\/meaning|og\/compare)\/[a-z0-9'.-]{1,60}$|^\/decade\/\d{4}s$|^\/s\/[a-z0-9]{8}$|^\/og\/share\/[a-z0-9.]{1,20}$|^\/(top\/girls|top\/boys|trending|unisex|browse|about|privacy|terms|favorites|search|generator|pricing|matcher|press|international)$/;
     if (typeof p === 'string' && p.length <= 100 && VALID_PATH.test(p) && !(await overQuota(c, 'beacon', 2000))) {
       const day = new Date().toISOString().slice(0, 10);
       await c.env.DB.prepare('INSERT INTO hits (day, path, count) VALUES (?, ?, 1) ON CONFLICT(day, path) DO UPDATE SET count = count + 1')
@@ -1542,7 +1599,8 @@ app.get('/:key{[a-f0-9]{32}\\.txt}', c => {
 app.notFound(c => htmlPrivate(c, layout({ title: 'Page not found | ' + SITE, desc: 'Not found', path: '/404', noindex: true, body: `<div class="text-center py-20"><h1 class="font-display text-3xl sm:text-4xl font-bold">404</h1><p class="mt-2 text-slate-600">That page doesn't exist.</p><a href="/" class="inline-block mt-6 text-indigo-600 hover:underline">← Back to NameChart</a></div>` }), 404));
 
 function staticPaths() {
-  const urls = ['/', '/top/girls', '/top/boys', '/unisex', '/trending', '/browse', '/generator', '/matcher', '/compare', '/pricing', '/about', '/press', '/privacy', '/terms'];
+  const urls = ['/', '/top/girls', '/top/boys', '/unisex', '/trending', '/browse', '/generator', '/matcher', '/compare', '/international', '/pricing', '/about', '/press', '/privacy', '/terms'];
+  for (const cc of Object.keys(INTL)) urls.push(`/international/${cc}`);
   for (const s of Object.keys(LISTS)) urls.push(`/list/${s}`);
   for (const w of MEANING_WORDS) urls.push(`/meaning/${w}`);
   for (const ch of 'abcdefghijklmnopqrstuvwxyz') urls.push(`/letter/${ch}`);

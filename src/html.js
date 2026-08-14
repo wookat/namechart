@@ -98,6 +98,7 @@ ${jsonld ? `<script type="application/ld+json">${JSON.stringify(jsonld)}</script
         <li><a class="hover:text-indigo-700" href="/trending">Rising &amp; falling</a></li>
         <li><a class="hover:text-indigo-700" href="/browse">Browse A–Z, years, decades, states</a></li>
         <li><a class="hover:text-indigo-700" href="/compare">Compare two names</a></li>
+        <li><a class="hover:text-indigo-700" href="/international">International top 100s</a></li>
         <li><a class="hover:text-indigo-700" href="/favorites">My shortlist</a></li>
         <li><a class="hover:text-indigo-700" href="/pricing">Pricing</a></li>
         <li><a class="hover:text-indigo-700" href="/about">About &amp; data sources</a></li>
