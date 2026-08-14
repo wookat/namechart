@@ -22,6 +22,10 @@
     });
   }
 
+  // Shown only right after an exact-match search redirect (#from-search fragment).
+  var searchNote = document.getElementById('nc-search-note');
+  if (searchNote && location.hash === '#from-search') searchNote.hidden = false;
+
   function favs() { try { return JSON.parse(localStorage.getItem('nc-favs') || '[]'); } catch (e) { return []; } }
   function saveFavs(a) { try { localStorage.setItem('nc-favs', JSON.stringify(a)); } catch (e) {} }
 
@@ -186,6 +190,7 @@
     if (dotM) { if (b) { dotM.setAttribute('cx', px); dotM.setAttribute('cy', yOf(b)); dotM.style.display = ''; } else dotM.style.display = 'none'; }
     var la = d.la || 'girls', lb = d.lb || 'boys';
     var msg = yr + ': ' + (g ? g.toLocaleString() + ' ' + la : '') + (g && b ? ' \u00b7 ' : '') + (b ? b.toLocaleString() + ' ' + lb : '') + (!g && !b ? 'no recorded births' : '');
+    if (d.fl && i === d.fl) msg += ' \u2014 ' + (g >= b ? la : lb) + ' takes the lead';
     if (tip) {
       tipText.textContent = msg;
       var tw = tipText.getComputedTextLength() + 16;

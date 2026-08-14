@@ -44,7 +44,7 @@ const slugify = s => (s || '').normalize('NFD').replace(/[\u0300-\u036f]/g, '').
 // Prefix search via index-friendly range scan (LIKE on a BINARY PK can't use the index
 // and D1 rejects patterns >= 50 chars).
 const NAME_COUNT = 105954; // rows in `names`; update when reimporting data
-const CACHE_VER = 93; // bump to invalidate the edge HTML cache on deploys that change rendering/data
+const CACHE_VER = 94; // bump to invalidate the edge HTML cache on deploys that change rendering/data
 // '~' (0x7E) sorts after every character allowed in slugs (a-z, apostrophe, hyphen).
 const prefixWhere = "slug >= ?1 AND slug < (?1 || '~')";
 
@@ -291,6 +291,7 @@ ${(() => {
   return ` In ${END_YEAR}, about <strong>1 in ${fmt(oneIn)}</strong> ${primary === 'girl' ? 'girls' : 'boys'} was named ${esc(r.name)}.`;
 })()}</p>
 <p class="mt-2 text-xs text-slate-600">Data: official U.S. Social Security records, 1880–${END_YEAR} · <a class="underline hover:text-indigo-600" href="/about">sources &amp; methodology</a> · <a class="underline hover:text-indigo-600" href="/search?q=${slug}&list=1">see all names matching “${esc(r.name)}”</a></p>
+<div id="nc-search-note" hidden class="mt-3 rounded-xl bg-indigo-50 border border-indigo-100 px-4 py-2.5 text-sm text-slate-700">Looking for every name starting with “${esc(r.name)}”? <a href="/search?q=${slug}&list=1" class="text-indigo-700 font-medium hover:underline">See the full match list →</a></div>
 <nav aria-label="On this page" class="mt-4 flex flex-wrap gap-x-4 gap-y-1 text-sm text-indigo-700"><span class="text-slate-600">On this page:</span>${[
   meaning && (meaning.etymology || meaning.ipa) ? ['#meaning', 'Meaning'] : null,
   ['#popularity', 'Popularity'],
@@ -471,7 +472,7 @@ app.get('/compare/:pair', async c => {
   const body = `
 <h1 class="font-display text-3xl sm:text-4xl font-bold tracking-tight">${esc(a.name)} <span class="text-slate-600">vs</span> ${esc(b.name)}</h1>
 <p class="mt-2 text-slate-600">All-time, <strong>${esc(winner.name)}</strong> leads: ${fmt(winner.total)} babies vs ${fmt(winner === a ? b.total : a.total)}.${leadNote ? ` ${leadNote}` : ''}</p>
-<div class="mt-6 rounded-2xl bg-white border border-slate-200 p-4 sm:p-6">${svg}<div id="nc-readout" class="mt-2 text-sm text-slate-600 tabular-nums" data-series='${esc(JSON.stringify({ s: START_YEAR, f: ta, m: tb, max, padT, ih, la: a.name, lb: b.name }))}'>Hover or tap the chart to read any year.</div></div>
+<div class="mt-6 rounded-2xl bg-white border border-slate-200 p-4 sm:p-6">${svg}<div id="nc-readout" class="mt-2 text-sm text-slate-600 tabular-nums" data-series='${esc(JSON.stringify({ s: START_YEAR, f: ta, m: tb, max, padT, ih, la: a.name, lb: b.name, fl: lastFlip > 0 ? lastFlip : 0 }))}'>Hover or tap the chart to read any year.</div></div>
 <div class="mt-6 grid grid-cols-2 gap-3">
   ${[a, b].map(r => `<a href="/name/${r.slug}" class="rounded-xl bg-white border border-slate-200 p-4 hover:border-indigo-400">
     <p class="font-bold">${esc(r.name)}</p>
@@ -562,10 +563,13 @@ app.get('/search', async c => {
   // list=1 keeps the user on the prefix-match list instead of jumping to an exact match.
   if (slug && c.req.query('list') !== '1') {
     const exact = await getName(db, slug);
-    if (exact) return c.redirect(`/name/${slug}`);
+    // The #from-search fragment lets the name page offer a way back to the full match list.
+    if (exact) return c.redirect(`/name/${slug}#from-search`);
   }
+  const sort = c.req.query('sort') === 'vintage' ? 'vintage' : 'popular';
+  const orderBy = sort === 'vintage' ? 'peak_year ASC, total DESC' : 'total DESC';
   const like = slug
-    ? await db.prepare(`SELECT slug,name,total,f_total,m_total,first_year FROM names WHERE ${prefixWhere} ORDER BY total DESC LIMIT 24`).bind(slug).all()
+    ? await db.prepare(`SELECT slug,name,total,f_total,m_total,first_year FROM names WHERE ${prefixWhere}${sort === 'vintage' ? ' AND total >= 500' : ''} ORDER BY ${orderBy} LIMIT 24`).bind(slug).all()
     : { results: [] };
   let didYouMean = [];
   if (!like.results.length && slug.length >= 3) didYouMean = await fuzzyMatches(db, slug);
@@ -582,7 +586,7 @@ app.get('/search', async c => {
   const body = `
 <h1 class="text-2xl font-bold">Search results for “${esc(q)}”</h1>
 ${like.results.length
-    ? `<div class="mt-6 grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 gap-3">${like.results.map(nameCard).join('')}</div>`
+    ? `<div class="mt-4 flex flex-wrap gap-2 text-sm" role="group" aria-label="Sort results">${[['popular', 'Most popular'], ['vintage', 'Vintage first']].map(([v, t]) => v === sort ? `<span class="px-3 py-1.5 rounded-full bg-indigo-600 text-white font-medium" aria-current="true">${t}</span>` : `<a href="/search?q=${encodeURIComponent(q)}&list=1${v === 'vintage' ? '&sort=vintage' : ''}" class="px-3 py-1.5 rounded-full bg-white border border-slate-300 text-slate-700 hover:border-indigo-400">${t}</a>`).join('')}</div><div class="mt-4 grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 gap-3">${like.results.map(nameCard).join('')}</div>`
     : `<p class="mt-4 text-slate-600">No names found. The data only includes names given to 5+ babies in a single year.</p>${didYouMean.length ? `<h2 class="mt-6 font-bold">Did you mean…</h2><div class="mt-3 grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 gap-3">${didYouMean.map(nameCard).join('')}</div>` : ''}${letterPicks.length ? `<h2 class="mt-6 font-bold">Popular “${slug[0].toUpperCase()}” names to explore</h2><div class="mt-3 grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 gap-3">${letterPicks.map(nameCard).join('')}</div><p class="mt-3 text-sm"><a href="/letter/${slug[0]}" class="text-indigo-600 hover:underline">See all names starting with ${slug[0].toUpperCase()} →</a></p>` : ''}<div class="mt-8 flex flex-wrap gap-2 text-sm"><a href="/generator" class="rounded-full bg-indigo-600 text-white px-4 py-2 font-semibold hover:bg-indigo-700">Get ideas from the generator →</a><a href="/browse" class="rounded-full bg-white border border-slate-300 px-4 py-2 text-slate-700 hover:border-indigo-400">Browse by letter, year or state</a></div>`}
 ${emailForm()}`;
   return htmlPrivate(c, layout({ title: `“${q}” — name search | ${SITE}`, desc: `Search results for ${q}`, path: '/search', noindex: true, body }));
