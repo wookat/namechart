@@ -1512,3 +1512,6 @@ beacon 防伪（P2-4）最小防护：/api/beacon 增 `Sec-Fetch-Site: same-orig
 
 ## R203：审改分离·第 9 轮（性别占比显示口径）— 2026-08-14
 P2：Gender split 取整到 100%/0% 与同页少数性别排名（如 Emma 1900 男 #519）矛盾。系统性修法：新增 pctLabel（≥99.5%→"99%+"、<0.5%→"<1%"，其余四舍五入），统计卡、FAQ 文案、FAQ JSON-LD 三处共用同一格式化，口径一次统一。实测 Emma "99%+ girls / <1% boys"、Michael "<1% girls / 99%+ boys"、Riley "57% girls / 43% boys"（中段不受影响）。CACHE_VER 95→96。回归：375px 两页 axe 0/无溢出/console 0。版本 feeaca9f。
+
+## R204：审改分离·第 11 轮（全集团统一 "free during beta" 口径）— 2026-08-14
+全站 grep 核清 "trial" 共 9 处（pricing 4、about 1、press 1、terms 2、footer 1）统一改为 "free during Beta"；docs/brand/brand-guide.md 口径规范同步更新（禁用 trial 字样）、PH launch kit FAQ 同步。生产六页 grep -i trial 全 0，pricing/footer 实测 "free during Beta"。CACHE_VER 96→97。回归：375px 两页 axe 0/无溢出/console 0。版本 89d753f6。

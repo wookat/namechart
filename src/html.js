@@ -87,7 +87,7 @@ ${jsonld ? `<script type="application/ld+json">${JSON.stringify(jsonld)}</script
   <div class="max-w-5xl xl:max-w-6xl mx-auto px-4 py-8 grid gap-8 sm:grid-cols-3 text-sm">
     <div>
       <p class="font-bold text-indigo-700 mb-2">NameChart</p>
-      <p class="text-slate-600">146 years of baby name popularity. Currently in Beta — all features open as a free trial. Data: U.S. Social Security Administration (public domain), 1880–2025.</p>
+      <p class="text-slate-600">146 years of baby name popularity. All features free during Beta. Data: U.S. Social Security Administration (public domain), 1880–2025.</p>
     </div>
     <div>
       <p class="font-semibold mb-2">Explore</p>

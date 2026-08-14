@@ -24,7 +24,7 @@ Effective 2026-08 · Owner: Zalize · Applies to site copy, OG cards, marketing 
   - **My Shortlist** (`/favorites`); the saved list is a "shortlist", never "wishlist"/"favorites list" in copy
   - **Name of the day** (home)
   - Share links are "shared shortlists" (`/s/…`)
-- Pricing wording: the product is **in Beta — free trial**. Never describe the product as simply "free"; always "free Beta" / "open during the Beta trial". Plans: Basic $0 / Plus $4 / Pro $9 (planned, not billed yet).
+- Pricing wording: the product is **free during Beta**（全集团统一口径，禁用 "trial" 字样——trial 暗示付费墙+试用期）。Never describe the product as simply "free"; always "free during Beta". Plans: Basic $0 / Plus $4 / Pro $9 (planned, not billed yet).
 - Data claims style: always attributable ("146 years of official U.S. birth records", "105,954 names", "SSA data through 2025"). Never invent or round claims beyond the data.
 
 ### Tone of voice

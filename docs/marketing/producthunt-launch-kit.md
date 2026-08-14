@@ -26,7 +26,7 @@ No ads, no cookies, no signup. Everything is free during the Beta. Would love yo
 ## FAQ answers
 - **How is this different from Nameberry?** Data-first: full historical charts for every name are free and ad-free; Nameberry gates several data features behind a subscription.
 - **Where does the data come from?** U.S. SSA public dataset (1880–2025), Wiktionary (CC BY-SA) for meanings, Wikidata (CC0) for namesakes. Names with <5 babies/year are excluded at the source.
-- **Business model?** Beta free trial now; published Plus ($4) / Pro ($9) plans later, with clear notice before any billing.
+- **Business model?** Free during Beta; published Plus ($4) / Pro ($9) plans later, with clear notice before any billing.
 - **Privacy?** No cookies, no trackers; anonymous first-party page counts only.
 
 ## Launch-day checklist (human)

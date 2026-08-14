@@ -44,7 +44,7 @@ const slugify = s => (s || '').normalize('NFD').replace(/[\u0300-\u036f]/g, '').
 // Prefix search via index-friendly range scan (LIKE on a BINARY PK can't use the index
 // and D1 rejects patterns >= 50 chars).
 const NAME_COUNT = 105954; // rows in `names`; update when reimporting data
-const CACHE_VER = 96; // bump to invalidate the edge HTML cache on deploys that change rendering/data
+const CACHE_VER = 97; // bump to invalidate the edge HTML cache on deploys that change rendering/data
 // '~' (0x7E) sorts after every character allowed in slugs (a-z, apostrophe, hyphen).
 const prefixWhere = "slug >= ?1 AND slug < (?1 || '~')";
 
@@ -1284,22 +1284,22 @@ app.get('/pricing', c => {
     <p class="mt-1 text-sm text-slate-600">${tagline}</p>
     <p class="mt-4"><span class="text-3xl font-extrabold">${price}</span><span class="text-slate-600 text-sm"> ${per}</span></p>
     <ul class="mt-4 space-y-2 text-sm text-slate-700 flex-1">${feats.map(f => `<li class="flex gap-2"><span aria-hidden="true" class="text-indigo-600">✓</span>${f}</li>`).join('')}</ul>
-    <span class="mt-6 inline-block text-center rounded-full ${highlight ? 'bg-indigo-600 text-white' : 'bg-slate-100 text-slate-700'} font-semibold px-5 py-2.5 text-sm">Included in the Beta trial</span>
+    <span class="mt-6 inline-block text-center rounded-full ${highlight ? 'bg-indigo-600 text-white' : 'bg-slate-100 text-slate-700'} font-semibold px-5 py-2.5 text-sm">Included free during Beta</span>
   </div>`;
   return html(c, layout({
     title: `Pricing | ${SITE}`,
-    desc: `NameChart pricing: planned Plus and Pro plans, all currently open as a free Beta trial. No payment is collected during the Beta.`,
+    desc: `NameChart pricing: planned Plus and Pro plans, all currently free during Beta. No payment is collected during the Beta.`,
     path: '/pricing',
     body: `<div class="max-w-3xl mx-auto text-center">
 <h1 class="font-display text-3xl sm:text-4xl font-bold">Pricing</h1>
-<p class="mt-3 text-slate-600">NameChart is in <strong>Beta</strong>. Everything below — including every planned paid feature — is open to everyone as a <strong>free trial</strong>. We don't collect payment yet, and we'll announce clearly before billing ever begins.</p>
+<p class="mt-3 text-slate-600">NameChart is in <strong>Beta</strong>. Everything below — including every planned paid feature — is <strong>free during Beta</strong> for everyone. We don't collect payment yet, and we'll announce clearly before billing ever begins.</p>
 </div>
 <div class="mt-8 grid sm:grid-cols-3 gap-4 max-w-4xl mx-auto">
 ${tier('Basic', '$0', 'forever', 'The essentials, always free', ['Name search &amp; full 146-year charts', 'Top 1000 rankings by year', 'Meanings, origins &amp; famous namesakes', 'Private in-browser shortlist'])}
 ${tier('Plus', '$4', '/ month', 'For active name hunters', ['Everything in Basic', 'Name generator with style &amp; meaning filters', 'Head-to-head name comparisons', 'State-by-state popularity maps', 'Sibling name suggestions'], true)}
 ${tier('Pro', '$9', '/ month', 'For pros &amp; data lovers', ['Everything in Plus', 'Decade &amp; trend deep-dives', 'Curated &amp; themed name lists', 'Early access to new tools', 'Priority email support'])}
 </div>
-<p class="mt-8 text-center text-sm text-slate-600 max-w-2xl mx-auto">During the Beta free trial there is no account, no credit card, and no feature gate. Prices shown are our planned plans and may change before launch.</p>
+<p class="mt-8 text-center text-sm text-slate-600 max-w-2xl mx-auto">While NameChart is free during Beta there is no account, no credit card, and no feature gate. Prices shown are our planned plans and may change before launch.</p>
 ${emailForm()}`,
   }));
 });
@@ -1311,7 +1311,7 @@ app.get('/about', c => html(c, layout({
   path: '/about',
   body: `<article class="prose-custom max-w-2xl">
 <h1 class="font-display text-3xl sm:text-4xl font-bold">About NameChart</h1>
-<p class="mt-4">NameChart gives every name a complete popularity chart — no ads, no signup. We're currently in Beta: every feature, including everything in our planned paid plans, is open as a free trial. See <a class="text-indigo-600 underline" href="/pricing">pricing</a> for what's planned.</p>
+<p class="mt-4">NameChart gives every name a complete popularity chart — no ads, no signup. We're currently in Beta: every feature, including everything in our planned paid plans, is free during Beta. See <a class="text-indigo-600 underline" href="/pricing">pricing</a> for what's planned.</p>
 <h2 class="text-xl font-bold mt-8">Data sources</h2>
 <p class="mt-2">All national data comes from the <a class="text-indigo-600 underline" href="https://www.ssa.gov/oact/babynames/">U.S. Social Security Administration</a> baby names dataset (1880–${END_YEAR}), which is in the public domain. State rankings come from the SSA state-level dataset. Names given to fewer than 5 babies of a gender in a year are excluded at the source to protect privacy.</p>
 <p class="mt-2">Note on wording: our &ldquo;Peak year&rdquo; is the year with the <em>most babies</em> given a name. SSA&rsquo;s &ldquo;most popular year&rdquo; refers to the year a name achieved its <em>highest rank</em>, so the two can differ. Data snapshot: SSA release covering births through ${END_YEAR}.</p>
@@ -1343,7 +1343,7 @@ app.get('/press', c => html(c, layout({
 <li>Meanings &amp; pronunciations adapted from Wiktionary (CC BY-SA); famous namesakes from Wikidata (CC0)</li>
 <li>Tools: Baby Name Generator, Sibling &amp; Middle Name Matcher, head-to-head comparisons, shareable shortlists</li>
 <li>Privacy: no cookies, no trackers, first-party anonymous analytics only</li>
-<li>Status: free Beta trial; planned plans published on the <a class="text-indigo-600 underline" href="/pricing">pricing page</a></li>
+<li>Status: free during Beta; planned plans published on the <a class="text-indigo-600 underline" href="/pricing">pricing page</a></li>
 </ul>
 <h2 class="text-xl font-bold mt-8">Logo</h2>
 <p class="mt-2 text-slate-700">Rounded-square gradient mark with a white chart line. Please don't recolor or stretch it.</p>
@@ -1370,13 +1370,13 @@ app.get('/favorites', c => html(c, layout({
 
 app.get('/terms', c => html(c, layout({
   title: `Terms of Use | ${SITE}`,
-  desc: 'NameChart terms of use: informational service, Beta trial terms, data accuracy disclaimer, acceptable use, and no government affiliation.',
+  desc: 'NameChart terms of use: informational service, Beta terms, data accuracy disclaimer, acceptable use, and no government affiliation.',
   path: '/terms',
   body: `<article class="max-w-2xl">
 <h1 class="font-display text-3xl sm:text-4xl font-bold">Terms of Use</h1>
 <p class="mt-4 text-slate-600">Effective: August 2026 · Operator: Zalize (hello@zalize.com)</p>
 <h2 class="text-xl font-bold mt-8">The service</h2>
-<p class="mt-2 text-slate-700">NameChart is an informational website presenting statistics derived from public-domain U.S. Social Security Administration data. The service is currently in Beta: all features are available as a free trial, no account is required, and no payment is collected. Paid plans are published on the <a class="text-indigo-600 underline" href="/pricing">pricing page</a> but are not yet for sale; we will announce clearly before any billing begins.</p>
+<p class="mt-2 text-slate-700">NameChart is an informational website presenting statistics derived from public-domain U.S. Social Security Administration data. The service is currently in Beta: all features are free during Beta, no account is required, and no payment is collected. Paid plans are published on the <a class="text-indigo-600 underline" href="/pricing">pricing page</a> but are not yet for sale; we will announce clearly before any billing begins.</p>
 <h2 class="text-xl font-bold mt-8">No affiliation with the government</h2>
 <p class="mt-2 text-slate-700">NameChart is not affiliated with, endorsed by, or sponsored by the U.S. Social Security Administration or any other government agency. “Social Security Administration” is used only to identify the source of the underlying data.</p>
 <h2 class="text-xl font-bold mt-8">Accuracy</h2>
