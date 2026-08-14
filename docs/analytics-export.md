@@ -1,6 +1,8 @@
 # NameChart 近 30 天聚合漏斗导出（2026-07-14 → 2026-08-14）
 
 > 口径更新（R200 起）：① QA/内部流量统一标记 —— 测试工具 User-Agent 含 `DevinQA`，采集端（beacon/searches/events）直接跳过，不再污染基线；② 新增 `events(day,event,count)` 日计数（`visit_new`/`visit_returning`，localStorage 首见日期推导，无任何标识符上传），后续导出可给出「回访近似口径」。本文档以下为 R199 时点快照（QA 剔除生效前的数据）。
+>
+> **计数不可防伪（永久口径）**：PV/搜索/事件计数是第一方 best-effort 统计——beacon 已要求浏览器 fetch-metadata（`Sec-Fetch-Site: same-origin`）并剔除 bot UA 与 QA UA，但非浏览器客户端伪造完整头部仍可污染计数。因此 PV 只作趋势参考，不作硬指标；解读时结合异常日标记（单日单路径突刺、UV≈PV 等形态视为可疑）。
 
 来源：D1 第一方聚合统计（`hits(day,path,count)`、`searches(day,q,results,count)`、`shares(created)`）。
 隐私口径：无 cookie、无用户标识符、无 IP 存储 —— 仅按天×路径/查询词聚合，无任何 PII。

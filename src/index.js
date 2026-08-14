@@ -1436,7 +1436,7 @@ app.post('/api/subscribe', async c => {
   if (!/^[^\s@]+@[^\s@]+\.[^\s@]{2,}$/.test(email) || email.length > 254) {
     return subscribePage(c, 'Invalid email', "That email doesn't look right", 'Please go back and check the address.', 400);
   }
-  if (await overQuota(c, 'sub', 5)) return subscribePage(c, 'Too many requests', 'Too many sign-ups', 'Please try again tomorrow.', 429);
+  if (await overQuota(c, 'sub', 20)) return subscribePage(c, 'Too many requests', 'Too many sign-ups', 'Please try again tomorrow.', 429);
   await c.env.DB.prepare('INSERT OR IGNORE INTO subscribers (email, source) VALUES (?, ?)')
     .bind(email, (c.req.header('Referer') || '').slice(0, 200)).run();
   return subscribePage(c, 'Subscribed', "🎉 You're on the list", "We'll email you when new data and tools land. Unsubscribe anytime via hello@zalize.com.");
@@ -1446,7 +1446,8 @@ const rand = n => { const b = crypto.getRandomValues(new Uint8Array(n)); return 
 
 app.post('/api/share', async c => {
   if (!sameOrigin(c)) return c.json({ error: 'forbidden' }, 403);
-  if (await overQuota(c, 'share', 20)) return c.json({ error: 'Too many shared lists today — try again tomorrow.' }, 429);
+  // IP quotas are wide backstops sized for shared/CGNAT egress IPs, not per-person limits.
+  if (await overQuota(c, 'share', 60)) return c.json({ error: 'Too many shared lists today — try again tomorrow.' }, 429);
   let body;
   try { body = await c.req.json(); } catch { return c.json({ error: 'bad request' }, 400); }
   const slugs = Array.isArray(body?.slugs)
@@ -1478,7 +1479,7 @@ app.post('/api/beacon', async c => {
     const { p, e } = await c.req.json();
     // Only count paths that match a real route family, so forged beacons can't pollute analytics.
     const VALID_PATH = /^\/$|^\/(name|letter|year|state|compare|list|meaning|og\/name|og\/list|og\/meaning|og\/compare)\/[a-z0-9'.-]{1,60}$|^\/decade\/\d{4}s$|^\/s\/[a-z0-9]{8}$|^\/og\/share\/[a-z0-9.]{1,20}$|^\/(top\/girls|top\/boys|trending|unisex|browse|about|privacy|terms|favorites|search|generator|pricing|matcher|press)$/;
-    if (typeof p === 'string' && p.length <= 100 && VALID_PATH.test(p) && !(await overQuota(c, 'beacon', 300))) {
+    if (typeof p === 'string' && p.length <= 100 && VALID_PATH.test(p) && !(await overQuota(c, 'beacon', 2000))) {
       const day = new Date().toISOString().slice(0, 10);
       await c.env.DB.prepare('INSERT INTO hits (day, path, count) VALUES (?, ?, 1) ON CONFLICT(day, path) DO UPDATE SET count = count + 1')
         .bind(day, p).run();

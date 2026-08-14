@@ -1503,3 +1503,9 @@ Round 5 分报告：无新 P1/P2 缺陷，第 2 轮复审全通过。三项建�
 横向矩阵自查（本线 × {AI/发信/管理端点、CSP、限流键维度、beacon 防伪}）：无 AI 端点、无发信（subscribe 仅存库且 sameOrigin+5/日/IP 配额）、无管理端点、CSP 完整（default-src 'self'; script-src 'self'）、限流为哈希 IP×日×kind 键（share 20、beacon 300、sub 5）——前五项无缺口。
 beacon 防伪（P2-4）最小防护：/api/beacon 增 `Sec-Fetch-Site: same-origin` 硬性要求（浏览器自动携带、curl 伪造 Origin 不再计数）；analytics 写入统一跳过 bot UA（bot/crawl/curl/python/headless…）与 DevinQA。实测：伪造 Origin 的 curl ×3 → 204 且计数不变；真实浏览器访问 → 计数 +1。
 回归：375px 三页 axe 0/无溢出/console 0。版本 b7dc3bbb。
+
+## R202：审改分离·第 8 轮（缓存模式文档化 + CGNAT 配额自查）— 2026-08-14
+1. **docs/edge-cache-pattern.md**：边缘缓存中间件参照实现整理成文（原理、CACHE_VER key 设计、五条不可缓存判定、ETag/304、验证方法、注意事项），供其余 7 线照搬。
+2. **CGNAT 误伤自查**：本线无 AI/发信成本端点，per-IP 配额只是 D1 写保护兜底；按「宽 IP 上限」原则放宽 share 20→60、sub 5→20、beacon 300→2000（/日/IP），CGNAT 共享出口不再互相挤占；不引入客户端 id（与无标识符隐私口径冲突，勿增实体）。
+3. **「计数不可防伪」口径**（P2-4）写入 docs/analytics-export.md 永久口径段。
+验证：ETag+If-None-Match → 304 实测通过；375px 两页 axe 0/无溢出/console 0。版本 ce3d5626。
