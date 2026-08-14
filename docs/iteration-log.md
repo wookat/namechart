@@ -1498,3 +1498,8 @@ Round 5 分报告：无新 P1/P2 缺陷，第 2 轮复审全通过。三项建�
 2. **QA 流量统一标记**：约定测试 UA 含 `DevinQA`；`isQA()` 在 beacon/searches/events 采集端跳过。本机 /home/ubuntu/nb 全部测试脚本已加 UA。实测 QA 搜索不落库。
 3. **回访近似口径（HonestCV ev 模式）**：新表 `events(day,event,count)`（迁移 0005），beacon 增可选 `e`∈{visit_new, visit_returning}，客户端由 localStorage `nc-first` 首见日期推导、每日至多一次，无标识符上传。实测 visit_new 落库、console 0 错误。
 回归：375px 三页 axe 0/无溢出/console 0。ASSET_VER 22→23、CACHE_VER 94→95。版本 ec83de5d。
+
+## R201：审改分离·第 7 轮（安全横向矩阵自查 + beacon 最小防护）— 2026-08-14
+横向矩阵自查（本线 × {AI/发信/管理端点、CSP、限流键维度、beacon 防伪}）：无 AI 端点、无发信（subscribe 仅存库且 sameOrigin+5/日/IP 配额）、无管理端点、CSP 完整（default-src 'self'; script-src 'self'）、限流为哈希 IP×日×kind 键（share 20、beacon 300、sub 5）——前五项无缺口。
+beacon 防伪（P2-4）最小防护：/api/beacon 增 `Sec-Fetch-Site: same-origin` 硬性要求（浏览器自动携带、curl 伪造 Origin 不再计数）；analytics 写入统一跳过 bot UA（bot/crawl/curl/python/headless…）与 DevinQA。实测：伪造 Origin 的 curl ×3 → 204 且计数不变；真实浏览器访问 → 计数 +1。
+回归：375px 三页 axe 0/无溢出/console 0。版本 b7dc3bbb。

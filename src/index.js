@@ -58,6 +58,9 @@ const BLOCKED_FAMOUS = new Set(['ted bundy', 'ted kaczynski', 'adolf hitler', 'j
 // Unified QA-traffic convention: internal test tooling appends "DevinQA" to its
 // User-Agent; such requests are served normally but excluded from analytics writes.
 const isQA = c => (c.req.header('User-Agent') || '').includes('DevinQA');
+// Analytics writes also skip obvious non-browser agents; counts stay best-effort, not tamper-proof.
+const BOT_UA = /bot|crawl|spider|curl|wget|python|httpx|libwww|scrapy|headless/i;
+const skipAnalytics = c => isQA(c) || BOT_UA.test(c.req.header('User-Agent') || '');
 
 const etagOf = async buf => {
   const d = await crypto.subtle.digest('SHA-1', buf);
@@ -581,7 +584,7 @@ app.get('/search', async c => {
   if (!like.results.length && !didYouMean.length && /^[a-z]/.test(slug)) {
     letterPicks = (await db.prepare(`SELECT slug,name,total,f_total,m_total,first_year FROM names WHERE slug LIKE ? ORDER BY total DESC LIMIT 8`).bind(slug[0] + '%').all()).results;
   }
-  if (slug && !isQA(c)) {
+  if (slug && !skipAnalytics(c)) {
     // Aggregate query counts (no user identifiers) to drive search-term analysis.
     c.executionCtx.waitUntil(db.prepare(
       'INSERT INTO searches (day, q, results) VALUES (?, ?, ?) ON CONFLICT(day, q) DO UPDATE SET count = count + 1'
@@ -1469,7 +1472,8 @@ app.post('/api/share/revoke', async c => {
 
 const EVENTS = new Set(['visit_new', 'visit_returning']);
 app.post('/api/beacon', async c => {
-  if (!sameOrigin(c) || isQA(c)) return c.body(null, 204);
+  // Beacons come only from our own pages: require browser fetch-metadata to say same-origin.
+  if (!sameOrigin(c) || skipAnalytics(c) || c.req.header('Sec-Fetch-Site') !== 'same-origin') return c.body(null, 204);
   try {
     const { p, e } = await c.req.json();
     // Only count paths that match a real route family, so forged beacons can't pollute analytics.
