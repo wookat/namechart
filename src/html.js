@@ -157,12 +157,12 @@ export function chartSVG(series, { width = 800, height = 280 } = {}) {
   ${hasM ? `<g><rect x="${padL + 60}" y="${padT}" width="10" height="3" fill="#2563eb"/><text x="${padL + 74}" y="${padT + 5}" font-size="11" fill="#475569">Boys</text></g>` : ''}
   ${(() => {
     // Static end-point anchors: dot + latest-year value for each visible line (labels dodge each other).
-    const ends = [[f, '#db2777', hasF], [m, '#2563eb', hasM]].filter(([arr, , has]) => has && arr[n - 1] > 0);
+    const ends = [[f, '#db2777', hasF, 'girls'], [m, '#2563eb', hasM, 'boys']].filter(([arr, , has]) => has && arr[n - 1] > 0);
     const close = ends.length === 2 && Math.abs(y(ends[0][0][n - 1]) - y(ends[1][0][n - 1])) < 16;
-    return ends.map(([arr, color], i) => {
+    return ends.map(([arr, color, , label], i) => {
       const v = arr[n - 1], px = x(n - 1), py = y(v);
       const ty = close && i === 1 ? py + 16 : py - 8;
-      return `<g><circle cx="${px}" cy="${py}" r="4" fill="${color}" stroke="#fff" stroke-width="1.5"/><text x="${px - 8}" y="${ty}" text-anchor="end" font-size="11" font-weight="600" fill="${color}" stroke="#fff" stroke-width="3" paint-order="stroke">${END_YEAR}: ${v.toLocaleString('en-US')}</text></g>`;
+      return `<g><circle cx="${px}" cy="${py}" r="4" fill="${color}" stroke="#fff" stroke-width="1.5"/><text x="${px - 8}" y="${ty}" text-anchor="end" font-size="11" font-weight="600" fill="${color}" stroke="#fff" stroke-width="3" paint-order="stroke">${END_YEAR}: ${v.toLocaleString('en-US')} ${label}</text></g>`;
     }).join('');
   })()}
   <line id="nc-cursor" x1="0" x2="0" y1="${padT}" y2="${padT + ih}" stroke="#6366f1" stroke-width="1" stroke-dasharray="3 3" style="display:none"/>

@@ -1526,3 +1526,8 @@ text-5xl/6xl（Fraunces 已有）；② 375px「On this page」锚点行改横�
 （mask-image，sm 起恢复 wrap）；③ 图表补 2025 静态端点锚点（圆点+数值标签，白描边
 halo，双线接近时自动错位）。CACHE_VER 98→99。回归：emma/michael/riley 375px axe 0/
 无溢出/console 0；1440+375 截图核验（Riley 双线端点标签无重叠）。版本 0887fa51。
+
+## R207：端点标签加性别限定词（盲评复评 P3 顺手项）— 2026-08-05
+复评通过（8:8）。P3：曲线端点标签「2025: 12,754」可能与总数表被读作矛盾，改为
+「2025: 12,754 girls / 1,666 boys」。CACHE_VER 99→100。生产 grep 与 riley 375px
+回归全绿。版本 921fa962。
