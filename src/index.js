@@ -54,7 +54,7 @@ const slugify = s => (s || '').normalize('NFD').replace(/[\u0300-\u036f]/g, '').
 // Prefix search via index-friendly range scan (LIKE on a BINARY PK can't use the index
 // and D1 rejects patterns >= 50 chars).
 const NAME_COUNT = 105954; // rows in `names`; update when reimporting data
-const CACHE_VER = 98; // bump to invalidate the edge HTML cache on deploys that change rendering/data
+const CACHE_VER = 99; // bump to invalidate the edge HTML cache on deploys that change rendering/data
 // '~' (0x7E) sorts after every character allowed in slugs (a-z, apostrophe, hyphen).
 const prefixWhere = "slug >= ?1 AND slug < (?1 || '~')";
 
@@ -287,10 +287,17 @@ app.get('/name/:slug', async c => {
     ['10-year trend', trendPct === null ? 'New / returning' : `${trendPct > 0 ? '▲ +' : trendPct < 0 ? '▼ ' : ''}${trendPct}%`, trendPct === null ? 'Too new (or newly back) to compare' : trendPct > 15 ? 'On its way up — getting more common' : trendPct < -15 ? 'Fading — feels more distinctive each year' : 'Holding steady vs. 10 years ago'],
     ['Gender split', r.f_total && r.m_total ? `${girlPct} girls / ${boyPct} boys` : (r.f_total ? 'All girls' : 'All boys'), unisex ? 'Genuinely used for both — a true unisex name' : 'Share of all babies ever given this name'],
   ];
+  // Gender-tinted hero panel gives the name "main character" presence (same hues as the chart lines).
+  const heroGrad = unisex
+    ? 'bg-gradient-to-br from-pink-100 via-purple-50 to-blue-100 border-purple-100'
+    : primary === 'girl'
+      ? 'bg-gradient-to-br from-pink-100 via-rose-50 to-white border-pink-100'
+      : 'bg-gradient-to-br from-blue-100 via-sky-50 to-white border-blue-100';
   const body = `
 <nav aria-label="Breadcrumb" class="text-sm text-slate-600 mb-4"><a href="/" class="hover:text-indigo-600">Home</a> › <a href="/letter/${slug[0]}" class="hover:text-indigo-600">Names starting with ${slug[0].toUpperCase()}</a> › <span>${esc(r.name)}</span></nav>
+<section class="${heroGrad} border rounded-3xl p-5 sm:p-8">
 <div class="flex flex-wrap items-baseline gap-3">
-  <h1 class="font-display text-4xl sm:text-5xl font-bold tracking-tight">${esc(r.name)}</h1>
+  <h1 class="font-display text-5xl sm:text-6xl font-bold tracking-tight">${esc(r.name)}</h1>
   ${unisex ? '<span class="text-sm rounded-full bg-purple-100 text-purple-700 px-3 py-1">Unisex</span>' : `<span class="text-sm rounded-full ${primary === 'girl' ? 'bg-pink-100 text-pink-700' : 'bg-blue-100 text-blue-700'} px-3 py-1">${cap(primary)} name</span>`}
 </div>
 ${(() => {
@@ -313,7 +320,8 @@ ${(() => {
 })()}</p>
 <p class="mt-2 text-xs text-slate-600">Data: official U.S. Social Security records, 1880–${END_YEAR} · <a class="underline hover:text-indigo-600" href="/about">sources &amp; methodology</a> · <a class="underline hover:text-indigo-600" href="/search?q=${slug}&list=1">see all names matching “${esc(r.name)}”</a></p>
 <div id="nc-search-note" hidden class="mt-3 rounded-xl bg-indigo-50 border border-indigo-100 px-4 py-2.5 text-sm text-slate-700">Looking for every name starting with “${esc(r.name)}”? <a href="/search?q=${slug}&list=1" class="text-indigo-700 font-medium hover:underline">See the full match list →</a></div>
-<nav aria-label="On this page" class="mt-4 flex flex-wrap gap-x-4 gap-y-1 text-sm text-indigo-700"><span class="text-slate-600">On this page:</span>${[
+</section>
+<nav aria-label="On this page" class="mt-4 flex overflow-x-auto whitespace-nowrap sm:flex-wrap sm:whitespace-normal gap-x-4 gap-y-1 text-sm text-indigo-700 [scrollbar-width:none] [mask-image:linear-gradient(90deg,#000_90%,transparent)] sm:[mask-image:none]"><span class="text-slate-600">On this page:</span>${[
   meaning && (meaning.etymology || meaning.ipa) ? ['#meaning', 'Meaning'] : null,
   ['#popularity', 'Popularity'],
   recentRanks.results.length ? ['#recent', 'Recent years'] : null,

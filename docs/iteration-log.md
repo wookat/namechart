@@ -1518,3 +1518,11 @@ P2：Gender split 取整到 100%/0% 与同页少数性别排名（如 Emma 1900 
 
 ## R205：国际排名立项落地（England & Wales / France / Ireland / Norway）— 2026-08-14
 竞品对比验收立项（Nameberry 33 国 vs 本线仅美国）。先论证后实现：docs/intl-data-sources.md 核定 4 国官方开放数据源（ONS OGL v3、INSEE Licence Ouverte、CSO CC BY 4.0、SSB NLOD），入选标准=官方机构+明确许可+可编程获取+年度更新；德国等无合规源的明确不做。实现：intl_ranks 表（与 state_ranks 同构，勿增实体）+ scripts/fetch-intl.mjs 一键重建（802 行，各国最新年 top 100×2 性别）；/international 总览页 + /international/:cc 四国家页（top 100 双表、来源署名、ItemList JSON-LD）；名字页新增 "around the world" 区块（如 Olivia：England & Wales #1）；footer/About/sitemap/beacon 白名单同步。CACHE_VER 97→98。回归：3 页 375px axe 0/无溢出/console 0。版本 14d7c1b5。
+
+## R206：UI 盲评第 1 轮整改（hero 品牌记忆点 + 锚点行横滚 + 图表端点锚点）— 2026-08-05
+验收官 UI 双维盲评 P1：名字页 hero「干净但像内部工具」。整改（复用现有资产，勿增实体）：
+① hero 区加性别色系渐变面板（girl 粉/boy 蓝/unisex 粉紫蓝，与曲线同色相），标题提级
+text-5xl/6xl（Fraunces 已有）；② 375px「On this page」锚点行改横向滚动+右端渐隐
+（mask-image，sm 起恢复 wrap）；③ 图表补 2025 静态端点锚点（圆点+数值标签，白描边
+halo，双线接近时自动错位）。CACHE_VER 98→99。回归：emma/michael/riley 375px axe 0/
+无溢出/console 0；1440+375 截图核验（Riley 双线端点标签无重叠）。版本 0887fa51。
