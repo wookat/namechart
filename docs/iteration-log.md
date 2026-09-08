@@ -1531,3 +1531,11 @@ halo，双线接近时自动错位）。CACHE_VER 98→99。回归：emma/michae
 复评通过（8:8）。P3：曲线端点标签「2025: 12,754」可能与总数表被读作矛盾，改为
 「2025: 12,754 girls / 1,666 boys」。CACHE_VER 99→100。生产 grep 与 riley 375px
 回归全绿。版本 921fa962。
+
+## R208：类别级 referrer 计数（CEO 流量核查转办）— 2026-09-08
+
+- 目标：在无 Cookie/无访客 ID 口径下判断搜索流量是否到来。
+- 方案（勿增实体）：复用 `events(day,event,count)`；浏览器侧把 `document.referrer` 的 hostname 归类为 `ref_search/ref_social/ref_internal/ref_direct/ref_other` 后只上传类别名，域名与 URL 参数不离开浏览器；`/api/beacon` 白名单接受 `r` 字段，与 `visit_*` 同表同写法。
+- 看板：`docs/analytics-export.md` 新增类别查询；`docs/ops-weekly.md` 周检加 ref_* 占比；隐私页同步声明。
+- 验证：真实浏览器带 google/reddit/站内 referer 访问，beacon payload 分别为 `ref_search/ref_social/ref_internal`（无域名）；服务端写入 `ref_search +1` 实测落库后已回滚该测试行（QA 不计业务）。headless UA 按既有口径被剔除。luna/privacy 375px axe 0/无溢出/console 0。
+- ASSET_VER 23→24、CACHE_VER 100→101。版本 14798742。

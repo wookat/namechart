@@ -54,7 +54,7 @@ const slugify = s => (s || '').normalize('NFD').replace(/[\u0300-\u036f]/g, '').
 // Prefix search via index-friendly range scan (LIKE on a BINARY PK can't use the index
 // and D1 rejects patterns >= 50 chars).
 const NAME_COUNT = 105954; // rows in `names`; update when reimporting data
-const CACHE_VER = 100; // bump to invalidate the edge HTML cache on deploys that change rendering/data
+const CACHE_VER = 101; // bump to invalidate the edge HTML cache on deploys that change rendering/data
 // '~' (0x7E) sorts after every character allowed in slugs (a-z, apostrophe, hyphen).
 const prefixWhere = "slug >= ?1 AND slug < (?1 || '~')";
 
@@ -1464,7 +1464,7 @@ app.get('/privacy', c => html(c, layout({
 <p class="mt-4 text-slate-600">Effective: August 2026</p>
 <ul class="mt-4 list-disc pl-5 space-y-2 text-slate-700">
 <li><strong>No cookies.</strong> We set no cookies and use no third-party trackers or ad networks.</li>
-<li><strong>Anonymous analytics.</strong> We count page views (path + day only) via a first-party beacon, and keep daily aggregate counts of search terms (the normalized query + day only). No IP addresses, fingerprints, or identifiers are stored with either. To limit abuse we hash your IP with the current date into a short-lived counter key; the raw IP is never written to storage.</li>
+<li><strong>Anonymous analytics.</strong> We count page views (path + day only) via a first-party beacon, and keep daily aggregate counts of search terms (the normalized query + day only). Your browser also reports whether you arrived from a search engine, a social site, another page of ours, or directly — as a category only, never the referring domain or URL — and a new-vs-returning flag derived from a first-visit date kept in your browser&rsquo;s local storage. No IP addresses, fingerprints, or identifiers are stored with either. To limit abuse we hash your IP with the current date into a short-lived counter key; the raw IP is never written to storage.</li>
 <li><strong>Shared shortlists.</strong> If you tap “Share this list” we store only the name list itself and the creation date — no account, email, or identifier is attached. You can delete the link at any time from the same browser, which disables it for everyone.</li>
 <li><strong>Email.</strong> If you subscribe for updates we store your email address, the date, and the page you signed up from, used solely for product updates. Unsubscribe anytime by replying to any email or writing to hello@zalize.com.</li>
 <li><strong>Processors.</strong> The site runs on Cloudflare (Workers, D1, DNS/CDN). Cloudflare processes connection data, including IP addresses, at its edge for delivery, caching, and security, and may transfer it internationally under its own terms; Cloudflare also collects network error reports (NEL) for our domain. Cloudflare&rsquo;s cookieless Web Analytics script is enabled at the zalize.com zone level, but our Content-Security-Policy blocks it from loading on NameChart. We use no ad networks, no cross-site trackers, and no third-party marketing tools.</li>
@@ -1539,21 +1539,24 @@ app.post('/api/share/revoke', async c => {
   return c.json({ ok: (r.meta?.changes ?? 0) > 0 });
 });
 
-const EVENTS = new Set(['visit_new', 'visit_returning']);
+// Day-level counters only: visit_* from localStorage first-seen, ref_* = referrer category classified client-side.
+const EVENTS = new Set(['visit_new', 'visit_returning', 'ref_search', 'ref_social', 'ref_internal', 'ref_direct', 'ref_other']);
 app.post('/api/beacon', async c => {
   // Beacons come only from our own pages: require browser fetch-metadata to say same-origin.
   if (!sameOrigin(c) || skipAnalytics(c) || c.req.header('Sec-Fetch-Site') !== 'same-origin') return c.body(null, 204);
   try {
-    const { p, e } = await c.req.json();
+    const { p, e, r } = await c.req.json();
     // Only count paths that match a real route family, so forged beacons can't pollute analytics.
     const VALID_PATH = /^\/$|^\/(name|letter|year|state|compare|list|meaning|international|og\/name|og\/list|og\/meaning|og\/compare)\/[a-z0-9'.-]{1,60}$|^\/decade\/\d{4}s$|^\/s\/[a-z0-9]{8}$|^\/og\/share\/[a-z0-9.]{1,20}$|^\/(top\/girls|top\/boys|trending|unisex|browse|about|privacy|terms|favorites|search|generator|pricing|matcher|press|international)$/;
     if (typeof p === 'string' && p.length <= 100 && VALID_PATH.test(p) && !(await overQuota(c, 'beacon', 2000))) {
       const day = new Date().toISOString().slice(0, 10);
       await c.env.DB.prepare('INSERT INTO hits (day, path, count) VALUES (?, ?, 1) ON CONFLICT(day, path) DO UPDATE SET count = count + 1')
         .bind(day, p).run();
-      if (typeof e === 'string' && EVENTS.has(e)) {
-        await c.env.DB.prepare('INSERT INTO events (day, event, count) VALUES (?, ?, 1) ON CONFLICT(day, event) DO UPDATE SET count = count + 1')
-          .bind(day, e).run();
+      for (const ev of [e, r]) {
+        if (typeof ev === 'string' && EVENTS.has(ev)) {
+          await c.env.DB.prepare('INSERT INTO events (day, event, count) VALUES (?, ?, 1) ON CONFLICT(day, event) DO UPDATE SET count = count + 1')
+            .bind(day, ev).run();
+        }
       }
     }
   } catch { /* ignore */ }

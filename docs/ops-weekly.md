@@ -3,7 +3,7 @@
 会话被唤醒执行周更时按此清单操作（约每周一次）。凭据：Cloudflare org token（`CLOUDFLARE_GLOBAL_API_TOKEN`），account `ddff52d24ee44e21a021c15eaffcc86d`，D1 database `6f658ccd-7d51-4de7-8eb7-b643fc1a4e97`，Worker `namechart`，域名 https://namechart.zalize.com 。
 
 ## 1. 流量周报
-- 查询 D1 `hits` 表：上周 PV 总量、Top 10 路径、按日趋势；`subscribers` 表增量。
+- 查询 D1 `hits` 表：上周 PV 总量、Top 10 路径、按日趋势；`events` 表 `ref_*` 类别占比（search/social/internal/direct/other，判断搜索流量是否到来）；`subscribers` 表增量。
 - 写入 `docs/weekly/YYYY-MM-DD.md` 并 push。
 
 ## 2. IndexNow 提交

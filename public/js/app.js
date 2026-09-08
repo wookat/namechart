@@ -9,7 +9,18 @@
       else if (localStorage.getItem('nc-evday') !== day) { ev = first < day ? 'visit_returning' : null; }
       if (ev) localStorage.setItem('nc-evday', day);
     } catch (e2) { /* storage unavailable */ }
-    navigator.sendBeacon('/api/beacon', JSON.stringify(ev ? { p: location.pathname, e: ev } : { p: location.pathname }));
+    // Referrer is reduced to a category in the browser; no domain or URL ever leaves the page.
+    var ref = 'ref_direct', rh = '';
+    try { rh = document.referrer ? new URL(document.referrer).hostname : ''; } catch (e3) { /* ignore */ }
+    if (rh) {
+      ref = rh === location.hostname ? 'ref_internal'
+        : /(^|\.)(google|bing|duckduckgo|yahoo|yandex|baidu|ecosia|brave|startpage|qwant|ask)\./.test(rh) ? 'ref_search'
+        : /(^|\.)(reddit|facebook|instagram|twitter|x|t|pinterest|tiktok|linkedin|threads|youtube|quora|tumblr|mastodon|bsky|producthunt|news\.ycombinator)\.(com|co|net|social|app)$/.test(rh) ? 'ref_social'
+        : 'ref_other';
+    }
+    var payload = { p: location.pathname, r: ref };
+    if (ev) payload.e = ev;
+    navigator.sendBeacon('/api/beacon', JSON.stringify(payload));
   } catch (e) { /* noop */ }
 
   var inputs = document.querySelectorAll('input[name=q]');
